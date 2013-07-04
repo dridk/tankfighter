@@ -1,0 +1,8 @@
+{"type": "ktank-map", "version": "1.0", "width": 1920, "height": 1080, "blocks": [
+	{"x": 100, "y":100, "w": 512, "h": 128, "texture": "bloc"},
+	{"x": 400, "y":300, "w": 256, "h": 256, "texture": "bloc"},
+	{"x": 10, "y":700, "w": 1024, "h": 256, "texture": "bloc"},
+	{"x": 1200, "y":150, "w": 256, "h": 1024, "texture": "bloc"},
+	{"x": 1600, "y":300, "w": 128, "h": 256, "texture": "bloc"}
+]
+}

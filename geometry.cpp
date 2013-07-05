@@ -5,6 +5,12 @@
 #include <stdio.h>
 
 
+static void dispLine(const Line &line) {
+	fprintf(stderr, "[line %lg*x+%lg*y+%lg = 0]\n", line.a, line.b, line.c);
+}
+static void dispPoint(Vector2d pt) {
+	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
+}
 static const double minWallDistance = 1e-4;
 
 Line Segment::toLine() const {
@@ -13,6 +19,17 @@ Line Segment::toLine() const {
 	res.b = (pt1.x - pt2.x);
 	res.c = -(pt1.x*res.a + pt1.y*res.b);
 	return res;
+}
+static double segmentModule(const Segment &segt) {
+	return pointsDistance(segt.pt1, segt.pt2);
+}
+static double vectorModule(const Vector2d &v) {
+	return sqrt(v.x*v.x + v.y*v.y);
+}
+static void normalizeVector(Vector2d &v, double new_module) {
+	double module = vectorModule(v);
+	v.x *= new_module/module;
+	v.y *= new_module/module;
 }
 double pointsDistance(Vector2d p1, Vector2d p2) {
 	Vector2d v=p2-p1;
@@ -41,19 +58,40 @@ static bool solve2nd(double *res1, double *res2, double a, double b, double c) {
 	return true;
 }
 
+static Vector2d getPointOnLine(const Line &line) {
+	Vector2d res;
+	double a=line.a, b=line.b, c=line.c;
+	if ((fabs(a)+fabs(b)) < 1e-6) {
+		/* invalid line */
+		res.x = 0; res.y = 0;
+		return res;
+	}
+	if (fabs(b) > fabs(a)) {
+		res.x = 0;
+		res.y = - c/b;
+	} else {
+		res.y = 0;
+		res.x = - c/a;
+	}
+	return res;
+}
 static bool circleIntersectsLine(Vector2d *res1, Vector2d *res2, const Line &line, const Circle &ci) {
 	Vector2d res;
 	/* equation is: x^2(1-a^2/b^2)+x(2*y0-2*x0)+(x0^2+y0^2-r^2)=0 */
 	double x0, y0, a, b;
 	double coeff1, coeff2;
-	double con1, con2;
-	if (line.b > line.a) {a = line.a; b = line.b; x0 = ci.center.x + line.c/b; y0 = ci.center.y; coeff1 = 1; con1 = 0; coeff2 = -(a/b); con2 = -(line.c/b);}
-	else		     {a = line.b; b = line.a; x0 = ci.center.y + line.c/b; y0 = ci.center.x; coeff2 = 1; con2 = 0; coeff1 = -(a/b); con1 = -(line.c/b);}
+	dispLine(line);
+	Vector2d repere = getPointOnLine(line);
+	Vector2d cic = ci.center - repere;
+	dispPoint(repere); /* Now, ignore c constant, since this line goes through this repere origin */
+	if (fabs(line.b) > fabs(line.a)) {a = line.a; b = line.b; x0 = cic.x; y0 = cic.y; coeff1 = 1; coeff2 = -(a/b);}
+	else		                 {a = line.b; b = line.a; x0 = cic.y; y0 = cic.x; coeff2 = 1; coeff1 = -(a/b);}
 	double x1, x2;
-	if (!solve2nd(&x1, &x2, 1-(a*a)/(b*b), 2*(y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius)))
+	fprintf(stderr, "[equa %lg %lg %lg]\n", 1+(a*a)/(b*b), 2*(a/b*y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius));
+	if (!solve2nd(&x1, &x2, 1+(a*a)/(b*b), 2*(a/b*y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius)))
 		return false;
-	(*res1) = Vector2d(coeff1*x1+con1, coeff2*x1+con2);
-	(*res2) = Vector2d(coeff1*x2+con1, coeff2*x2+con2);
+	(*res1) = Vector2d(coeff1*x1, coeff2*x1) + repere;
+	(*res2) = Vector2d(coeff1*x2, coeff2*x2) + repere;
 	return true;
 }
 static bool is_between(double x, double a, double b) {
@@ -68,7 +106,9 @@ static bool isLPointOnSegment(const Vector2d &res, const Segment &segt) { /* poi
 }
 static bool circleIntersectsSegment(Vector2d &res, const Segment &segt, const Circle &ci) {
 	Vector2d p1, p2;
+	if (segmentModule(segt) < 1e-6) return false;
 	if (!circleIntersectsLine(&p1, &p2, segt.toLine(), ci)) return false;
+	fprintf(stderr, "[circle intersects line %lg,%lg and %lg,%lg]\n", p1.x, p1.y, p2.x, p2.y);
 	if (pointsDistance(p1, segt.pt1) < pointsDistance(p2, segt.pt1)) res = p1; else res = p2;
 	return isLPointOnSegment(res, segt);
 }
@@ -117,12 +157,6 @@ static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* orie
 	vect.pt2 = C;
 	return true;
 }
-static void dispLine(const Line &line) {
-	fprintf(stderr, "[line %lg*x+%lg*y+%lg = 0]\n", line.a, line.b, line.c);
-}
-static void dispPoint(Vector2d pt) {
-	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
-}
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
 	return intersectLines(res, orthoLine(line, pt), line);
 }
@@ -132,17 +166,6 @@ static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vec
 	if (!isLPointOnSegment(res, segt)) return false;
 	res0 = res;
 	return true;
-}
-static double segmentModule(const Segment &segt) {
-	return pointsDistance(segt.pt1, segt.pt2);
-}
-static double vectorModule(const Vector2d &v) {
-	return sqrt(v.x*v.x + v.y*v.y);
-}
-static void normalizeVector(Vector2d &v, double new_module) {
-	double module = vectorModule(v);
-	v.x *= new_module/module;
-	v.y *= new_module/module;
 }
 static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
@@ -158,6 +181,7 @@ static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
 	Vector2d A, C, B = vect.pt2;
 	Vector2d proj;
 	Segment segt = segt0;
+	if (segmentModule(vect) < 1e-6) return false;
 	/*fprintf(stderr, "[pos %lg,%lg]\n", vect.pt1.x, vect.pt1.y);*/
 	if (!intersectSegments(A, vect, segt)) {
 		return false;
@@ -243,7 +267,7 @@ bool moveCircleToCircle(double radius, Segment &vect, const Circle &colli) {
 	return pointMovesToCircleArc(vect, arc);
 }
 
-void test_geometry_cpp() {
+static void test_segments() {
 	Segment s1;
 	Segment v;
 	s1.pt1.x = 100;
@@ -259,4 +283,32 @@ void test_geometry_cpp() {
 	} else {
 		fprintf(stderr, "[point doesn't move to segt]\n");
 	}
+}
+static void test_circles() {
+	Segment vect;
+	Circle circle;
+	Vector2d repere;
+	Vector2d A;
+	circle.center.x = 100;
+	circle.center.y = 0;
+	circle.radius = 10;
+	vect.pt1.x = 0;
+	vect.pt1.y = 0;
+	vect.pt2.x = 101;
+	vect.pt2.y = 5;
+
+	repere.x = 0; repere.y = 10;
+	translateSegment(vect, repere);
+	circle.center += repere;
+	if (circleIntersectsSegment(A, vect, circle)) {
+		fprintf(stderr, "[intersection %lg,%lg]\n", A.x, A.y);
+	} else {
+		fprintf(stderr, "[no intersection between segment and circle]\n");
+	}
+	fprintf(stderr, "[radius = %lg]\n", pointsDistance(circle.center, A));
+}
+void test_geometry_cpp() {
+	test_segments();
+	test_circles();
+	/* abort(); */
 }

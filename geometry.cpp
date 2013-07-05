@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 
+static const double minWallDistance = 1e-4;
+
 Line Segment::toLine() const {
 	Line res;
 	res.a = (pt2.y - pt1.y);
@@ -118,8 +120,42 @@ static void dispLine(const Line &line) {
 static void dispPoint(Vector2d pt) {
 	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
 }
-static bool pointMovesToSegment(Segment &vect, const Segment &segt) {
+static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
+	return intersectLines(res, orthoLine(line, pt), line);
+}
+static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vector2d &pt) {
+	Vector2d res;
+	if (!orthoProjectOnLine(res, segt.toLine(), pt)) return false;
+	if (!isLPointOnSegment(res, segt)) return false;
+	res0 = res;
+	return true;
+}
+static double segmentModule(const Segment &segt) {
+	return pointsDistance(segt.pt1, segt.pt2);
+}
+static double vectorModule(const Vector2d &v) {
+	return sqrt(v.x*v.x + v.y*v.y);
+}
+static void normalizeVector(Vector2d &v, double new_module) {
+	double module = vectorModule(v);
+	v.x *= new_module/module;
+	v.y *= new_module/module;
+}
+static void translateSegment(Segment &segt, Vector2d v) {
+	segt.pt1 += v;
+	segt.pt2 += v;
+}
+static Vector2d line2Vector(const Line &line) {
+	return Vector2d(line.a, -line.b);
+}
+static Vector2d orthoVector(const Vector2d &v) {
+	return Vector2d(v.y, -v.x);
+}
+static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
 	Vector2d A, C, B = vect.pt2;
+	Vector2d proj;
+	Segment segt = segt0;
+	fprintf(stderr, "[pos %lg,%lg]\n", vect.pt1.x, vect.pt1.y);
 	if (!intersectSegments(A, vect, segt)) {
 		return false;
 	} else {
@@ -127,7 +163,6 @@ static bool pointMovesToSegment(Segment &vect, const Segment &segt) {
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
 		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
-		asm("int $3");
 	}
 	Line BC = orthoLine(segt.toLine(), B);
 	Line AC = segt.toLine();
@@ -137,6 +172,13 @@ static bool pointMovesToSegment(Segment &vect, const Segment &segt) {
 		return true;
 	}
 	vect.pt2 = C;
+	if (orthoProjectOnSegment(proj, segt, vect.pt1)) {
+		Vector2d v = Vector2d(vect.pt1.x - proj.x, vect.pt1.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
+		if (vectorModule(v) >= minWallDistance/2) {
+			normalizeVector(v, minWallDistance);
+			vect.pt2 += v;
+		}
+	}
 	return true;
 }
 static bool pointMovesToComplexShape(Segment &vect, const ComplexShape &shape) {

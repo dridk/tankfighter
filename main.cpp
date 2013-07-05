@@ -573,10 +573,10 @@ void move_player(Player &pl, Int64 tm) {
 	vect.pt2 = vect.pt1;
 	move_between_boundaries(vect.pt2.x, cos(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_width());
 	move_between_boundaries(vect.pt2.y, sin(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_height());
-#if 0
+
 	std::vector<Block> &blocks = wstate.map.blocks;
 	for(unsigned i=0; i < blocks.size(); i++) {
-		FloatRect r;
+		DoubleRect r;
 		Block &block = blocks[i];
 		r.left = block.x;
 		r.top = block.y;
@@ -586,7 +586,6 @@ void move_player(Player &pl, Int64 tm) {
 			/*fprintf(stderr, "[collision on block %d]\n", i);*/;
 		}
 	}
-#endif
 	pl.tank_x = vect.pt2.x;
 	pl.tank_y = vect.pt2.y;
 	

@@ -32,10 +32,6 @@ static int positionToInterval(double x, double left, double right) {
 	if (x >= right) return 1;
 	return 0;
 }
-static double pointsDistance(Vector2f p1, Vector2f p2) {
-	Vector2f v=p2-p1;
-	return sqrt(v.x*v.x + v.y*v.y);
-}
 static double distanceToRectangle(Vector2f pt, const FloatRect &br) {
 	double x = pt.x, y = pt.y;
 	double distance=0;
@@ -57,6 +53,7 @@ static double distanceToRectangle(Vector2f pt, const FloatRect &br) {
 		distance = distanceToInterval(x, br.left, br.left+br.width);
 	}
 }
+
 static void intersects(Entity *a, Entity *b) {
 	if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_CIRCLE) {
 		double distance = pointsDistance(a->position, b->position);

@@ -4,8 +4,6 @@
 #include <vector>
 #include <stdio.h>
 
-using sf::Vector2f;
-using sf::FloatRect;
 
 Line Segment::toLine() const {
 	Line res;
@@ -14,17 +12,17 @@ Line Segment::toLine() const {
 	res.c = -(pt1.x*res.a + pt1.y*res.b);
 	return res;
 }
-double pointsDistance(Vector2f p1, Vector2f p2) {
-	Vector2f v=p2-p1;
+double pointsDistance(Vector2d p1, Vector2d p2) {
+	Vector2d v=p2-p1;
 	return sqrt(v.x*v.x + v.y*v.y);
 }
-static Line parallelLine(const Line &line, const Vector2f &pt) {
+static Line parallelLine(const Line &line, const Vector2d &pt) {
 	/* computes a line parallel to the input line, going through the specified pt point */
 	Line res = line;
 	res.c = -(res.a * pt.x + res.b * pt.y);
 	return res;
 }
-static Line orthoLine(const Line &line, const Vector2f &pt) {
+static Line orthoLine(const Line &line, const Vector2d &pt) {
 	/* computes a line orthogonal to the input line, going through the specified pt point */
 	Line res;
 	res.a = -line.b;
@@ -41,8 +39,8 @@ static bool solve2nd(double *res1, double *res2, double a, double b, double c) {
 	return true;
 }
 
-static bool circleIntersectsLine(Vector2f *res1, Vector2f *res2, const Line &line, const Circle &ci) {
-	Vector2f res;
+static bool circleIntersectsLine(Vector2d *res1, Vector2d *res2, const Line &line, const Circle &ci) {
+	Vector2d res;
 	/* equation is: x^2(1-a^2/b^2)+x(2*y0-2*x0)+(x0^2+y0^2-r^2)=0 */
 	double x0, y0, a, b;
 	double coeff1, coeff2;
@@ -52,37 +50,39 @@ static bool circleIntersectsLine(Vector2f *res1, Vector2f *res2, const Line &lin
 	double x1, x2;
 	if (!solve2nd(&x1, &x2, 1-(a*a)/(b*b), 2*(y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius)))
 		return false;
-	(*res1) = Vector2f(coeff1*x1+con1, coeff2*x1+con2);
-	(*res2) = Vector2f(coeff1*x2+con1, coeff2*x2+con2);
+	(*res1) = Vector2d(coeff1*x1+con1, coeff2*x1+con2);
+	(*res2) = Vector2d(coeff1*x2+con1, coeff2*x2+con2);
 	return true;
 }
 static bool is_between(double x, double a, double b) {
 	return (x >= a && x < b) || (x >= b && x < a);
 }
-static bool isLPointOnSegment(const Vector2f &res, const Segment &segt) { /* point must already be on the Line */
+static bool isLPointOnSegment(const Vector2d &res, const Segment &segt) { /* point must already be on the Line */
 	double d1, d2;
 	d1 = segt.pt2.x - segt.pt1.x;
 	d2 = segt.pt2.y - segt.pt2.y;
 	if (fabs(d1) > fabs(d2)) return is_between(res.x, segt.pt1.x, segt.pt2.x);
 	return is_between(res.y, segt.pt1.y, segt.pt2.y);
 }
-static bool intersectSegments(Vector2f &res, const Segment &s1, const Segment &s2) {
-	if (!intersectLines(A, s1.toLine(), s2.toLine())) return false;
-        if (!isLPointOnSegment(A, s1)) return false;
-	if (!isLPointOnSegment(A, s2)) return false;
-	return true;
-}
-static bool circleIntersectsSegment(Vector2f &res, const Segment &segt, const Circle &ci) {
-	Vector2f p1, p2;
+static bool circleIntersectsSegment(Vector2d &res, const Segment &segt, const Circle &ci) {
+	Vector2d p1, p2;
 	if (!circleIntersectsLine(&p1, &p2, segt.toLine(), ci)) return false;
 	if (pointsDistance(p1, segt.pt1) < pointsDistance(p2, segt.pt1)) res = p1; else res = p2;
 	return isLPointOnSegment(res, segt);
 }
-static bool intersectLines(Vector2f &res, const Line &line1, const Line &line2) {
+static bool intersectLines(Vector2d &res, const Line &line1, const Line &line2) {
 	double d = line1.a * line2.b - line2.a * line1.b;
 	if (fabs(d) < 1e-8) return false;
 	res.y = (line2.a*line1.c - line1.a*line2.c) / d;
 	res.x = (line1.b*line2.c - line2.b*line1.c) / d;
+	return true;
+}
+static bool intersectSegments(Vector2d &res0, const Segment &s1, const Segment &s2) {
+	Vector2d res;
+	if (!intersectLines(res, s1.toLine(), s2.toLine())) return false;
+        if (!isLPointOnSegment(res, s1)) return false;
+	if (!isLPointOnSegment(res, s2)) return false;
+	res0 = res;
 	return true;
 }
 static double angle_from_dxdy(double dx, double dy) {
@@ -96,9 +96,9 @@ static bool trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 }
 static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* oriented segment */
 	return false;
-	Vector2f A;
-	Vector2f B = vect.pt2;
-	Vector2f C;
+	Vector2d A;
+	Vector2d B = vect.pt2;
+	Vector2d C;
 	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
 	Segment AB, OA;
 	OA.pt2 = A; OA.pt1 = arc.circle.center;
@@ -115,18 +115,27 @@ static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* orie
 static void dispLine(const Line &line) {
 	fprintf(stderr, "[line %lg*x+%lg*y+%lg = 0]\n", line.a, line.b, line.c);
 }
-static void dispPoint(Vector2f pt) {
+static void dispPoint(Vector2d pt) {
 	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
 }
 static bool pointMovesToSegment(Segment &vect, const Segment &segt) {
-	Vector2f A, C, B = vect.pt2;
-	if (!intersectLines(A, vect.toLine(), segt.toLine())) return false;
-        if (!isLPointOnSegment(A, segt)) return false;
-	if (!isLPointOnSegment(A, vect)) return false;
+	Vector2d A, C, B = vect.pt2;
+	if (!intersectSegments(A, vect, segt)) {
+		return false;
+	} else {
+	fprintf(stderr, "[pmt (%lg,%lg)-(%lg,%lg) (%lg,%lg)-(%lg,%lg)]\n"
+		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
+		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
+		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
+		asm("int $3");
+	}
 	Line BC = orthoLine(segt.toLine(), B);
 	Line AC = segt.toLine();
-	if (!intersectLines(C, BC, AC))
-		{vect.pt2 = vect.pt1;return true;}
+	if (!intersectLines(C, BC, AC)) {
+		fprintf(stderr, "[This should never happen]\n");
+		vect.pt2 = vect.pt1;
+		return true;
+	}
 	vect.pt2 = C;
 	return true;
 }
@@ -135,9 +144,9 @@ static bool pointMovesToComplexShape(Segment &vect, const ComplexShape &shape) {
 	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(vect, shape.segment);
 	return false;
 }
-static void roundAugmentRectangle(const FloatRect &r0, double radius, std::vector<ComplexShape> &shapes) {
+static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vector<ComplexShape> &shapes) {
 	unsigned i;
-	FloatRect r = r0;
+	DoubleRect r = r0;
 	shapes.resize(8);
 	r.left -= radius;
 	r.top  -= radius;
@@ -164,7 +173,7 @@ static void roundAugmentRectangle(const FloatRect &r0, double radius, std::vecto
 		shapes[2*i+1].arc = c;
 	}
 }
-bool moveCircleToRectangle(double radius, Segment &vect, const FloatRect &r) {
+bool moveCircleToRectangle(double radius, Segment &vect, const DoubleRect &r) {
 	std::vector<ComplexShape> shapes;
 	roundAugmentRectangle(r, radius, shapes);
 	for(unsigned i=0; i < shapes.size(); i++) {

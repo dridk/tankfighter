@@ -1,13 +1,27 @@
+#ifdef SFML2
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/Audio.hpp>
+#else
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
 #include <math.h>
 #include "json.h"
+#include "geometry.h"
+
+#ifdef SFML2
+#define LoadFromFile loadFromFile
+#else
+#define LoadFromFile LoadFromFile
+#define Texture Image
+#endif
 
 using namespace sf;
 using namespace std;
@@ -242,7 +256,7 @@ Player::Player() {
 	Controller vide;
 	vide.type == CN_NONE;
 	vide.joyid = 0;
-	vide.V_axis = 0;
+	vide.V_axis = (Joystick::Axis)0;
 	tank_x=tank_y=tank_angle=canon_angle=0;
 	controller=vide;
 	color=Color(255,255,255);
@@ -368,20 +382,26 @@ double Player::tank_get_angle() {
 }
 
 double map_width(void) {
-	return window.getSize().x;
+	double sz = window.getSize().x;
+	return sz == 0 ? 800 : sz;
 }
 double map_height(void) {
-	return window.getSize().y;
+	double sz = window.getSize().y;
+	return sz == 0 ? 600 : sz;
 }
 
 void load_sprite(Sprite &sprite, Texture &tex, const char *path)
 {
-	if (!tex.loadFromFile(path)) {
+	if (!tex.LoadFromFile(path)) {
 		fprintf(stderr, "Failed to load %s\n", path);
 		exit(1);
 	}
 	tex.setSmooth(true);
+#ifdef SFML2
 	sprite.setTexture(tex);
+#else
+	sprite.SetImage(tex);
+#endif
 	FloatRect r=sprite.getLocalBounds();
 	sprite.setOrigin(Vector2f(r.width/2, r.height/2));
 }
@@ -480,6 +500,14 @@ void draw_player(Player &pl) {
 		canon.setRotation(pl.canon_angle+90);
 		canon.setColor(pl.color);
 		window.draw(canon);
+
+		CircleShape c;
+		c.setRadius(64);
+		c.setOrigin(32, 32);
+		c.setPosition(Vector2f(pl.tank_x, pl.tank_y));
+		c.setFillColor(Color(255,0,0));
+		c.setOutlineColor(Color(0,0,255));
+		window.draw(c);
 }
 void draw_missile(Missile &m) {
 	Sprite &missile=wres.missile;
@@ -539,8 +567,28 @@ void move_player(Player &pl, Int64 tm) {
 		pl.canon_angle += pl.canon_rotation() * angle_speed;
 		adjust_angle(pl.canon_angle);
 	}
-	move_between_boundaries(pl.tank_x, cos(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_width());
-	move_between_boundaries(pl.tank_y, sin(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_height());
+	Segment vect;
+	vect.pt1.x = pl.tank_x;
+	vect.pt1.y = pl.tank_y;
+	vect.pt2 = vect.pt1;
+	move_between_boundaries(vect.pt2.x, cos(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_width());
+	move_between_boundaries(vect.pt2.y, sin(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_height());
+#if 0
+	std::vector<Block> &blocks = wstate.map.blocks;
+	for(unsigned i=0; i < blocks.size(); i++) {
+		FloatRect r;
+		Block &block = blocks[i];
+		r.left = block.x;
+		r.top = block.y;
+		r.width = block.width;
+		r.height = block.height;
+		if (moveCircleToRectangle(64, vect, r)) {
+			/*fprintf(stderr, "[collision on block %d]\n", i);*/;
+		}
+	}
+#endif
+	pl.tank_x = vect.pt2.x;
+	pl.tank_y = vect.pt2.y;
 	
 	if (!pl.speed()) 
 	   wres.sound.play();
@@ -585,11 +633,13 @@ void compute_world(sf::RenderWindow &w, Int64 tm) {
 	}
 }
 int main() {
+void test_geometry_cpp();
+	test_geometry_cpp();
 	srand(time(NULL));
-	initialize_world();
-	window.create(VideoMode(1920,1080), "Tank window", Style::Fullscreen);
+	window.create(VideoMode(800,600), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
+	initialize_world();
 	initialize_res();
 	
 	

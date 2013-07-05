@@ -26,6 +26,8 @@
 using namespace sf;
 using namespace std;
 
+#undef DEBUG_OBJECT_OUTLINES
+
 RenderWindow window;
 enum ControllerType {CN_NONE, CN_KEYBMOUSE, CN_JOYSTICK};
 enum JoystickAxis {HorizontalMove, VerticalMove, HorizontalDirection, VerticalDirection};
@@ -447,7 +449,7 @@ int initial_user_count(void) {
 }
 
 void initialize_world(void) {
-	load_map(wstate.map, "map.json");
+	load_map(wstate.map, "map2.json");
 	wstate.players.reserve(8);
 	wstate.players.resize(initial_user_count());
 	for(int i=0; i < wstate.players.size(); i++) {
@@ -501,6 +503,7 @@ void draw_player(Player &pl) {
 		canon.setColor(pl.color);
 		window.draw(canon);
 
+#ifdef DEBUG_OBJECT_OUTLINES
 		CircleShape c;
 		c.setRadius(64);
 		c.setOrigin(64, 64);
@@ -508,6 +511,7 @@ void draw_player(Player &pl) {
 		c.setFillColor(Color(255,0,0));
 		c.setOutlineColor(Color(0,0,255));
 		window.draw(c);
+#endif
 }
 void draw_missile(Missile &m) {
 	Sprite &missile=wres.missile;
@@ -523,12 +527,14 @@ void draw_block(Block &b) {
 	wres.wall.setPosition(Vector2f(b.x, b.y));
 	wres.wall.setTextureRect(IntRect(0,0,b.width,b.height));
 	window.draw(wres.wall);
+#ifdef DEBUG_OBJECT_OUTLINES
 	RectangleShape r;
 	r.setFillColor(Color(0,255,0));
 	r.setOutlineColor(Color(0,0,255));
 	r.setPosition(Vector2f(b.x,b.y));
 	r.setSize(Vector2f(b.width, b.height));
 	window.draw(r);
+#endif
 }
 void draw_world(sf::RenderWindow &w) {
 	for(int i=0; i < wstate.map.blocks.size(); i++) {
@@ -641,7 +647,7 @@ int main() {
 void test_geometry_cpp();
 	test_geometry_cpp();
 	srand(time(NULL));
-	window.create(VideoMode(800,600), "Tank window", Style::Default);
+	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
 	initialize_world();

@@ -523,6 +523,12 @@ void draw_block(Block &b) {
 	wres.wall.setPosition(Vector2f(b.x, b.y));
 	wres.wall.setTextureRect(IntRect(0,0,b.width,b.height));
 	window.draw(wres.wall);
+	RectangleShape r;
+	r.setFillColor(Color(0,255,0));
+	r.setOutlineColor(Color(0,0,255));
+	r.setPosition(Vector2f(b.x,b.y));
+	r.setSize(Vector2f(b.width, b.height));
+	window.draw(r);
 }
 void draw_world(sf::RenderWindow &w) {
 	for(int i=0; i < wstate.map.blocks.size(); i++) {

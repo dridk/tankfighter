@@ -245,6 +245,10 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		c.start = M_PI/2 - i*M_PI/2;
 		if (c.end < 0) c.end += 2*M_PI;
 		c.end = c.start + M_PI/2;
+
+		c.start = -1000;
+		c.end = +1000;
+
 		shapes[2*i+1].type = CSIT_ARC;
 		shapes[2*i+1].arc = c;
 	}

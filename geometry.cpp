@@ -31,6 +31,16 @@ static void normalizeVector(Vector2d &v, double new_module) {
 	v.x *= new_module/module;
 	v.y *= new_module/module;
 }
+static void normalizeAngle(double &angle) {
+	if (angle < 0) angle += M_PI*2;
+	if (angle > M_PI*2) angle -= M_PI*2;
+}
+static Vector2d line2Vector(const Line &line) {
+	return Vector2d(line.a, -line.b);
+}
+static Vector2d orthoVector(const Vector2d &v) {
+	return Vector2d(v.y, -v.x);
+}
 double pointsDistance(Vector2d p1, Vector2d p2) {
 	Vector2d v=p2-p1;
 	return sqrt(v.x*v.x + v.y*v.y);
@@ -80,14 +90,11 @@ static bool circleIntersectsLine(Vector2d *res1, Vector2d *res2, const Line &lin
 	/* equation is: x^2(1-a^2/b^2)+x(2*y0-2*x0)+(x0^2+y0^2-r^2)=0 */
 	double x0, y0, a, b;
 	double coeff1, coeff2;
-	dispLine(line);
-	Vector2d repere = getPointOnLine(line);
+	Vector2d repere = getPointOnLine(line); /* Now, ignore c constant, since this line goes through this repere origin */
 	Vector2d cic = ci.center - repere;
-	dispPoint(repere); /* Now, ignore c constant, since this line goes through this repere origin */
 	if (fabs(line.b) > fabs(line.a)) {a = line.a; b = line.b; x0 = cic.x; y0 = cic.y; coeff1 = 1; coeff2 = -(a/b);}
 	else		                 {a = line.b; b = line.a; x0 = cic.y; y0 = cic.x; coeff2 = 1; coeff1 = -(a/b);}
 	double x1, x2;
-	fprintf(stderr, "[equa %lg %lg %lg]\n", 1+(a*a)/(b*b), 2*(a/b*y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius));
 	if (!solve2nd(&x1, &x2, 1+(a*a)/(b*b), 2*(a/b*y0 - x0), (x0*x0+y0*y0 - ci.radius*ci.radius)))
 		return false;
 	(*res1) = Vector2d(coeff1*x1, coeff2*x1) + repere;
@@ -108,7 +115,7 @@ static bool circleIntersectsSegment(Vector2d &res, const Segment &segt, const Ci
 	Vector2d p1, p2;
 	if (segmentModule(segt) < 1e-6) return false;
 	if (!circleIntersectsLine(&p1, &p2, segt.toLine(), ci)) return false;
-	fprintf(stderr, "[circle intersects line %lg,%lg and %lg,%lg]\n", p1.x, p1.y, p2.x, p2.y);
+	/*fprintf(stderr, "[circle intersects line %lg,%lg and %lg,%lg]\n", p1.x, p1.y, p2.x, p2.y);*/
 	if (pointsDistance(p1, segt.pt1) < pointsDistance(p2, segt.pt1)) res = p1; else res = p2;
 	return isLPointOnSegment(res, segt);
 }
@@ -131,9 +138,10 @@ static double angle_from_dxdy(double dx, double dy) {
 	double angle=0;
 	angle = atan(dy/dx);
 	if (dx < 0) angle += M_PI;
-	return angle+M_PI/2;
+	normalizeAngle(angle);
+	return angle;
 }
-static bool trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
+static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 	return angle_from_dxdy(segt.pt2.x - segt.pt1.x, segt.pt2.y - segt.pt1.y);
 }
 static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* oriented segment */
@@ -154,7 +162,9 @@ static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* orie
 	Line AC = orthoLine(OA.toLine(), A);
 	if (!intersectLines(C, BC, AC))
 		{vect.pt2 = vect.pt1;return true;} /* In theory, it's impossible as BC and AC are orthogonal */
-	vect.pt2 = C;
+	Vector2d bcv = OA.pt2 - OA.pt1;
+	normalizeVector(bcv, minWallDistance);
+	vect.pt2 = C + bcv;
 	return true;
 }
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
@@ -170,12 +180,6 @@ static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vec
 static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
 	segt.pt2 += v;
-}
-static Vector2d line2Vector(const Line &line) {
-	return Vector2d(line.a, -line.b);
-}
-static Vector2d orthoVector(const Vector2d &v) {
-	return Vector2d(v.y, -v.x);
 }
 static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
 	Vector2d A, C, B = vect.pt2;
@@ -242,12 +246,21 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		s.pt1.x = ((i==0 || i==3) ? r0.left : r0.left+r0.width);
 		s.pt1.y = ((i==0 || i==1) ? r0.top  : r0.top+r0.height);
 		c.circle.center = s.pt1;
-		c.start = M_PI/2 - i*M_PI/2;
-		if (c.end < 0) c.end += 2*M_PI;
-		c.end = c.start + M_PI/2;
+		double start, end;
+		start = M_PI/2 - i*M_PI/2;
+		normalizeAngle(start);
+		end = start + M_PI/2;
+		normalizeAngle(end);
+		c.start = -end;
+		c.end   = -start;
+		if (fabs(c.end) <= 1e-3) c.end = M_PI*2;
+		normalizeAngle(c.start);
+		normalizeAngle(c.end);
 
+#if 0
 		c.start = -1000;
 		c.end = +1000;
+#endif
 
 		shapes[2*i+1].type = CSIT_ARC;
 		shapes[2*i+1].arc = c;

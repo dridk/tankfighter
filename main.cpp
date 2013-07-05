@@ -503,7 +503,7 @@ void draw_player(Player &pl) {
 
 		CircleShape c;
 		c.setRadius(64);
-		c.setOrigin(32, 32);
+		c.setOrigin(64, 64);
 		c.setPosition(Vector2f(pl.tank_x, pl.tank_y));
 		c.setFillColor(Color(255,0,0));
 		c.setOutlineColor(Color(0,0,255));

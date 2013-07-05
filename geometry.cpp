@@ -97,11 +97,14 @@ static bool trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 	return angle_from_dxdy(segt.pt2.x - segt.pt1.x, segt.pt2.y - segt.pt1.y);
 }
 static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* oriented segment */
-	return false;
 	Vector2d A;
 	Vector2d B = vect.pt2;
 	Vector2d C;
 	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
+	fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
+		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
+		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
+	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);
 	Segment AB, OA;
 	OA.pt2 = A; OA.pt1 = arc.circle.center;
 	double angle = trigoAngleFromSegment(OA);
@@ -155,15 +158,15 @@ static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
 	Vector2d A, C, B = vect.pt2;
 	Vector2d proj;
 	Segment segt = segt0;
-	fprintf(stderr, "[pos %lg,%lg]\n", vect.pt1.x, vect.pt1.y);
+	/*fprintf(stderr, "[pos %lg,%lg]\n", vect.pt1.x, vect.pt1.y);*/
 	if (!intersectSegments(A, vect, segt)) {
 		return false;
-	} else {
+	} /*else {
 	fprintf(stderr, "[pmt (%lg,%lg)-(%lg,%lg) (%lg,%lg)-(%lg,%lg)]\n"
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
 		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
-	}
+	}*/
 	Line BC = orthoLine(segt.toLine(), B);
 	Line AC = segt.toLine();
 	if (!intersectLines(C, BC, AC)) {
@@ -186,6 +189,12 @@ static bool pointMovesToComplexShape(Segment &vect, const ComplexShape &shape) {
 	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(vect, shape.segment);
 	return false;
 }
+static void prolongateSegment(Segment &s, double distance) {
+	Vector2d pro1 = s.pt1 - s.pt2;
+	normalizeVector(pro1, distance);
+	s.pt1 += pro1;
+	s.pt2 -= pro1;
+}
 static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vector<ComplexShape> &shapes) {
 	unsigned i;
 	DoubleRect r = r0;
@@ -201,6 +210,7 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
+		prolongateSegment(s, -radius+minWallDistance/2);
 		shapes[2*i].type = CSIT_SEGMENT;
 		shapes[2*i].segment = s;
 

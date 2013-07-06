@@ -10,6 +10,7 @@
 #include "json.h"
 #include "geometry.h"
 #include "misc.h"
+#include "engine.h"
 
 using namespace sf;
 using namespace std;
@@ -632,10 +633,7 @@ void compute_world(sf::RenderWindow &w, Int64 tm) {
 		} else i++;
 	}
 }
-int main() {
-void test_geometry_cpp();
-	test_geometry_cpp();
-	srand(time(NULL));
+int nmain() {
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
@@ -658,4 +656,15 @@ void test_geometry_cpp();
 		compute_world(window, elapsed);
 	}
 	return 0;
+}
+int repl() {
+	Engine engine;
+	while (engine.step());
+	return 0;
+}
+int main() {
+	void test_geometry_cpp();
+	test_geometry_cpp();
+	srand(time(NULL));
+	return repl();
 }

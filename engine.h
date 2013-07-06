@@ -28,6 +28,7 @@ class Engine
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
+	Vector2d map_size(void);
 
 	sf::Texture background_texture;
 	sf::Sprite background;

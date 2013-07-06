@@ -10,12 +10,20 @@
 
 using namespace sf;
 
+Vector2d Engine::map_size(void) {
+	Vector2u sz = window.getSize();
+	return Vector2d(sz.x, sz.y);
+}
 Engine::Engine() {
 	first_step = true;
 	must_quit = false;
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
+
+	load_texture(background, background_texture, "sprites/dirt.jpg");
+	Vector2d sz = map_size();
+	background.setTextureRect(IntRect(0,0,sz.x,sz.y));
 }
 Engine::~Engine() {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
@@ -41,7 +49,7 @@ bool Engine::step(void) {
 	draw();
 	compute_physics();
 	destroy_flagged();
-	return must_quit;
+	return !must_quit;
 }
 void Engine::draw(void) {
 	window.clear();

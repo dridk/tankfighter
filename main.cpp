@@ -1,13 +1,7 @@
-#ifdef SFML2
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/Audio.hpp>
-#else
-#include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -15,13 +9,7 @@
 #include <math.h>
 #include "json.h"
 #include "geometry.h"
-
-#ifdef SFML2
-#define LoadFromFile loadFromFile
-#else
-#define LoadFromFile LoadFromFile
-#define Texture Image
-#endif
+#include "misc.h"
 
 using namespace sf;
 using namespace std;
@@ -393,26 +381,6 @@ double map_height(void) {
 	return sz == 0 ? 600 : sz;
 }
 
-void load_sprite(Sprite &sprite, Texture &tex, const char *path)
-{
-	if (!tex.LoadFromFile(path)) {
-		fprintf(stderr, "Failed to load %s\n", path);
-		exit(1);
-	}
-	tex.setSmooth(true);
-#ifdef SFML2
-	sprite.setTexture(tex);
-#else
-	sprite.SetImage(tex);
-#endif
-	FloatRect r=sprite.getLocalBounds();
-	sprite.setOrigin(Vector2f(r.width/2, r.height/2));
-}
-void load_texture(Sprite &sprite, Texture &tex, const char *path) {
-	load_sprite(sprite, tex, path);
-	sprite.setOrigin(0,0);
-	tex.setRepeated(true);
-}
 void initialize_res(void) {
   
         if (wres.soundBuffer.loadFromFile("moving.wav")) {

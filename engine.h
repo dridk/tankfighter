@@ -3,6 +3,8 @@
 #include <deque>
 #include "coretypes.h"
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 class Entity;
 class EngineEvent;
@@ -27,6 +29,8 @@ class Engine
 	void compute_physics(void);
 	void destroy_flagged(void);
 
+	sf::Texture background_texture;
+	sf::Sprite background;
 	sf::RenderWindow window;
 	Entities entities;
 	sf::Clock clock;

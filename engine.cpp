@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "geometry.h"
 #include "engine_event.h"
+#include "misc.h"
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/Window.hpp>
 
@@ -43,9 +44,12 @@ bool Engine::step(void) {
 	return must_quit;
 }
 void Engine::draw(void) {
+	window.clear();
+	window.draw(background);
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		(*it)->draw(window);
 	}
+	window.display();
 }
 static double getEntityRadius(Entity *a) {
 	return a->getSize().x/2;

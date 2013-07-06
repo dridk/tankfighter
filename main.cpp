@@ -11,6 +11,7 @@
 #include "geometry.h"
 #include "misc.h"
 #include "engine.h"
+#include "load_map.h"
 
 using namespace sf;
 using namespace std;
@@ -31,23 +32,7 @@ struct Map {
 };
 
 
-void *load_file(const char *input_file_name, unsigned long *file_size) {
-	char *file_contents;
-	long input_file_size;
-	FILE *input_file = fopen(input_file_name, "rb");
-	if (!input_file) return NULL;
-	fseek(input_file, 0, SEEK_END);
-	input_file_size = ftell(input_file);
-	*file_size = input_file_size;
-	rewind(input_file);
-	file_contents = (char*)malloc(input_file_size * (sizeof(char)));
-	if (!file_contents) return NULL;
-	fread(file_contents, sizeof(char), input_file_size, input_file);
-	fclose(input_file);
-	return file_contents;
-}
-
-json_value *access_json_hash(json_value *p, const json_char *key) {
+static json_value *access_json_hash(json_value *p, const json_char *key) {
 	if (p->type != json_object) return NULL;
 	for (unsigned i=0; i < p->u.object.length; i++) {
 		if (strcmp(p->u.object.values[i].name, key)==0) {
@@ -58,21 +43,21 @@ json_value *access_json_hash(json_value *p, const json_char *key) {
 }
 
 #define reterror(err) {fprintf(stderr, "%s\n", err);return;}
-bool assertinteger(const char *varname, const json_value *val) {
+static bool assertinteger(const char *varname, const json_value *val) {
 	if (val->type != json_integer) {
 		fprintf(stderr, "Expected integer for parameter %s\n", varname);
 		return false;
 	}
 	return true;
 }
-bool try_assign_integer_variable(unsigned short *out, const char *varname, const char *key, const json_value *val) {
+static bool try_assign_integer_variable(unsigned short *out, const char *varname, const char *key, const json_value *val) {
 	if (strcmp(key, varname)==0) {
 		if (assertinteger(varname, val)) {*out = val->u.integer;return true;}
 		else return false;
 	}
 	return true;
 }
-void load_map(Map &map, const char *json_path) {
+static void load_json_map(Map &map, const char *json_path) {
 	unsigned long file_size;
 	char *json = (char*)load_file(json_path, &file_size);
 	json_value *p = json_parse(json, file_size);
@@ -422,7 +407,7 @@ int initial_user_count(void) {
 }
 
 void initialize_world(void) {
-	load_map(wstate.map, "map2.json");
+	load_json_map(wstate.map, "map2.json");
 	wstate.players.reserve(8);
 	wstate.players.resize(initial_user_count());
 	for(int i=0; i < wstate.players.size(); i++) {
@@ -659,6 +644,7 @@ int nmain() {
 }
 int repl() {
 	Engine engine;
+	load_map(&engine, "map2.json");
 	while (engine.step());
 	return 0;
 }

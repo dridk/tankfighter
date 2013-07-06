@@ -31,6 +31,7 @@ Engine::~Engine() {
 	}
 }
 void Engine::add(Entity *entity) {
+	entity->setEngine(this);
 	entities.push_back(entity);
 }
 void Engine::destroy(Entity *entity) { /* Removes entity from engine and deletes the underlying object */

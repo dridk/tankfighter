@@ -13,10 +13,9 @@ class Entity
 	EntityShape shape;
 	Vector2d position;
 
-	DoubleRect getBoundingRect(void) const;
-	Entity();
+	Entity(EntityShape shape);
 	virtual ~Entity();
-	virtual Vector2d getSize() const;
+	virtual Vector2d getSize() const = 0;
 
 	/* called by graphics engine */
 	virtual void draw(sf::RenderTarget &target) const = 0;

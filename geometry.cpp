@@ -20,18 +20,18 @@ Line Segment::toLine() const {
 	res.c = -(pt1.x*res.a + pt1.y*res.b);
 	return res;
 }
-static double segmentModule(const Segment &segt) {
+double segmentModule(const Segment &segt) {
 	return pointsDistance(segt.pt1, segt.pt2);
 }
-static double vectorModule(const Vector2d &v) {
+double vectorModule(const Vector2d &v) {
 	return sqrt(v.x*v.x + v.y*v.y);
 }
-static void normalizeVector(Vector2d &v, double new_module) {
+void normalizeVector(Vector2d &v, double new_module) {
 	double module = vectorModule(v);
 	v.x *= new_module/module;
 	v.y *= new_module/module;
 }
-static void normalizeAngle(double &angle) {
+void normalizeAngle(double &angle) {
 	if (angle < 0) angle += M_PI*2;
 	if (angle > M_PI*2) angle -= M_PI*2;
 }
@@ -137,7 +137,7 @@ static bool intersectSegments(Vector2d &res0, const Segment &s1, const Segment &
 	res0 = res;
 	return true;
 }
-static double angle_from_dxdy(double dx, double dy) {
+double angle_from_dxdy(double dx, double dy) {
 	double angle=0;
 	angle = atan(dy/dx);
 	if (dx < 0) angle += M_PI;

@@ -25,6 +25,8 @@ class Engine
 
 	bool step(void);
 	TextureCache *getTextureCache(void) const;
+	sf::RenderWindow &getWindow(void) {return window;}
+	const sf::RenderWindow &getWindow(void) const {return window;}
 
 	private:
 	void draw(void);

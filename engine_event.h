@@ -2,6 +2,8 @@
 #define __ENGINE_EVENT_H__
 #include "geometry.h"
 
+class Entity;
+
 enum EngineEventType {
 	NULL_EVENT,
 	ENTITY_CREATED_EVENT,
@@ -13,6 +15,8 @@ enum EngineEventType {
 struct EngineEvent
 {
 	EngineEventType type;
+	EngineEvent();
+	virtual ~EngineEvent();
 };
 struct EntityCreatedEvent: EngineEvent
 {

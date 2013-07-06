@@ -13,6 +13,7 @@
 #include "engine.h"
 #include "load_map.h"
 #include "player.h"
+#include "controller.h"
 
 using namespace sf;
 using namespace std;
@@ -645,7 +646,7 @@ int nmain() {
 int repl() {
 	Engine engine;
 	load_map(&engine, "map2.json");
-	engine.add(new Player);
+	engine.add(new Player(new KeyboardMouseController));
 	while (engine.step());
 	return 0;
 }

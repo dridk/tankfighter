@@ -44,4 +44,9 @@ struct MoveContext {
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r);
 bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli);
 double pointsDistance(Vector2d p1, Vector2d p2);
+double segmentModule(const Segment &segt);
+double vectorModule(const Vector2d &v);
+void normalizeVector(Vector2d &v, double new_module);
+double angle_from_dxdy(double dx, double dy);
+void normalizeAngle(double &angle);
 #endif

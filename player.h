@@ -6,10 +6,12 @@
 #include <SFML/System.hpp>
 #include <SFML/System/Clock.hpp>
 
+class Controller;
+
 class Player: public Entity
 {
 	public:
-	Player();
+	Player(Controller *controller);
 	~Player();
 	virtual Vector2d getSize() const;
 	virtual void draw(sf::RenderTarget &target) const;
@@ -23,6 +25,7 @@ class Player: public Entity
 	void keepShooting(void);
 
 	private:
+	Controller *controller;
 	static const float missileDelay; /* milliseconds */
 	float tank_direction;
 	float canon_direction;
@@ -32,6 +35,11 @@ class Player: public Entity
 	int playerUID;
 	static int UID;
 
+/* dynamic info */
+	bool is_shooting;
+	double canon_rotation;
+	Vector2d tank_movement;
+	Vector2d tank_goto;
 	sf::Sprite &getSprite(const char *name) const;
 };
 #endif

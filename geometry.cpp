@@ -259,8 +259,8 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
 		prolongateSegment(s, -radius+minWallDistance/2);
-		shapes[2*i].type = CSIT_SEGMENT;
-		shapes[2*i].segment = s;
+		shapes[i].type = CSIT_SEGMENT;
+		shapes[i].segment = s;
 
 		c.circle.radius = radius;
 		s.pt1.x = ((i==0 || i==3) ? r0.left : r0.left+r0.width);
@@ -282,8 +282,8 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		c.end = +1000;
 #endif
 
-		shapes[2*i+1].type = CSIT_ARC;
-		shapes[2*i+1].arc = c;
+		shapes[i+4].type = CSIT_ARC;
+		shapes[i+4].arc = c;
 	}
 }
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r) {

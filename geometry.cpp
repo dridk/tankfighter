@@ -147,30 +147,6 @@ static double angle_from_dxdy(double dx, double dy) {
 static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 	return angle_from_dxdy(segt.pt2.x - segt.pt1.x, segt.pt2.y - segt.pt1.y);
 }
-static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
-	Segment &vect = ctx.vect;
-	Vector2d A;
-	Vector2d B = vect.pt2;
-	Vector2d C;
-	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
-	fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
-		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
-		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
-	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);
-	Segment AB, OA;
-	OA.pt2 = A; OA.pt1 = arc.circle.center;
-	double angle = trigoAngleFromSegment(OA);
-	if (!(angle >= arc.start && angle < arc.end)) return false;
-	AB.pt1 = A; AB.pt2 = B;
-	Line BC = parallelLine(OA.toLine(), B);
-	Line AC = orthoLine(OA.toLine(), A);
-	if (!intersectLines(C, BC, AC))
-		{vect.pt2 = vect.pt1;return true;} /* In theory, it's impossible as BC and AC are orthogonal */
-	Vector2d bcv = OA.pt2 - OA.pt1;
-	normalizeVector(bcv, minWallDistance);
-	vect.pt2 = C + bcv;
-	return true;
-}
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
 	return intersectLines(res, orthoLine(line, pt), line);
 }
@@ -185,10 +161,73 @@ static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
 	segt.pt2 += v;
 }
+static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vector2d &A) {
+	Segment &vect = ctx.vect;
+	Vector2d I = vect.pt1;
+	Vector2d B = vect.pt2;
+	if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_BOUNCE) {
+		Vector2d C;
+		Line BC = orthoLine(wall, B);
+		Line AC = wall;
+		if (!intersectLines(C, BC, AC)) {
+			fprintf(stderr, "[This should never happen]\n");
+			vect.pt2 = I;
+			return true;
+		}
+		if (ctx.interaction == IT_SLIDE) {
+			vect.pt2 = C;
+		} else {
+			vect.pt2 = C + (C-B);
+			Vector2d move = vect.pt2 - A;
+			normalizeVector(move, vectorModule(ctx.nmove));
+			ctx.nmove = move;
+			return true;
+		}
+	} else if (ctx.interaction == IT_STICK) {
+		vect.pt2 = A;
+	} else if (ctx.interaction == IT_CANCEL) {
+		vect.pt2 = I;
+		return true;
+	}
+	Vector2d proj;
+	if (orthoProjectOnLine(proj, wall, I)) {
+		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
+		if (vectorModule(v) >= minWallDistance/2) {
+			normalizeVector(v, minWallDistance);
+			translateSegment(vect, v);
+		}
+	}
+	return true;
+}
+static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
+	Segment &vect = ctx.vect;
+	Vector2d A;
+	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
+	fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
+		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
+		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
+	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);
+	Segment AB, OA;
+	OA.pt2 = A; OA.pt1 = arc.circle.center;
+	double angle = trigoAngleFromSegment(OA);
+	if (!(angle >= arc.start && angle < arc.end)) return false;
+	return pointMovesAgainstWall(ctx, orthoLine(OA.toLine(), A), A);
+#if 0
+	AB.pt1 = A; AB.pt2 = B;
+	Line BC = parallelLine(OA.toLine(), B);
+	Line AC = orthoLine(OA.toLine(), A);
+	if (!intersectLines(C, BC, AC))
+		{vect.pt2 = vect.pt1;return true;} /* In theory, it's impossible as BC and AC are orthogonal */
+	Vector2d bcv = OA.pt2 - OA.pt1;
+	normalizeVector(bcv, minWallDistance);
+	vect.pt2 = C + bcv;
+	return true;
+#endif
+}
 static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
 	Vector2d I = vect.pt1;
-	Vector2d A, C, B = vect.pt2;
+	Vector2d A, C;
 	Vector2d proj;
 	Segment segt = segt0;
 	if (segmentModule(vect) < 1e-6) return false;
@@ -201,36 +240,7 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
 		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
 	}*/
-	if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_BOUNCE) {
-		Line BC = orthoLine(segt.toLine(), B);
-		Line AC = segt.toLine();
-		if (!intersectLines(C, BC, AC)) {
-			fprintf(stderr, "[This should never happen]\n");
-			vect.pt2 = vect.pt1;
-			return true;
-		}
-		if (ctx.interaction == IT_SLIDE) {
-			vect.pt2 = C;
-		} else {
-			vect.pt2 = C + (C-B);
-			Vector2d move = vect.pt2 - A;
-			normalizeVector(move, vectorModule(ctx.nmove));
-			ctx.nmove = move;
-		}
-	} else if (ctx.interaction == IT_STICK) {
-		vect.pt2 = A;
-	} else if (ctx.interaction == IT_CANCEL) {
-		vect.pt2 = I;
-		return true;
-	}
-	if (orthoProjectOnSegment(proj, segt, vect.pt1)) {
-		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
-		if (vectorModule(v) >= minWallDistance/2) {
-			normalizeVector(v, minWallDistance);
-			translateSegment(vect, v);
-		}
-	}
-	return true;
+	return pointMovesAgainstWall(ctx, segt.toLine(), A);
 }
 static bool pointMovesToComplexShape(MoveContext &ctx, const ComplexShape &shape) {
 	if (shape.type == CSIT_ARC) return pointMovesToCircleArc(ctx, shape.arc);

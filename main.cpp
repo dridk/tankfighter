@@ -601,6 +601,18 @@ void move_player(Player &pl, Int64 tm) {
 			/*fprintf(stderr, "[collision on block %d]\n", i);*/;
 		}
 	}
+	ctx.interaction = IT_CANCEL;
+	for(unsigned i=0; i < blocks.size(); i++) {
+		DoubleRect r;
+		Block &block = blocks[i];
+		r.left = block.x;
+		r.top = block.y;
+		r.width = block.width;
+		r.height = block.height;
+		if (moveCircleToRectangle(64, ctx, r)) {
+			/*fprintf(stderr, "[collision on block %d]\n", i);*/;
+		}
+	}
 	vect = ctx.vect;
 	pl.tank_x = vect.pt2.x;
 	pl.tank_y = vect.pt2.y;

@@ -38,6 +38,9 @@ static void normalizeAngle(double &angle) {
 static Vector2d line2Vector(const Line &line) {
 	return Vector2d(line.a, -line.b);
 }
+static Vector2d segment2Vector(const Segment &segt) {
+	return segt.pt2 - segt.pt1;
+}
 static Vector2d orthoVector(const Vector2d &v) {
 	return Vector2d(v.y, -v.x);
 }
@@ -184,6 +187,7 @@ static void translateSegment(Segment &segt, Vector2d v) {
 }
 static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
+	Vector2d I = vect.pt1;
 	Vector2d A, C, B = vect.pt2;
 	Vector2d proj;
 	Segment segt = segt0;
@@ -197,19 +201,33 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
 		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
 	}*/
-	Line BC = orthoLine(segt.toLine(), B);
-	Line AC = segt.toLine();
-	if (!intersectLines(C, BC, AC)) {
-		fprintf(stderr, "[This should never happen]\n");
-		vect.pt2 = vect.pt1;
+	if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_BOUNCE) {
+		Line BC = orthoLine(segt.toLine(), B);
+		Line AC = segt.toLine();
+		if (!intersectLines(C, BC, AC)) {
+			fprintf(stderr, "[This should never happen]\n");
+			vect.pt2 = vect.pt1;
+			return true;
+		}
+		if (ctx.interaction == IT_SLIDE) {
+			vect.pt2 = C;
+		} else {
+			vect.pt2 = C + (C-B);
+			Vector2d move = vect.pt2 - A;
+			normalizeVector(move, vectorModule(ctx.nmove));
+			ctx.nmove = move;
+		}
+	} else if (ctx.interaction == IT_STICK) {
+		vect.pt2 = A;
+	} else if (ctx.interaction == IT_CANCEL) {
+		vect.pt2 = I;
 		return true;
 	}
-	vect.pt2 = C;
 	if (orthoProjectOnSegment(proj, segt, vect.pt1)) {
-		Vector2d v = Vector2d(vect.pt1.x - proj.x, vect.pt1.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
+		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
 		if (vectorModule(v) >= minWallDistance/2) {
 			normalizeVector(v, minWallDistance);
-			vect.pt2 += v;
+			translateSegment(vect, v);
 		}
 	}
 	return true;
@@ -300,6 +318,7 @@ static void test_segments() {
 	MoveContext ctx;
 	ctx.vect = v;
 	ctx.interaction = IT_SLIDE;
+	ctx.nmove = segment2Vector(ctx.vect);
 	if (pointMovesToSegment(ctx, s1)) {
 		v = ctx.vect;
 		fprintf(stderr, "[point moves to segt %lg x %lg]\n", v.pt2.x, v.pt2.y);

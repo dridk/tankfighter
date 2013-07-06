@@ -40,6 +40,7 @@ enum InteractionType {
 struct MoveContext {
 	InteractionType interaction;
 	Segment vect;
+	Vector2d nmove;
 };
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r);
 bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli);

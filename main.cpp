@@ -171,6 +171,7 @@ struct WorldState {
 struct Resources {
 	Texture tex1, tex2, tex3, tex4, tex5;
 	Sprite tank, canon, missile, background, wall;
+	SoundBuffer soundBuffer;
 	Sound sound;
 } wres;
 
@@ -414,9 +415,11 @@ void load_texture(Sprite &sprite, Texture &tex, const char *path) {
 }
 void initialize_res(void) {
   
-   sf::SoundBuffer buffer;
-    if (buffer.loadFromFile("audio.wav"))
-      wres.sound.setBuffer(buffer);
+        if (wres.soundBuffer.loadFromFile("audio.wav"))
+        wres.sound.setBuffer(wres.soundBuffer);
+	wres.sound.setLoop(true);
+	wres.sound.setVolume(30);
+	wres.sound.setRelativeToListener(true);
   
   	load_sprite(wres.tank, wres.tex1, "sprites/car.png");
 	load_sprite(wres.canon, wres.tex2, "sprites/canon.png");
@@ -617,8 +620,11 @@ void move_player(Player &pl, Int64 tm) {
 	pl.tank_x = vect.pt2.x;
 	pl.tank_y = vect.pt2.y;
 	
-	if (!pl.speed()) 
-	   wres.sound.play();
+	if (pl.speed()!=0 && wres.sound.getStatus() != SoundSource::Playing) {
+		wres.sound.play();
+	} else if (pl.speed() == 0 && wres.sound.getStatus() == SoundSource::Playing) {
+		wres.sound.stop();
+	}
 }
 void create_missile(Player &pl) {
 	Missile m= {0};
@@ -668,6 +674,7 @@ void test_geometry_cpp();
 	window.clear(Color::White);
 	initialize_world();
 	initialize_res();
+	wres.sound.play();
 	
 	
 	Clock tm;

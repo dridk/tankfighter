@@ -415,11 +415,12 @@ void load_texture(Sprite &sprite, Texture &tex, const char *path) {
 }
 void initialize_res(void) {
   
-        if (wres.soundBuffer.loadFromFile("audio.wav"))
-        wres.sound.setBuffer(wres.soundBuffer);
-	wres.sound.setLoop(true);
-	wres.sound.setVolume(30);
-	wres.sound.setRelativeToListener(true);
+        if (wres.soundBuffer.loadFromFile("moving.wav")) {
+		wres.sound.setBuffer(wres.soundBuffer);
+		wres.sound.setLoop(true);
+		wres.sound.setVolume(30);
+		wres.sound.setRelativeToListener(true);
+	}
   
   	load_sprite(wres.tank, wres.tex1, "sprites/car.png");
 	load_sprite(wres.canon, wres.tex2, "sprites/canon.png");

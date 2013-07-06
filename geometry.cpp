@@ -165,7 +165,8 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 	Segment &vect = ctx.vect;
 	Vector2d I = vect.pt1;
 	Vector2d B = vect.pt2;
-	if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_BOUNCE) {
+	InteractionType interaction = ctx.interaction;
+	if (interaction == IT_SLIDE || interaction == IT_BOUNCE) {
 		Vector2d C;
 		Line BC = orthoLine(wall, B);
 		Line AC = wall;
@@ -174,7 +175,7 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 			vect.pt2 = I;
 			return true;
 		}
-		if (ctx.interaction == IT_SLIDE) {
+		if (interaction == IT_SLIDE) {
 			vect.pt2 = C;
 		} else {
 			vect.pt2 = C + (C-B);
@@ -183,10 +184,12 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 			ctx.nmove = move;
 			return true;
 		}
-	} else if (ctx.interaction == IT_STICK) {
+	} else if (interaction == IT_STICK) {
 		vect.pt2 = A;
-	} else if (ctx.interaction == IT_CANCEL) {
+	} else if (interaction == IT_CANCEL) {
 		vect.pt2 = I;
+		return true;
+	} else if (interaction == IT_GHOST) {
 		return true;
 	}
 	Vector2d proj;
@@ -314,6 +317,16 @@ bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli) {
 	return pointMovesToCircleArc(ctx, arc);
 }
 
+MoveContext::MoveContext(InteractionType interaction0, const Segment &vect0)
+	:interaction(interaction0),vect(vect0) {
+	nmove = segment2Vector(vect);
+}
+MoveContext::MoveContext() {
+	interaction = IT_GHOST;
+	vect.pt1 = Vector2d(0,0);
+	vect.pt2 = vect.pt1;
+	nmove = Vector2d(0,0);
+}
 static void test_segments() {
 	Segment s1;
 	Segment v;
@@ -325,10 +338,7 @@ static void test_segments() {
 	v.pt1.y = 10;
 	v.pt2.x = 80;
 	v.pt2.y = 10;
-	MoveContext ctx;
-	ctx.vect = v;
-	ctx.interaction = IT_SLIDE;
-	ctx.nmove = segment2Vector(ctx.vect);
+	MoveContext ctx(IT_SLIDE, v);
 	if (pointMovesToSegment(ctx, s1)) {
 		v = ctx.vect;
 		fprintf(stderr, "[point moves to segt %lg x %lg]\n", v.pt2.x, v.pt2.y);
@@ -352,11 +362,6 @@ static void test_circles() {
 	repere.x = 0; repere.y = 10;
 	translateSegment(vect, repere);
 	circle.center += repere;
-#if 0
-	MoveContext ctx;
-	ctx.vect = vect;
-	ctx.interaction = IT_SLIDE;
-#endif
 	if (circleIntersectsSegment(A, vect, circle)) {
 		fprintf(stderr, "[intersection %lg,%lg]\n", A.x, A.y);
 	} else {

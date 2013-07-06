@@ -1,11 +1,13 @@
 #ifndef __ENGINE_EVENT_H__
 #define __ENGINE_EVENT_H__
+#include "geometry.h"
 
 enum EngineEventType {
 	NULL_EVENT,
 	ENTITY_CREATED_EVENT,
 	ENTITY_DESTROYED_EVENT,
-	COLLIDE_EVENT
+	COLLIDE_EVENT,
+	COMPLETED_MOVEMENT_EVENT
 };
 
 struct EngineEvent
@@ -22,7 +24,15 @@ struct EntityDestroyedEvent: EngineEvent
 };
 struct CollisionEvent: EngineEvent
 {
-	Entity *first;
-	Entity *second;
+	Entity *first;  /* in */
+	Entity *second; /* in */
+	InteractionType interaction; /* out */
+};
+struct CompletedMovementEvent: EngineEvent
+{
+	Entity *entity;
+	Vector2d position;
+	Vector2d new_speed;
+	bool has_new_speed;
 };
 #endif

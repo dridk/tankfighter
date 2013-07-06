@@ -1,35 +1,36 @@
 #ifndef __ENTITY__H
 #define __ENTITY__H
-#include <SFML/Graphics.h>
+#include "coretypes.h"
+#include <SFML/Graphics/RenderTarget.hpp>
 
 class EngineEvent;
 class Engine;
 
+enum EntityShape {SHAPE_CIRCLE, SHAPE_RECTANGLE};
 class Entity
 {
 	public:
-	enum Shape {CIRCLE_SHAPE, RECTANGLE_SHAPE};
-	Shape shape;
-	Vector2f position;
+	EntityShape shape;
+	Vector2d position;
 
-	FloatRect getBoundingRect(void) const;
+	DoubleRect getBoundingRect(void) const;
 	Entity();
 	virtual ~Entity();
-	virtual Vector2f getSize() const;
+	virtual Vector2d getSize() const;
 
 	/* called by graphics engine */
-	virtual void draw(sf::RenderTarget target) const = 0;
+	virtual void draw(sf::RenderTarget &target) const = 0;
 	/* call by physics engine. This function returns the relative movement that SHOULD happen if no obstacle is found */
-	virtual Vector2f movement(Int64 tm) = 0;
+	virtual Vector2d movement(sf::Int64 tm) = 0;
 	/* then, the physics engine call the HIT functions if an obstacle is in the way of the movement */
 	virtual void event_received(EngineEvent *event) = 0;
 
-	void setKilled(void) {isKilled=true;}
-	bool isKilled(void) {return isKilled;}
+	void setKilled(void) {isKilledFlag=true;}
+	bool isKilled(void) {return isKilledFlag;}
 	void setEngine(Engine *eng) {engine = eng;}
 	Engine *getEngine(void) const {return engine;}
 	private:
-	bool isKilled;
+	bool isKilledFlag;
 	Engine *engine;
 };
 

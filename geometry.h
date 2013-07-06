@@ -1,10 +1,6 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
-#include <SFML/System/Vector2.hpp>
-#include <SFML/Graphics/Rect.hpp>
-
-typedef sf::Vector2<double> Vector2d;
-typedef sf::Rect<double> DoubleRect;
+#include "coretypes.h"
 
 struct Line {
 	double a,b,c; /* Line equation a*x+b*y+c = 0 */
@@ -32,12 +28,15 @@ struct ComplexShape {
 		CircleArc arc;
 };
 enum InteractionType {
+	IT_GHOST, /* Don't interact. Used for testing whether a collision exists. */
 	IT_CANCEL,
 	IT_STICK,
 	IT_BOUNCE,
 	IT_SLIDE
 };
 struct MoveContext {
+	MoveContext();
+	MoveContext(InteractionType interaction, const Segment &vect);
 	InteractionType interaction;
 	Segment vect;
 	Vector2d nmove;

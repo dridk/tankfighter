@@ -5,6 +5,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include "texture_cache.h"
 
 class Entity;
 class EngineEvent;
@@ -23,12 +24,15 @@ class Engine
 	/* Actually, it only set a flag. Entities are really destroyed at the end of the physical frame */
 
 	bool step(void);
+	TextureCache *getTextureCache(void);
 
 	private:
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
 	Vector2d map_size(void);
+
+	TextureCache texture_cache;
 
 	sf::Texture background_texture;
 	sf::Sprite background;

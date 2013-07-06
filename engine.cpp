@@ -10,6 +10,9 @@
 
 using namespace sf;
 
+TextureCache *Engine::getTextureCache(void) {
+	return &texture_cache;
+}
 Vector2d Engine::map_size(void) {
 	Vector2u sz = window.getSize();
 	return Vector2d(sz.x, sz.y);

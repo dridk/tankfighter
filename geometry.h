@@ -31,7 +31,17 @@ struct ComplexShape {
 		Segment segment;
 		CircleArc arc;
 };
-bool moveCircleToRectangle(double radius, Segment &vect, const DoubleRect &r);
-bool moveCircleToCircle(double radius, Segment &vect, const Circle &colli);
+enum InteractionType {
+	IT_CANCEL,
+	IT_STICK,
+	IT_BOUNCE,
+	IT_SLIDE
+};
+struct MoveContext {
+	InteractionType interaction;
+	Segment vect;
+};
+bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r);
+bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli);
 double pointsDistance(Vector2d p1, Vector2d p2);
 #endif

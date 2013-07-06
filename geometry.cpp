@@ -144,7 +144,8 @@ static double angle_from_dxdy(double dx, double dy) {
 static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 	return angle_from_dxdy(segt.pt2.x - segt.pt1.x, segt.pt2.y - segt.pt1.y);
 }
-static bool pointMovesToCircleArc(Segment &vect, const CircleArc &arc) { /* oriented segment */
+static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
+	Segment &vect = ctx.vect;
 	Vector2d A;
 	Vector2d B = vect.pt2;
 	Vector2d C;
@@ -181,7 +182,8 @@ static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
 	segt.pt2 += v;
 }
-static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
+static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
+	Segment &vect = ctx.vect;
 	Vector2d A, C, B = vect.pt2;
 	Vector2d proj;
 	Segment segt = segt0;
@@ -212,9 +214,9 @@ static bool pointMovesToSegment(Segment &vect, const Segment &segt0) {
 	}
 	return true;
 }
-static bool pointMovesToComplexShape(Segment &vect, const ComplexShape &shape) {
-	if (shape.type == CSIT_ARC) return pointMovesToCircleArc(vect, shape.arc);
-	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(vect, shape.segment);
+static bool pointMovesToComplexShape(MoveContext &ctx, const ComplexShape &shape) {
+	if (shape.type == CSIT_ARC) return pointMovesToCircleArc(ctx, shape.arc);
+	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(ctx, shape.segment);
 	return false;
 }
 static void prolongateSegment(Segment &s, double distance) {
@@ -266,22 +268,22 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		shapes[2*i+1].arc = c;
 	}
 }
-bool moveCircleToRectangle(double radius, Segment &vect, const DoubleRect &r) {
+bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r) {
 	std::vector<ComplexShape> shapes;
 	roundAugmentRectangle(r, radius, shapes);
 	for(unsigned i=0; i < shapes.size(); i++) {
-		if (pointMovesToComplexShape(vect, shapes[i])) {
+		if (pointMovesToComplexShape(ctx, shapes[i])) {
 			return true;
 		}
 	}
 }
-bool moveCircleToCircle(double radius, Segment &vect, const Circle &colli) {
+bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli) {
 	CircleArc arc;
 	arc.circle.center = colli.center;
 	arc.circle.radius = radius + colli.radius;
 	arc.start = 0;
 	arc.end   = M_PI*2+1e-3;
-	return pointMovesToCircleArc(vect, arc);
+	return pointMovesToCircleArc(ctx, arc);
 }
 
 static void test_segments() {
@@ -295,7 +297,11 @@ static void test_segments() {
 	v.pt1.y = 10;
 	v.pt2.x = 80;
 	v.pt2.y = 10;
-	if (pointMovesToSegment(v, s1)) {
+	MoveContext ctx;
+	ctx.vect = v;
+	ctx.interaction = IT_SLIDE;
+	if (pointMovesToSegment(ctx, s1)) {
+		v = ctx.vect;
 		fprintf(stderr, "[point moves to segt %lg x %lg]\n", v.pt2.x, v.pt2.y);
 	} else {
 		fprintf(stderr, "[point doesn't move to segt]\n");
@@ -317,6 +323,11 @@ static void test_circles() {
 	repere.x = 0; repere.y = 10;
 	translateSegment(vect, repere);
 	circle.center += repere;
+#if 0
+	MoveContext ctx;
+	ctx.vect = vect;
+	ctx.interaction = IT_SLIDE;
+#endif
 	if (circleIntersectsSegment(A, vect, circle)) {
 		fprintf(stderr, "[intersection %lg,%lg]\n", A.x, A.y);
 	} else {

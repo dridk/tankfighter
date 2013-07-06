@@ -587,6 +587,9 @@ void move_player(Player &pl, Int64 tm) {
 	move_between_boundaries(vect.pt2.y, sin(pl.tank_angle/180*M_PI) * linear_speed * pl.speed(), 0, map_height());
 
 	std::vector<Block> &blocks = wstate.map.blocks;
+	MoveContext ctx;
+	ctx.vect = vect;
+	ctx.interaction = IT_SLIDE;
 	for(unsigned i=0; i < blocks.size(); i++) {
 		DoubleRect r;
 		Block &block = blocks[i];
@@ -594,10 +597,11 @@ void move_player(Player &pl, Int64 tm) {
 		r.top = block.y;
 		r.width = block.width;
 		r.height = block.height;
-		if (moveCircleToRectangle(64, vect, r)) {
+		if (moveCircleToRectangle(64, ctx, r)) {
 			/*fprintf(stderr, "[collision on block %d]\n", i);*/;
 		}
 	}
+	vect = ctx.vect;
 	pl.tank_x = vect.pt2.x;
 	pl.tank_y = vect.pt2.y;
 	

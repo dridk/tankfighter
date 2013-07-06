@@ -12,12 +12,14 @@
 #include "misc.h"
 #include "engine.h"
 #include "load_map.h"
+#include "player.h"
 
 using namespace sf;
 using namespace std;
 
 #undef DEBUG_OBJECT_OUTLINES
 
+#if 0
 RenderWindow window;
 enum ControllerType {CN_NONE, CN_KEYBMOUSE, CN_JOYSTICK};
 enum JoystickAxis {HorizontalMove, VerticalMove, HorizontalDirection, VerticalDirection};
@@ -392,9 +394,6 @@ void initialize_res(void) {
 	}
 #endif
 }
-double get_random(void) {
-	return double(rand())/RAND_MAX;
-}
 int initial_user_count(void) {
 	int count = 0;
 	return 1;
@@ -642,9 +641,11 @@ int nmain() {
 	}
 	return 0;
 }
+#endif
 int repl() {
 	Engine engine;
 	load_map(&engine, "map2.json");
+	engine.add(new Player);
 	while (engine.step());
 	return 0;
 }

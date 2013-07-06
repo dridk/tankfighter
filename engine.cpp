@@ -10,7 +10,7 @@
 
 using namespace sf;
 
-TextureCache *Engine::getTextureCache(void) {
+TextureCache *Engine::getTextureCache(void) const {
 	return &texture_cache;
 }
 Vector2d Engine::map_size(void) {

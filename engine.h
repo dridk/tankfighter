@@ -24,7 +24,7 @@ class Engine
 	/* Actually, it only set a flag. Entities are really destroyed at the end of the physical frame */
 
 	bool step(void);
-	TextureCache *getTextureCache(void);
+	TextureCache *getTextureCache(void) const;
 
 	private:
 	void draw(void);
@@ -32,7 +32,7 @@ class Engine
 	void destroy_flagged(void);
 	Vector2d map_size(void);
 
-	TextureCache texture_cache;
+	mutable TextureCache texture_cache;
 
 	sf::Texture background_texture;
 	sf::Sprite background;

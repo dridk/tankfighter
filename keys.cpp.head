@@ -1,0 +1,5 @@
+#include "keys.h"
+
+using namespace sf;
+
+NamedKey named_keys[]={

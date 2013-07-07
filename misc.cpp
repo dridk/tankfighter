@@ -20,7 +20,11 @@ void *load_file(const char *input_file_name, unsigned long *file_size) {
 	rewind(input_file);
 	file_contents = (char*)malloc(input_file_size * (sizeof(char)));
 	if (!file_contents) return NULL;
-	fread(file_contents, sizeof(char), input_file_size, input_file);
+	if (fread(file_contents, sizeof(char), input_file_size, input_file)<1) {
+		fclose(input_file);
+		free(file_contents);
+		return NULL;
+	}
 	fclose(input_file);
 	return file_contents;
 }

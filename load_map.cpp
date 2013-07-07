@@ -70,7 +70,7 @@ static void enum_map(BlockEnumerator *blockenum, const char *json_path) {
 	const json_value *blocks = access_json_hash(p, "blocks");
 	if (!blocks) reterror("Map lacks a blocks array!");
 	if (!blocks->type == json_array) reterror("Map blocks field should be an array!");
-	for(int i=0; i < blocks->u.array.length; i++) {
+	for(size_t i=0; i < blocks->u.array.length; i++) {
 		const json_value *entity = blocks->u.array.values[i];
 		if (entity->type != json_object) {
 			fprintf(stderr, "Map block is not hash! Block ignored!");
@@ -78,7 +78,7 @@ static void enum_map(BlockEnumerator *blockenum, const char *json_path) {
 		}
 		Block block={0};
 		block.texture_name = NULL;
-		for(int j=0; j < entity->u.object.length; j++) {
+		for(size_t j=0; j < entity->u.object.length; j++) {
 			const char *key = entity->u.object.values[j].name;
 			const json_value *value = entity->u.object.values[j].value;
 			try_assign_integer_variable(&block.x, "x", key, value);

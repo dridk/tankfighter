@@ -5,12 +5,14 @@
 #include <stdio.h>
 
 
+#ifdef DEBUG
 static void dispLine(const Line &line) {
 	fprintf(stderr, "[line %lg*x+%lg*y+%lg = 0]\n", line.a, line.b, line.c);
 }
 static void dispPoint(Vector2d pt) {
 	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
 }
+#endif
 static const double minWallDistance = 1e-4;
 
 Line Segment::toLine() const {
@@ -35,24 +37,33 @@ void normalizeAngle(double &angle) {
 	if (angle < 0) angle += M_PI*2;
 	if (angle > M_PI*2) angle -= M_PI*2;
 }
+#if 0
 static Vector2d line2Vector(const Line &line) {
 	return Vector2d(line.a, -line.b);
 }
-static Vector2d segment2Vector(const Segment &segt) {
-	return segt.pt2 - segt.pt1;
-}
 static Vector2d orthoVector(const Vector2d &v) {
 	return Vector2d(v.y, -v.x);
-}
-double pointsDistance(Vector2d p1, Vector2d p2) {
-	Vector2d v=p2-p1;
-	return sqrt(v.x*v.x + v.y*v.y);
 }
 static Line parallelLine(const Line &line, const Vector2d &pt) {
 	/* computes a line parallel to the input line, going through the specified pt point */
 	Line res = line;
 	res.c = -(res.a * pt.x + res.b * pt.y);
 	return res;
+}
+static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vector2d &pt) {
+	Vector2d res;
+	if (!orthoProjectOnLine(res, segt.toLine(), pt)) return false;
+	if (!isLPointOnSegment(res, segt)) return false;
+	res0 = res;
+	return true;
+}
+#endif
+static Vector2d segment2Vector(const Segment &segt) {
+	return segt.pt2 - segt.pt1;
+}
+double pointsDistance(Vector2d p1, Vector2d p2) {
+	Vector2d v=p2-p1;
+	return sqrt(v.x*v.x + v.y*v.y);
 }
 static Line orthoLine(const Line &line, const Vector2d &pt) {
 	/* computes a line orthogonal to the input line, going through the specified pt point */
@@ -150,13 +161,6 @@ static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment *
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
 	return intersectLines(res, orthoLine(line, pt), line);
 }
-static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vector2d &pt) {
-	Vector2d res;
-	if (!orthoProjectOnLine(res, segt.toLine(), pt)) return false;
-	if (!isLPointOnSegment(res, segt)) return false;
-	res0 = res;
-	return true;
-}
 static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
 	segt.pt2 += v;
@@ -230,7 +234,6 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 }
 static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
-	Vector2d I = vect.pt1;
 	Vector2d A, C;
 	Vector2d proj;
 	Segment segt = segt0;

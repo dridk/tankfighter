@@ -27,6 +27,8 @@ class Player: public Entity
 	void move(Vector2d speed);
 	void setPosition(Vector2d position);
 	void keepShooting(void);
+	int  getScore(void);
+	void setScore(int score);
 
 	private:
 	Controller *controller;
@@ -38,6 +40,7 @@ class Player: public Entity
 
 	int playerUID;
 	static int UID;
+	int score;
 
 /* dynamic info */
 	bool started;

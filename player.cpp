@@ -34,7 +34,10 @@ void Player::computeRandomPosition() {
 	position.x = plsize.x + get_random(map_size.x-2*plsize.x);
 	position.y = plsize.y + get_random(map_size.y-2*plsize.y);
 }
+int Player::getScore() {return score;}
+void Player::setScore(int sc) {score = sc;}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
+	score = 0;
 	started = false;
 	is_shooting = false;
 	computeRandomPosition();

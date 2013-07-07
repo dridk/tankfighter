@@ -6,8 +6,10 @@
 #include "engine_event.h"
 #include "misc.h"
 #include "wall.h"
+#include "player.h"
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/Window.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include <stdio.h>
 
 using namespace sf;
@@ -30,6 +32,7 @@ Engine::Engine() {
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
+	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
 	Vector2d sz = map_size();
@@ -87,11 +90,31 @@ bool Engine::step(void) {
 	destroy_flagged();
 	return !must_quit;
 }
+void draw_score(RenderTarget &target, Font &ft, int score, Color color, Vector2d pos) {
+	Text text;
+	char sscore[256];
+	sprintf(sscore, "%d", score);
+	text.setCharacterSize(128);
+	text.setString(sscore);
+	text.setColor(color);
+	text.setPosition(Vector2f(pos.x, pos.y));
+	text.setFont(ft);
+
+	target.draw(text);
+}
 void Engine::draw(void) {
+	Vector2d scorepos;
+	scorepos.x = 16;
+	scorepos.y = 16;
 	window.clear();
 	window.draw(background);
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		(*it)->draw(window);
+
+		if (Player *pl = dynamic_cast<Player*>((*it))) {
+			draw_score(window, score_font, pl->getScore(), pl->getColor(), scorepos);
+			scorepos.x += 384+16;
+		}
 	}
 	window.display();
 }

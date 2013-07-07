@@ -60,16 +60,24 @@ Vector2d Player::movement(Int64 tm) {
 	canon_direction += canon_rotation * tm * canon_rotation_speed;
 	
 	if (tank_goto.x >= -0.5 && tank_goto.y >= -0.5) {
-		return tank_goto - position;
+		tank_movement = tank_goto - position;
 	} else if (tank_movement.x != 0 || tank_movement.y != 0) {
-		fprintf(stderr, "[move rel %lg %lg]\n", tank_movement.x * tm * linear_speed, tank_movement.y * tm * linear_speed);
-		return Vector2d(tank_movement.x * tm * linear_speed, tank_movement.y * tm * linear_speed);
+		tank_movement
+		=Vector2d(tank_movement.x * tm * linear_speed,
+			tank_movement.y * tm * linear_speed);
 	}
-	return Vector2d(0,0);
+	if (tank_movement.x != 0 || tank_movement.y != 0) {
+		double angle = angle_from_dxdy(tank_movement.x, tank_movement.y);
+		if (angle >= 0 && angle <= 2*M_PI) tank_direction = angle;
+	}
+	fprintf(stderr, "[move rel %lg %lg]\n"
+		, tank_movement.x * tm * linear_speed
+		, tank_movement.y * tm * linear_speed);
+	return tank_movement;
 }
 void Player::event_received(EngineEvent *event) {
 	CompletedMovementEvent *e = dynamic_cast<CompletedMovementEvent*>(event);
-	if (e) {
+	if (e && e->entity == this) {
 		fprintf(stderr, "[completed %lg %lg]\n", e->position.x, e->position.y);
 		position = e->position;
 	}

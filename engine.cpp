@@ -141,7 +141,7 @@ void Engine::compute_physics(void) {
 		CompletedMovementEvent e;
 		e.type = COMPLETED_MOVEMENT_EVENT;
 		e.entity = entity;
-		e.position = vect.pt1;
+		e.position = vect.pt2;
 		Vector2d new_speed = ctx.nmove;
 		new_speed.x /= tm;
 		new_speed.y /= tm;

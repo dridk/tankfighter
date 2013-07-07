@@ -120,7 +120,8 @@ void Engine::compute_physics(void) {
 			if (entity->isKilled()) break;
 			if (centity == entity) continue;
 			ctx.interaction = IT_GHOST;
-			if (interacts(ctx, entity, centity)) {
+			MoveContext ctxtemp = ctx;
+			if (interacts(ctxtemp, entity, centity)) {
 				if (entity->isKilled() || centity->isKilled()) continue;
 				CollisionEvent e;
 				e.type   = COLLIDE_EVENT;

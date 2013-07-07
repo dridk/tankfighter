@@ -206,10 +206,10 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 	Segment &vect = ctx.vect;
 	Vector2d A;
 	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
-	fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
+	/*fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
-	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);
+	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);*/
 	Segment AB, OA;
 	OA.pt2 = A; OA.pt1 = arc.circle.center;
 	double angle = trigoAngleFromSegment(OA);

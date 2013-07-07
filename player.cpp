@@ -6,6 +6,7 @@
 #include "controller.h"
 #include "geometry.h"
 #include "engine_event.h"
+#include "wall.h"
 #include <stdio.h>
 
 using namespace sf;
@@ -70,16 +71,21 @@ Vector2d Player::movement(Int64 tm) {
 		double angle = angle_from_dxdy(tank_movement.x, tank_movement.y);
 		if (angle >= 0 && angle <= 2*M_PI) tank_direction = angle;
 	}
-	fprintf(stderr, "[move rel %lg %lg]\n"
-		, tank_movement.x * tm * linear_speed
-		, tank_movement.y * tm * linear_speed);
 	return tank_movement;
 }
 void Player::event_received(EngineEvent *event) {
 	CompletedMovementEvent *e = dynamic_cast<CompletedMovementEvent*>(event);
+	CollisionEvent *coll;
 	if (e && e->entity == this) {
-		fprintf(stderr, "[completed %lg %lg]\n", e->position.x, e->position.y);
 		position = e->position;
+		return;
+	}
+	coll = dynamic_cast<CollisionEvent*>(event);
+	if (coll && coll->first == this) {
+		if (dynamic_cast<Wall*>(coll->second)) {
+			coll->interaction = IT_SLIDE;
+		}
+		return;
 	}
 }
 Sprite &Player::getSprite(const char *name) const {

@@ -11,7 +11,7 @@ Wall::Wall(double x, double y, double w, double h, const char *texture_name0, En
 	size.y = h;
 	position.x = x;
 	position.y = y;
-	texture_name = texture_name0;
+	texture_name = (texture_name0?texture_name0:"");
 }
 Wall::~Wall() {}
 Vector2d Wall::getSize() const {
@@ -19,6 +19,7 @@ Vector2d Wall::getSize() const {
 }
 
 void Wall::draw(sf::RenderTarget &target) const {
+	if (texture_name == "") return;
 	TextureCache *cache = getEngine()->getTextureCache();
 	unsigned ID = cache->getTextureID(texture_name.c_str());
 	Sprite &sprite = *(cache->getSprite(ID));

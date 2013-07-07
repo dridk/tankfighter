@@ -104,7 +104,6 @@ void load_map(Engine *engine, const char *file_path) {
 }
 
 void BlockEnumerator::enumerate(const Block &block) {
-	Wall *wall = new Wall(block.x, block.y, block.width, block.height, block.texture_name, engine);
-	engine->add(wall);
+	engine->add(new Wall(block.x, block.y, block.width, block.height, block.texture_name, engine));
 }
 

@@ -5,12 +5,16 @@
 #include "geometry.h"
 #include "engine_event.h"
 #include "misc.h"
+#include "wall.h"
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/Window.hpp>
 #include <stdio.h>
 
 using namespace sf;
 
+Entity *Engine::getMapBoundariesEntity() {
+	return map_boundaries_entity;
+}
 TextureCache *Engine::getTextureCache(void) const {
 	return &texture_cache;
 }
@@ -28,6 +32,8 @@ Engine::Engine() {
 	load_texture(background, background_texture, "sprites/dirt.jpg");
 	Vector2d sz = map_size();
 	background.setTextureRect(IntRect(0,0,sz.x,sz.y));
+	map_boundaries_entity = new Wall(0,0,sz.x,sz.y, NULL, this);
+	add(map_boundaries_entity);
 }
 Engine::~Engine() {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {

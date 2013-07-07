@@ -21,6 +21,7 @@ class Engine
 	void destroy(Entity *entity); /* Removes entity from engine and deletes the underlying object */
 	void broadcast(EngineEvent *event);
 	void quit(void);
+	Entity *getMapBoundariesEntity(void);
 	/* Actually, it only set a flag. Entities are really destroyed at the end of the physical frame */
 
 	bool step(void);
@@ -36,6 +37,7 @@ class Engine
 
 	mutable TextureCache texture_cache;
 
+	Entity *map_boundaries_entity;
 	sf::Texture background_texture;
 	sf::Sprite background;
 	sf::RenderWindow window;

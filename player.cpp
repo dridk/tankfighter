@@ -29,8 +29,10 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 	Vector2d map_size;
 	map_size.x = 800; map_size.y = 600;
 	if (engine) map_size = engine->map_size();
-	position.x = get_random(map_size.x);
-	position.y = get_random(map_size.y);
+	Vector2d plsize = getSize();
+	plsize.x += 2;plsize.y += 2;
+	position.x = plsize.x + get_random(map_size.x-2*plsize.x);
+	position.y = plsize.y + get_random(map_size.y-2*plsize.y);
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(255), get_random(255), get_random(255));

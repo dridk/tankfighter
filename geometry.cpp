@@ -260,14 +260,15 @@ static void prolongateSegment(Segment &s, double distance) {
 	s.pt1 += pro1;
 	s.pt2 -= pro1;
 }
-static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vector<ComplexShape> &shapes) {
+static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vector<ComplexShape> &shapes, bool inside) {
 	unsigned i;
 	DoubleRect r = r0;
-	shapes.resize(8);
-	r.left -= radius;
-	r.top  -= radius;
-	r.width  += 2*radius;
-	r.height += 2*radius;
+	shapes.resize(inside?4:8);
+	double augment = inside?-radius:radius;
+	r.left -= augment;
+	r.top  -= augment;
+	r.width  += 2*augment;
+	r.height += 2*augment;
 	for(i=0; i < 4;i++) {
 		Segment s;
 		CircleArc c;
@@ -275,10 +276,11 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
-		prolongateSegment(s, -radius+minWallDistance/2);
+		if (!inside) prolongateSegment(s, -radius+minWallDistance/2);
 		shapes[i].type = CSIT_SEGMENT;
 		shapes[i].segment = s;
 
+		if (inside) continue;
 		c.circle.radius = radius;
 		s.pt1.x = ((i==0 || i==3) ? r0.left : r0.left+r0.width);
 		s.pt1.y = ((i==0 || i==1) ? r0.top  : r0.top+r0.height);
@@ -303,9 +305,12 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		shapes[i+4].arc = c;
 	}
 }
+static bool insideRectangle(const Vector2d &p, const DoubleRect &r) {
+	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
+}
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r) {
 	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(r, radius, shapes);
+	roundAugmentRectangle(r, radius, shapes, insideRectangle(ctx.vect.pt1, r));
 	for(unsigned i=0; i < shapes.size(); i++) {
 		if (pointMovesToComplexShape(ctx, shapes[i])) {
 			return true;

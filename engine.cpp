@@ -7,6 +7,7 @@
 #include "misc.h"
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/Window.hpp>
+#include <stdio.h>
 
 using namespace sf;
 
@@ -112,6 +113,7 @@ void Engine::compute_physics(void) {
 		Segment vect;
 		vect.pt1 = entity->position;
 		vect.pt2 = vect.pt1 + movement;
+		if ((fabs(movement.x)+fabs(movement.y)) < 1e-4) continue;
 		MoveContext ctx(IT_GHOST, vect);
 		for(int pass=0; pass < 2; ++pass)
 		for (EntitiesIterator itc=entities.begin(); itc != entities.end(); ++itc) {
@@ -123,18 +125,19 @@ void Engine::compute_physics(void) {
 			MoveContext ctxtemp = ctx;
 			if (interacts(ctxtemp, entity, centity)) {
 				if (entity->isKilled() || centity->isKilled()) continue;
+				if (pass == 1) {
+					/* On second interaction in the same frame, cancel movement */
+					ctx.vect.pt2 = ctx.vect.pt1 = entity->position;
+					break;
+				}
 				CollisionEvent e;
 				e.type   = COLLIDE_EVENT;
 				e.first  = entity;
 				e.second = centity;
 				e.interaction = IT_GHOST; /* default interaction type */
 				broadcast(&e); /* should set e.interaction */
-				if (pass == 1) {
-					e.interaction = IT_CANCEL; /* On second interaction in the same frame, do nothing */
-				} else {
-					ctx.interaction = e.interaction;
-					interacts(ctx, entity, centity);
-				}
+				ctx.interaction = e.interaction;
+				interacts(ctx, entity, centity);
 			}
 		}
 		if (entity->isKilled()) continue;

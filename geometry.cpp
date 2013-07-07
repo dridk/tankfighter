@@ -197,7 +197,8 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
 		if (vectorModule(v) >= minWallDistance/2) {
 			normalizeVector(v, minWallDistance);
-			translateSegment(vect, v);
+			/*translateSegment(vect, v);*/
+			vect.pt2 += v;
 		}
 	}
 	return true;
@@ -307,6 +308,7 @@ bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r)
 			return true;
 		}
 	}
+	return false;
 }
 bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli) {
 	CircleArc arc;

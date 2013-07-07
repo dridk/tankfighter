@@ -13,7 +13,7 @@ class Entity
 	EntityShape shape;
 	Vector2d position;
 
-	Entity(EntityShape shape);
+	Entity(EntityShape shape, Engine *engine);
 	virtual ~Entity();
 	virtual Vector2d getSize() const = 0;
 

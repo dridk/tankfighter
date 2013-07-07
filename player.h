@@ -7,11 +7,12 @@
 #include <SFML/System/Clock.hpp>
 
 class Controller;
+class Engine;
 
 class Player: public Entity
 {
 	public:
-	Player(Controller *controller);
+	Player(Controller *controller, Engine *engine);
 	~Player();
 	virtual Vector2d getSize() const;
 	virtual void draw(sf::RenderTarget &target) const;

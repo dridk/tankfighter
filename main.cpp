@@ -646,7 +646,7 @@ int nmain() {
 int repl() {
 	Engine engine;
 	load_map(&engine, "map2.json");
-	engine.add(new Player(new KeyboardMouseController));
+	engine.add(new Player(new KeyboardMouseController, &engine));
 	while (engine.step());
 	return 0;
 }

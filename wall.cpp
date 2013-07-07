@@ -6,7 +6,7 @@
 
 using namespace sf;
 
-Wall::Wall(double x, double y, double w, double h, const char *texture_name0):Entity(SHAPE_RECTANGLE) {
+Wall::Wall(double x, double y, double w, double h, const char *texture_name0, Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
 	size.x = w;
 	size.y = h;
 	position.x = x;

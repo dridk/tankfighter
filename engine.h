@@ -27,12 +27,12 @@ class Engine
 	TextureCache *getTextureCache(void) const;
 	sf::RenderWindow &getWindow(void) {return window;}
 	const sf::RenderWindow &getWindow(void) const {return window;}
+	Vector2d map_size(void);
 
 	private:
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
-	Vector2d map_size(void);
 
 	mutable TextureCache texture_cache;
 

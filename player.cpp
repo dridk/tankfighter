@@ -17,10 +17,13 @@ int Player::UID = 0;
 Player::~Player() {
 	delete controller;
 }
-Player::Player(Controller *controller0):Entity(SHAPE_CIRCLE),controller(controller0) {
+Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 	is_shooting = false;
-	position.x = get_random(800);
-	position.y = get_random(600);
+	Vector2d map_size;
+	map_size.x = 800; map_size.y = 600;
+	if (engine) map_size = engine->map_size();
+	position.x = get_random(map_size.x);
+	position.y = get_random(map_size.y);
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(255), get_random(255), get_random(255));

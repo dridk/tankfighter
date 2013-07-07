@@ -3,10 +3,12 @@
 #include "entity.h"
 #include <string>
 
+class Engine;
+
 class Wall: public Entity
 {
 	public:
-	Wall(double x, double y, double w, double h, const char *texture_name);
+	Wall(double x, double y, double w, double h, const char *texture_name, Engine *engine);
 	virtual ~Wall();
 	virtual Vector2d getSize() const;
 

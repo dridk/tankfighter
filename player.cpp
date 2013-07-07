@@ -8,14 +8,21 @@
 #include "engine_event.h"
 #include "wall.h"
 #include <stdio.h>
+#include "missile.h"
 
 using namespace sf;
 
 const float Player::missileDelay = 200;
 int Player::UID = 0;
 
+double Player::getCanonAngle() {
+	return canon_direction;
+}
 Player::~Player() {
 	delete controller;
+}
+Color Player::getColor() {
+	return color;
 }
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 	is_shooting = false;
@@ -42,17 +49,27 @@ void Player::draw(sf::RenderTarget &target) const {
 	body.setPosition(Vector2f(position.x, position.y));
 	body.setOrigin(Vector2f(r.width/2, r.height/2));
 	body.setRotation(360.0/(2*M_PI)*tank_direction+90);
+	body.setColor(color);
 	target.draw(body);
 
-	Sprite &tank = getSprite("canon");
-	r = tank.getLocalBounds();
-	tank.setPosition(Vector2f(position.x, position.y));
-	tank.setOrigin(Vector2f(r.width/2, r.height/2));
-	tank.setRotation(360.0/(2*M_PI)*canon_direction+90);
-	target.draw(tank);
+	Sprite &canon = getSprite("canon");
+	r = canon.getLocalBounds();
+	canon.setPosition(Vector2f(position.x, position.y));
+	canon.setOrigin(Vector2f(r.width/2, r.height/2));
+	canon.setRotation(360.0/(2*M_PI)*canon_direction+90);
+	canon.setColor(color);
+	target.draw(canon);
 }
 static const double canon_rotation_speed = 3e-4/180*M_PI; /* radians per microsecond */
 static const double linear_speed = 3e-4; /* pixels per microsecond */
+
+void Player::try_shoot() {
+	if (is_shooting && shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000) {
+		shoot_clock.restart();
+		getEngine()->add(new Missile(this));
+	}
+}
+
 Vector2d Player::movement(Int64 tm) {
 	is_shooting = false;
 	canon_rotation = 0;
@@ -60,6 +77,7 @@ Vector2d Player::movement(Int64 tm) {
 	tank_goto = Vector2d(-1,-1);
 
 	controller->detectMovement(this);
+	try_shoot();
 
 	canon_direction += canon_rotation * tm * canon_rotation_speed;
 	
@@ -79,12 +97,12 @@ Vector2d Player::movement(Int64 tm) {
 void Player::event_received(EngineEvent *event) {
 	CompletedMovementEvent *e = dynamic_cast<CompletedMovementEvent*>(event);
 	CollisionEvent *coll;
-	if (e && e->entity == this) {
+	if (e && e->entity == static_cast<Entity*>(this)) {
 		position = e->position;
 		return;
 	}
 	coll = dynamic_cast<CollisionEvent*>(event);
-	if (coll && coll->first == this) {
+	if (coll && coll->first == static_cast<Entity*>(this)) {
 		if (dynamic_cast<Wall*>(coll->second)) {
 			coll->interaction = IT_SLIDE;
 		}

@@ -18,6 +18,9 @@ class Player: public Entity
 	virtual void draw(sf::RenderTarget &target) const;
 	virtual Vector2d movement(sf::Int64 tm);
 	virtual void event_received(EngineEvent *event);
+	
+	sf::Color getColor(void);
+	double getCanonAngle(void);
 
 	void setCanonAngle(float angle);
 	void rotateCanon(float angleSpeed);
@@ -41,6 +44,7 @@ class Player: public Entity
 	double canon_rotation;
 	Vector2d tank_movement;
 	Vector2d tank_goto;
+	void try_shoot(void);
 	sf::Sprite &getSprite(const char *name) const;
 };
 #endif

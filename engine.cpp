@@ -125,11 +125,6 @@ void Engine::compute_physics(void) {
 			MoveContext ctxtemp = ctx;
 			if (interacts(ctxtemp, entity, centity)) {
 				if (entity->isKilled() || centity->isKilled()) continue;
-				if (pass == 1) {
-					/* On second interaction in the same frame, cancel movement */
-					ctx.vect.pt2 = ctx.vect.pt1 = entity->position;
-					break;
-				}
 				CollisionEvent e;
 				e.type   = COLLIDE_EVENT;
 				e.first  = entity;
@@ -137,6 +132,11 @@ void Engine::compute_physics(void) {
 				e.interaction = IT_GHOST; /* default interaction type */
 				broadcast(&e); /* should set e.interaction */
 				ctx.interaction = e.interaction;
+				if (pass == 1 && ctx.interaction != IT_GHOST) {
+					/* On second interaction in the same frame, cancel movement */
+					ctx.vect.pt2 = ctx.vect.pt1 = entity->position;
+					break;
+				}
 				interacts(ctx, entity, centity);
 			}
 		}

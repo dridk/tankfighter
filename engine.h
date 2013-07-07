@@ -34,6 +34,7 @@ class Engine
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
+	void seekCollisions(Entity *entity);
 
 	mutable TextureCache texture_cache;
 

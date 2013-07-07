@@ -40,11 +40,13 @@ class Player: public Entity
 	static int UID;
 
 /* dynamic info */
+	bool started;
 	bool is_shooting;
 	double canon_rotation;
 	Vector2d tank_movement;
 	Vector2d tank_goto;
 	void try_shoot(void);
 	sf::Sprite &getSprite(const char *name) const;
+	void computeRandomPosition(void);
 };
 #endif

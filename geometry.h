@@ -10,8 +10,15 @@ struct Segment {
 	Line toLine() const;
 };
 struct Circle {
+	bool filled;
+	Circle() {filled=true;}
 	Vector2d center;
 	double radius;
+};
+struct GeomRectangle {
+	bool filled;
+	GeomRectangle() {filled=true;}
+	DoubleRect r;
 };
 struct CircleArc {
 	Circle circle;
@@ -41,7 +48,7 @@ struct MoveContext {
 	Segment vect;
 	Vector2d nmove;
 };
-bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r);
+bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r);
 bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli);
 double pointsDistance(Vector2d p1, Vector2d p2);
 double segmentModule(const Segment &segt);

@@ -28,9 +28,11 @@ struct EntityDestroyedEvent: EngineEvent
 };
 struct CollisionEvent: EngineEvent
 {
+	CollisionEvent();
 	Entity *first;  /* in */
 	Entity *second; /* in */
 	InteractionType interaction; /* out */
+	bool retry; /* out: Object tried to get out of collision but might have failed. So, check again for a new collision. */
 };
 struct CompletedMovementEvent: EngineEvent
 {

@@ -165,6 +165,27 @@ static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
 	segt.pt2 += v;
 }
+static bool inCircle(const Vector2d &pt, const Circle &circle) {
+	return pointsDistance(pt, circle.center) < circle.radius;
+}
+static bool inCircle(const Segment &segt, const Circle &circle) {
+	return inCircle(segt.pt1, circle) && inCircle(segt.pt2, circle);
+}
+static bool inRectangle(const Vector2d &p, const DoubleRect &r) {
+	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
+}
+static bool inRectangle(const Segment &segt, const DoubleRect &r) {
+	return inRectangle(segt.pt1, r) && inRectangle(segt.pt2, r);
+}
+static bool inRoundRectangle(const Vector2d &p, const DoubleRect &r, double radius) {
+	Vector2d corner;
+	if (!inRectangle(p,r)) return false;
+	if (p.x > r.left+radius && p.x < r.left+r.width-radius) return p.y > r.top && p.y  < r.top+r.height;
+	if (p.y > r.top+radius &&  p.y < r.top+r.height-radius) return p.x > r.left && p.x < r.left+r.width;
+	if (p.x <= r.left+radius) corner.x = r.left+radius; else corner.x = r.left+r.width+radius;
+	if (p.y <= r.top+radius)  corner.y = r.top +radius; else corner.y = r.top+r.height+radius;
+	return pointsDistance(p, corner) < radius;
+}
 static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vector2d &A) {
 	Segment &vect = ctx.vect;
 	Vector2d I = vect.pt1;
@@ -210,27 +231,39 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
 	Segment &vect = ctx.vect;
 	Vector2d A;
-	if (!circleIntersectsSegment(A, vect, arc.circle)) return false;
+	const Circle &circle = arc.circle;
+
+	if (fabs(arc.start) <= 1e-3 && fabs(arc.end-2*M_PI) <= 1e-3
+	    && circle.filled && inCircle(vect.pt1, circle) && !inCircle(vect.pt2, circle)) {
+		return false; /* assume exiting something is not interacting */
+	}
+	if (fabs(arc.start) <= 1e-3 && fabs(arc.end-2*M_PI) <= 1e-3
+	    && circle.filled && inCircle(vect, circle)) {
+		/* already inside discus */
+		if (ctx.interaction == IT_GHOST) return true;
+		else if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;}
+		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
+			Vector2d OB = (ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1) - circle.center;
+			double module = segmentModule(vect);
+			normalizeVector(OB, circle.radius+minWallDistance);
+			vect.pt2 = circle.center + OB;
+			if (ctx.interaction == IT_BOUNCE) {
+				normalizeVector(OB, module);
+				ctx.nmove = OB;
+			}
+		}
+		return true;
+	}
+	if (!circleIntersectsSegment(A, vect, circle)) return false;
 	/*fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
 	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);*/
 	Segment AB, OA;
-	OA.pt2 = A; OA.pt1 = arc.circle.center;
+	OA.pt2 = A; OA.pt1 = circle.center;
 	double angle = trigoAngleFromSegment(OA);
 	if (!(angle >= arc.start && angle < arc.end)) return false;
 	return pointMovesAgainstWall(ctx, orthoLine(OA.toLine(), A), A);
-#if 0
-	AB.pt1 = A; AB.pt2 = B;
-	Line BC = parallelLine(OA.toLine(), B);
-	Line AC = orthoLine(OA.toLine(), A);
-	if (!intersectLines(C, BC, AC))
-		{vect.pt2 = vect.pt1;return true;} /* In theory, it's impossible as BC and AC are orthogonal */
-	Vector2d bcv = OA.pt2 - OA.pt1;
-	normalizeVector(bcv, minWallDistance);
-	vect.pt2 = C + bcv;
-	return true;
-#endif
 }
 static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
@@ -260,15 +293,18 @@ static void prolongateSegment(Segment &s, double distance) {
 	s.pt1 += pro1;
 	s.pt2 -= pro1;
 }
-static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vector<ComplexShape> &shapes, bool inside) {
+static void augmentRectangle(DoubleRect &r, double augment) {
+	r.left -= augment;
+	r.top -= augment;
+	r.height += 2*augment;
+	r.width += 2*augment;
+}
+static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
 	unsigned i;
 	DoubleRect r = r0;
 	shapes.resize(inside?4:8);
-	double augment = inside?-radius:radius;
-	r.left -= augment;
-	r.top  -= augment;
-	r.width  += 2*augment;
-	r.height += 2*augment;
+	double radius = fabs(augment);
+	augmentRectangle(r, augment);
 	for(i=0; i < 4;i++) {
 		Segment s;
 		CircleArc c;
@@ -276,7 +312,7 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
-		if (!inside) prolongateSegment(s, -radius+minWallDistance/2);
+		if (!inside) prolongateSegment(s, -augment+minWallDistance/2);
 		shapes[i].type = CSIT_SEGMENT;
 		shapes[i].segment = s;
 
@@ -305,12 +341,37 @@ static void roundAugmentRectangle(const DoubleRect &r0, double radius, std::vect
 		shapes[i+4].arc = c;
 	}
 }
-static bool insideRectangle(const Vector2d &p, const DoubleRect &r) {
-	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
-}
-bool moveCircleToRectangle(double radius, MoveContext &ctx, const DoubleRect &r) {
+bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
+	DoubleRect r = r0.r;
 	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(r, radius, shapes, insideRectangle(ctx.vect.pt1, r));
+	bool sign = inRectangle(ctx.vect.pt1, r) && !r0.filled;
+	roundAugmentRectangle(r, (sign?-radius:radius), shapes, inRectangle(ctx.vect.pt1, r));
+	augmentRectangle(r, radius);
+	if (r0.filled && inRoundRectangle(ctx.vect.pt1, r, radius) && !inRoundRectangle(ctx.vect.pt2, r, radius)) {
+		return false; /* assume exiting something is not interacting */
+	}
+	if (r0.filled && inRoundRectangle(ctx.vect.pt1, r, radius) && inRoundRectangle(ctx.vect.pt2, r, radius)) {
+		Segment &vect = ctx.vect;
+		/* already inside rectangle */
+		if (ctx.interaction == IT_GHOST) return true;
+		else if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;}
+		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
+			Vector2d B = ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1;
+			Vector2d O = Vector2d(r.left + r.width/2, r.top + r.height/2);
+			Vector2d C;
+			if (B.x <= O.x && r.left > minWallDistance) C.x = r.left - minWallDistance; else C.x = r.left + r.width + minWallDistance;
+			if (B.y <= O.y && r.top > minWallDistance) C.y = r.top - minWallDistance;  else C.y = r.top + r.height + minWallDistance;
+			if (fabs(C.x - B.x) < fabs(C.y - B.y)) C.y = B.y; else C.x = B.x;
+			double module = segmentModule(vect);
+			vect.pt2 = C;
+			if (ctx.interaction == IT_BOUNCE) {
+				Vector2d OB = B - O;
+				normalizeVector(OB, module);
+				ctx.nmove = OB;
+			}
+		}
+		return true;
+	}
 	for(unsigned i=0; i < shapes.size(); i++) {
 		if (pointMovesToComplexShape(ctx, shapes[i])) {
 			return true;

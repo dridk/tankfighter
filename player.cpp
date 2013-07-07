@@ -24,15 +24,20 @@ Player::~Player() {
 Color Player::getColor() {
 	return color;
 }
-Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
-	is_shooting = false;
+void Player::computeRandomPosition() {
 	Vector2d map_size;
 	map_size.x = 800; map_size.y = 600;
-	if (engine) map_size = engine->map_size();
+	if (getEngine()) map_size = getEngine()->map_size();
+
 	Vector2d plsize = getSize();
 	plsize.x += 2;plsize.y += 2;
 	position.x = plsize.x + get_random(map_size.x-2*plsize.x);
 	position.y = plsize.y + get_random(map_size.y-2*plsize.y);
+}
+Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
+	started = false;
+	is_shooting = false;
+	computeRandomPosition();
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(255), get_random(255), get_random(255));
@@ -73,6 +78,8 @@ void Player::try_shoot() {
 }
 
 Vector2d Player::movement(Int64 tm) {
+	started = true;
+
 	is_shooting = false;
 	canon_rotation = 0;
 	tank_movement = Vector2d(0,0);
@@ -105,6 +112,10 @@ void Player::event_received(EngineEvent *event) {
 	}
 	coll = dynamic_cast<CollisionEvent*>(event);
 	if (coll && coll->first == static_cast<Entity*>(this)) {
+		if (!started) { /* teleport it as it has spawned in a another entity */
+			computeRandomPosition();
+			coll->retry = true;
+		}
 		if (dynamic_cast<Wall*>(coll->second)) {
 			coll->interaction = IT_SLIDE;
 		}

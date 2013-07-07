@@ -12,6 +12,8 @@
 
 using namespace sf;
 
+static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
+
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;
 }
@@ -40,9 +42,32 @@ Engine::~Engine() {
 		delete (*it);
 	}
 }
+void Engine::seekCollisions(Entity *entity) {
+	int i=100;
+	bool retry = false;
+	do {
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
+		Entity *centity = (*it);
+		Segment vect;
+		vect.pt1 = entity->position;
+		vect.pt2 = entity->position;
+		MoveContext ctx(IT_GHOST, vect);
+		if (interacts(this, ctx, entity, centity)) {
+			CollisionEvent e;
+			e.first = entity;
+			e.second = centity;
+			e.interaction = IT_GHOST;
+			broadcast(&e);
+			if (e.retry) retry = true;
+		}
+	}
+	} while(retry && --i > 0);
+}
 void Engine::add(Entity *entity) {
 	entity->setEngine(this);
 	entities.push_back(entity);
+	/* signal spawn-time collisions */
+	seekCollisions(entity);
 }
 void Engine::destroy(Entity *entity) { /* Removes entity from engine and deletes the underlying object */
 	entity->setKilled();
@@ -85,14 +110,18 @@ static DoubleRect getEntityBoundingRectangle(Entity *a) {
 }
 static Circle getEntityCircle(Entity *a) {
 	Circle circle;
+	circle.filled = true;
 	circle.center = a->position;
 	circle.radius = getEntityRadius(a);
 	return circle;
 }
 /* Note: Dynamic entities must be circle-shaped */
-static bool interacts(MoveContext &ctx, Entity *a, Entity *b) {
+static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b) {
 	if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_RECTANGLE) {
-		return moveCircleToRectangle(getEntityRadius(a), ctx, getEntityBoundingRectangle(b));
+		GeomRectangle gr;
+		gr.filled = (b != engine->getMapBoundariesEntity());
+		gr.r = getEntityBoundingRectangle(b);
+		return moveCircleToRectangle(getEntityRadius(a), ctx, gr);
 	} else if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_CIRCLE) {
 		return moveCircleToCircle(getEntityRadius(a), ctx, getEntityCircle(b));
 	} else {
@@ -129,7 +158,7 @@ void Engine::compute_physics(void) {
 			if (centity == entity) continue;
 			ctx.interaction = IT_GHOST;
 			MoveContext ctxtemp = ctx;
-			if (interacts(ctxtemp, entity, centity)) {
+			if (interacts(this, ctxtemp, entity, centity)) {
 				if (entity->isKilled() || centity->isKilled()) continue;
 				CollisionEvent e;
 				e.type   = COLLIDE_EVENT;
@@ -143,7 +172,7 @@ void Engine::compute_physics(void) {
 					ctx.vect.pt2 = ctx.vect.pt1 = entity->position;
 					break;
 				}
-				interacts(ctx, entity, centity);
+				interacts(this, ctx, entity, centity);
 			}
 		}
 		if (entity->isKilled()) continue;

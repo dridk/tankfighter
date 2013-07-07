@@ -29,6 +29,9 @@ void detectKeyboardMovement(Player *player) {
 		normalizeVector(v, 1);
 		player->move(v);
 	}
+	if (Keyboard::isKeyPressed(Keyboard::Escape)) {
+		player->getEngine()->quit();
+	}
 }
 void detectMouseMovement(Player *player) {
 	double dx, dy;

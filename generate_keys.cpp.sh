@@ -1,4 +1,11 @@
 #!/bin/sh
+
+out="$1"
+
+if [ -z "$out" ]; then
+	out="keys.cpp"
+fi
+
 extract_enum() {
 	sed -n '/ *enum Key/,/};/p'|sed -n '/,/p'|sed 's/ *\([^, =]*\)[, =].*/\1/'|(cat keys.cpp.head;sed 's/.*/{"Key&", Keyboard::&},/';cat keys.cpp.tail)
 }
@@ -13,7 +20,7 @@ done|tail -1
 
 kbh=$(find_keyboard_hpp)
 if [ -n "$kbh" ]; then
-	cat "$kbh"|extract_enum > keys.cpp
+	cat "$kbh"|extract_enum > "$out"
 	exit 0
 else
 	echo "SFML keyboard file not found" >&2

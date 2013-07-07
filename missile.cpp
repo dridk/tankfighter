@@ -65,8 +65,8 @@ void Missile::event_received(EngineEvent *event) {
 	} else if (CompletedMovementEvent *cme = dynamic_cast<CompletedMovementEvent*>(event)) {
 		if (cme->entity == static_cast<Entity*>(this)) {
 			position = cme->position;
-			Vector2d map_size = getEngine()->map_size();
 #if 0
+			Vector2d map_size = getEngine()->map_size();
 			if (position.x < 0 || position.x > map_size.x || position.y < 0 || position.y > map_size.y) {
 				getEngine()->destroy(this);
 			}

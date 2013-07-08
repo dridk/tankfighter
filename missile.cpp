@@ -24,6 +24,9 @@ Vector2d Missile::getSize() const {
 	sz.y = 16;
 	return sz;
 }
+Player *Missile::getOwner(void) const {
+	return player;
+}
 void Missile::draw(sf::RenderTarget &target) const {
 	Sprite &sprite = *getEngine()->getTextureCache()->getSprite("bullet");
 	FloatRect r = sprite.getLocalBounds();
@@ -40,6 +43,9 @@ Vector2d Missile::movement(Int64 tm) {
 	Vector2d v;
 	v.x = cos(angle) * tm * speed;
 	v.y = sin(angle) * tm * speed;
+	if (lifetime.getElapsedTime().asMicroseconds() >= 1000*(Int64)maxLifeDuration) {
+		getEngine()->destroy(this);
+	}
 	return v;
 }
 void Missile::event_received(EngineEvent *event) {

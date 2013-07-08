@@ -34,6 +34,7 @@ class Player: public Entity
 	void killedPlayer(Player *player);
 
 	private:
+	static const unsigned maxMissileCount = 3;
 	void teleport(void);
 	Controller *controller;
 	static const float missileDelay; /* milliseconds */
@@ -45,6 +46,7 @@ class Player: public Entity
 	int playerUID;
 	static int UID;
 	int score;
+	int missileCount;
 
 /* dynamic info */
 	bool teleporting;

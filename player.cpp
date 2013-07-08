@@ -50,6 +50,7 @@ void Player::teleport() {
 int Player::getScore() {return score;}
 void Player::setScore(int sc) {score = sc;}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
+	missileCount = 0;
 	score = 0;
 	is_shooting = false;
 	tank_direction = get_random(2*M_PI);
@@ -87,9 +88,10 @@ static const double canon_rotation_speed = 3e-4/180*M_PI; /* radians per microse
 static const double linear_speed = 3e-4; /* pixels per microsecond */
 
 void Player::try_shoot() {
-	if (is_shooting && shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000) {
+	if (is_shooting && shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000 && missileCount < maxMissileCount) {
 		shoot_clock.restart();
 		getEngine()->add(new Missile(this));
+		missileCount++;
 	}
 }
 
@@ -136,6 +138,12 @@ void Player::event_received(EngineEvent *event) {
 			coll->interaction = IT_SLIDE;
 		}
 		return;
+	}
+	if (EntityDestroyedEvent *ede = dynamic_cast<EntityDestroyedEvent*>(event)) {
+		Missile *missile = dynamic_cast<Missile*>(ede->entity);
+		if (missile->getOwner() == this) {
+			missileCount--;
+		}
 	}
 }
 Sprite &Player::getSprite(const char *name) const {

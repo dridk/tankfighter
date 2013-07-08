@@ -46,7 +46,6 @@ void Missile::event_received(EngineEvent *event) {
 	if (EntityDestroyedEvent *de = dynamic_cast<EntityDestroyedEvent*>(event)) {
 		if (de->entity == static_cast<Entity*>(player)) {
 			player = NULL;
-				fprintf(stderr, "[death0]\n");
 			getEngine()->destroy(this);
 		}
 	} else if (CollisionEvent *ce = dynamic_cast<CollisionEvent*>(event)) {
@@ -57,7 +56,6 @@ void Missile::event_received(EngineEvent *event) {
 			if (dynamic_cast<Wall*>(ce->second)) {
 				ce->interaction = IT_BOUNCE;
 			} else if (static_cast<Entity*>(player) != ce->second && dynamic_cast<Player*>(ce->second)) {
-				fprintf(stderr, "[death]\n");
 				ce->interaction = IT_GHOST;
 				getEngine()->destroy(this);
 			}

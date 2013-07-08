@@ -643,14 +643,26 @@ int nmain() {
 	return 0;
 }
 #endif
-int repl() {
+int repl(void) {
 	Engine engine;
 	load_map(&engine, "map2.json");
 	engine.add(new Player(new KeyboardMouseController, &engine));
-	while (engine.step());
+	for(unsigned i=0; i < Joystick::Count; i++) {
+		if (Joystick::isConnected(i)) {
+			engine.add(new Player(new JoystickController(i), &engine));
+		}
+	}
+	Window &window = engine.getWindow();
+	while (engine.step()) {
+		Event e;
+		while (window.pollEvent(e)) {
+			if (e.type == Event::Closed)
+				{engine.quit();}
+		}
+	}
 	return 0;
 }
-int main() {
+int main(void) {
 	void test_geometry_cpp();
 	test_geometry_cpp();
 	srand(time(NULL));

@@ -44,6 +44,7 @@ Engine::~Engine() {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		delete (*it);
 	}
+	window.close();
 }
 void Engine::seekCollisions(Entity *entity) {
 	int i=100;
@@ -84,6 +85,7 @@ void Engine::quit(void) {
 	must_quit = true;
 }
 bool Engine::step(void) {
+	if (must_quit) return false;
 	if (first_step) {clock.restart();first_step=false;}
 	draw();
 	compute_physics();

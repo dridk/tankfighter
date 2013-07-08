@@ -54,7 +54,7 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 	is_shooting = false;
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
-	color = Color(get_random(255), get_random(255), get_random(255));
+	color = Color(get_random(128)+127, get_random(128)+127, get_random(128)+127);
 	playerUID = ++UID;
 	teleporting = true;
 	computeRandomPosition();

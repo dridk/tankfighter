@@ -652,14 +652,7 @@ int repl(void) {
 			engine.add(new Player(new JoystickController(i), &engine));
 		}
 	}
-	Window &window = engine.getWindow();
-	while (engine.step()) {
-		Event e;
-		while (window.pollEvent(e)) {
-			if (e.type == Event::Closed)
-				{engine.quit();}
-		}
-	}
+	engine.play();
 	return 0;
 }
 int main(void) {

@@ -16,6 +16,15 @@ using namespace sf;
 
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
 
+void Engine::play(void) {
+	while (step()) {
+		Event e;
+		while (window.pollEvent(e)) {
+			if (e.type == Event::Closed)
+				{quit();}
+		}
+	}
+}
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;
 }
@@ -35,7 +44,7 @@ Engine::EntitiesIterator Engine::end_entities() {
 Engine::Engine() {
 	first_step = true;
 	must_quit = false;
-	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
+	window.create(VideoMode(1920,1080), "Tank window", Style::Fullscreen);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");

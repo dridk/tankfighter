@@ -26,7 +26,7 @@ class Engine
 	Entity *getMapBoundariesEntity(void);
 	/* Actually, it only set a flag. Entities are really destroyed at the end of the physical frame */
 
-	bool step(void);
+	void play(void);
 	TextureCache *getTextureCache(void) const;
 	sf::RenderWindow &getWindow(void) {return window;}
 	const sf::RenderWindow &getWindow(void) const {return window;}
@@ -34,6 +34,7 @@ class Engine
 	void seekCollisions(Entity *entity);
 
 	private:
+	bool step(void);
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);

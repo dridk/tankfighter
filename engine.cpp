@@ -26,6 +26,12 @@ Vector2d Engine::map_size(void) {
 	Vector2u sz = window.getSize();
 	return Vector2d(sz.x, sz.y);
 }
+Engine::EntitiesIterator Engine::begin_entities() {
+	return entities.begin();
+}
+Engine::EntitiesIterator Engine::end_entities() {
+	return entities.end();
+}
 Engine::Engine() {
 	first_step = true;
 	must_quit = false;

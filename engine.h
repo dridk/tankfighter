@@ -13,8 +13,10 @@ class EngineEvent;
 class Engine
 {
 	typedef std::deque<Entity*> Entities;
-	typedef Entities::iterator EntitiesIterator;
 	public:
+	typedef Entities::iterator EntitiesIterator;
+	EntitiesIterator begin_entities();
+	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */

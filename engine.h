@@ -29,12 +29,12 @@ class Engine
 	sf::RenderWindow &getWindow(void) {return window;}
 	const sf::RenderWindow &getWindow(void) const {return window;}
 	Vector2d map_size(void);
+	void seekCollisions(Entity *entity);
 
 	private:
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
-	void seekCollisions(Entity *entity);
 
 	mutable TextureCache texture_cache;
 

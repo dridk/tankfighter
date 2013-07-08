@@ -43,6 +43,7 @@ Vector2d Missile::movement(Int64 tm) {
 	return v;
 }
 void Missile::event_received(EngineEvent *event) {
+	Player *dying;
 	if (EntityDestroyedEvent *de = dynamic_cast<EntityDestroyedEvent*>(event)) {
 		if (de->entity == static_cast<Entity*>(player)) {
 			player = NULL;
@@ -55,7 +56,10 @@ void Missile::event_received(EngineEvent *event) {
 			}
 			if (dynamic_cast<Wall*>(ce->second)) {
 				ce->interaction = IT_BOUNCE;
-			} else if (static_cast<Entity*>(player) != ce->second && dynamic_cast<Player*>(ce->second)) {
+			} else if (static_cast<Entity*>(player) != ce->second && (dying = dynamic_cast<Player*>(ce->second))) {
+				dying->killedBy(player);
+				player->killedPlayer(dying);
+				/* missile dies */
 				ce->interaction = IT_GHOST;
 				getEngine()->destroy(this);
 			}
@@ -63,12 +67,6 @@ void Missile::event_received(EngineEvent *event) {
 	} else if (CompletedMovementEvent *cme = dynamic_cast<CompletedMovementEvent*>(event)) {
 		if (cme->entity == static_cast<Entity*>(this)) {
 			position = cme->position;
-#if 0
-			Vector2d map_size = getEngine()->map_size();
-			if (position.x < 0 || position.x > map_size.x || position.y < 0 || position.y > map_size.y) {
-				getEngine()->destroy(this);
-			}
-#endif
 			if (cme->has_new_speed) {
 				double nangle = angle_from_dxdy(cme->new_speed.x, cme->new_speed.y);
 				if (fabs(nangle - angle) >= M_PI*1e-4) angle = nangle;

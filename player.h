@@ -30,7 +30,11 @@ class Player: public Entity
 	int  getScore(void);
 	void setScore(int score);
 
+	void killedBy(Player *player);
+	void killedPlayer(Player *player);
+
 	private:
+	void teleport(void);
 	Controller *controller;
 	static const float missileDelay; /* milliseconds */
 	float tank_direction;
@@ -43,7 +47,7 @@ class Player: public Entity
 	int score;
 
 /* dynamic info */
-	bool started;
+	bool teleporting;
 	bool is_shooting;
 	double canon_rotation;
 	Vector2d tank_movement;

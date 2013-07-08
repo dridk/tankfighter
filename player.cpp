@@ -24,6 +24,12 @@ Player::~Player() {
 Color Player::getColor() {
 	return color;
 }
+void Player::killedBy(Player *player) {
+	teleport();
+}
+void Player::killedPlayer(Player *player) {
+	setScore(getScore()+1);
+}
 void Player::computeRandomPosition() {
 	Vector2d map_size;
 	map_size.x = 800; map_size.y = 600;
@@ -34,17 +40,24 @@ void Player::computeRandomPosition() {
 	position.x = plsize.x + get_random(map_size.x-2*plsize.x);
 	position.y = plsize.y + get_random(map_size.y-2*plsize.y);
 }
+void Player::teleport() {
+	teleporting = true;
+	computeRandomPosition();
+	getEngine()->seekCollisions(this);
+	teleporting = false;
+}
+
 int Player::getScore() {return score;}
 void Player::setScore(int sc) {score = sc;}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 	score = 0;
-	started = false;
 	is_shooting = false;
-	computeRandomPosition();
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(255), get_random(255), get_random(255));
 	playerUID = ++UID;
+	teleporting = true;
+	computeRandomPosition();
 }
 
 Vector2d Player::getSize() const {
@@ -81,7 +94,7 @@ void Player::try_shoot() {
 }
 
 Vector2d Player::movement(Int64 tm) {
-	started = true;
+	teleporting = false;
 
 	is_shooting = false;
 	canon_rotation = 0;
@@ -115,7 +128,7 @@ void Player::event_received(EngineEvent *event) {
 	}
 	coll = dynamic_cast<CollisionEvent*>(event);
 	if (coll && coll->first == static_cast<Entity*>(this)) {
-		if (!started) { /* teleport it as it has spawned in a another entity */
+		if (teleporting) { /* teleport it as it has spawned in a another entity */
 			computeRandomPosition();
 			coll->retry = true;
 		}

@@ -29,13 +29,13 @@ void Engine::play(void) {
 		}
 	}
 }
-void Engine::addPlayer(int cid) {
+void Engine::addPlayer(unsigned cid, int joyid) {
 	if (cid >= cdef.forplayer.size()) return;
 	if (!cdef.forplayer[cid]) {
 		fprintf(stderr, "Error: no controller %d found for new player\n", cid);
 		return;
 	}
-	add(new Player(cdef.forplayer[cid]->clone(cid), this));
+	add(new Player(cdef.forplayer[cid]->clone(joyid), this));
 }
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;

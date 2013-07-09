@@ -57,6 +57,7 @@ int Player::getScore() {return score;}
 void Player::setScore(int sc) {score = sc;}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 	preserve_tank_angle = false;
+	adapt_canon_angle   = false;
 	tank_rotation = canon_rotation = 0;
 	missileCount = 0;
 	score = 0;
@@ -112,6 +113,7 @@ Vector2d Player::movement(Int64 tm) {
 	tank_movement = Vector2d(0,0);
 	tank_goto = Vector2d(-1,-1);
 	preserve_tank_angle = false;
+	adapt_canon_angle   = false;
 
 	controller->detectMovement(this);
 	try_shoot();
@@ -132,10 +134,16 @@ Vector2d Player::movement(Int64 tm) {
 		double angle = angle_from_dxdy(tank_movement.x, tank_movement.y);
 		if (angle >= 0 && angle <= 2*M_PI) tank_direction = angle;
 	}
+	if (adapt_canon_angle) {
+		canon_direction = tank_direction;
+	}
 	return tank_movement;
 }
 void Player::preserveTankAngle(void) {
 	preserve_tank_angle = true;
+}
+void Player::adaptCanonAngle(void) {
+	adapt_canon_angle = true;
 }
 void Player::event_received(EngineEvent *event) {
 	CompletedMovementEvent *e = dynamic_cast<CompletedMovementEvent*>(event);

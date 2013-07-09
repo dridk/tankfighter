@@ -20,7 +20,7 @@ class Engine
 	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
-	void addPlayer(int controllerType);
+	void addPlayer(unsigned controllerType, int joyid=0);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
 	void destroy(Entity *entity); /* Removes entity from engine and deletes the underlying object */
 	void broadcast(EngineEvent *event);

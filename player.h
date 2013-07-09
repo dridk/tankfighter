@@ -28,6 +28,7 @@ class Player: public Entity
 	void rotateCanon(float angleSpeed);
 
 	void preserveTankAngle(void);
+	void adaptCanonAngle(void);
 	void setTankAngle(float angle);
 	void rotateTank (float angleSpeed);
 
@@ -42,7 +43,7 @@ class Player: public Entity
 	void killedPlayer(Player *player);
 
 	private:
-	static const unsigned maxMissileCount = 3;
+	static const short maxMissileCount = 3;
 	void teleport(void);
 	Controller *controller;
 	static const float missileDelay; /* milliseconds */
@@ -54,9 +55,10 @@ class Player: public Entity
 	int playerUID;
 	static int UID;
 	int score;
-	int missileCount;
+	short missileCount;
 
 /* dynamic info */
+	bool adapt_canon_angle;
 	bool preserve_tank_angle;
 	bool teleporting;
 	bool is_shooting;

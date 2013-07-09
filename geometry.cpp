@@ -62,6 +62,9 @@ static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vec
 	res0 = res;
 	return true;
 }
+static bool inRectangle(const Segment &segt, const DoubleRect &r) {
+	return inRectangle(segt.pt1, r) && inRectangle(segt.pt2, r);
+}
 #endif
 static Vector2d segment2Vector(const Segment &segt) {
 	return segt.pt2 - segt.pt1;
@@ -178,9 +181,6 @@ static bool inCircle(const Segment &segt, const Circle &circle) {
 }
 static bool inRectangle(const Vector2d &p, const DoubleRect &r) {
 	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
-}
-static bool inRectangle(const Segment &segt, const DoubleRect &r) {
-	return inRectangle(segt.pt1, r) && inRectangle(segt.pt2, r);
 }
 static bool inRoundRectangle(const Vector2d &p, const DoubleRect &r, double radius) {
 	Vector2d corner;

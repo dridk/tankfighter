@@ -52,7 +52,7 @@ float JoystickController::getAxis(JoystickAxis axis) {
 }
 
 bool JoystickController::is_shooting() {
-	for(int i=0; i < Joystick::getButtonCount(joyid); i++) {
+	for(unsigned i=0; i < Joystick::getButtonCount(joyid); i++) {
 		if (Joystick::isButtonPressed(joyid, i)) {
 			return true;
 		}
@@ -72,7 +72,6 @@ void JoystickController::detectMovement(Player *player) {
 		player->move(mv);
 		moving = true;
 	}
-	double angle = angle_from_dxdy(ca.x, ca.y);
 	if (fabs(ca.x)+fabs(ca.y) >= 0.3) player->setCanonAngle(angle_from_dxdy(ca.x, ca.y));
 	else if (moving) {
 		player->setCanonAngle(angle_from_dxdy(mv.x, mv.y));

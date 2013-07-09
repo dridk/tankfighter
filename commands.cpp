@@ -170,6 +170,7 @@ static double trigger_value(int joyid, Window &window, const Trigger &trigger, d
 		value2 = pos.y;
 		return pos.x;
 	}
+	return 0;
 }
 
 static bool notzero(const Vector2d &vect) {
@@ -259,6 +260,9 @@ void KeymapController::detectMovement(Player *player) {
 	}
 	if (defined_absa[CP_Tank_Orientation] || defined_rela[CP_Tank_Orientation] || defined_rotate[CP_Tank_Orientation]) {
 		player->preserveTankAngle();
+	}
+	if (!(defined_absa[CP_Canon_Orientation] || defined_rela[CP_Canon_Orientation] || defined_rotate[CP_Canon_Orientation])) {
+		player->adaptCanonAngle();
 	}
 }
 

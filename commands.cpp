@@ -64,12 +64,13 @@ static bool translate_command_string(Command &desc, const char *cmd0) {
 		desc.relativity = CR_Relative;
 	} else if (command == "shoot") {
 		desc.piece = CP_Shooter;
-		desc.axis  = CD_Axial;
-		desc.sens  = CD_Positive;
 		desc.relativity = CR_Absolute;
 	}
 	/* Compute axis and sens fields */
-	if (command != "lookat" && command != "shoot") {
+	if (command == "lookat" || command == "shoot") {
+		desc.axis = CD_Axial;
+		desc.sens = CD_Positive;
+	} else {
 		if (direction == "down" || direction == "up")    desc.axis = CD_Vertical;
 		else if (direction == "left" || direction == "right") {
 			if (command == "turn") desc.axis = CD_Rotate;

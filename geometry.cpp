@@ -37,6 +37,11 @@ void normalizeAngle(double &angle) {
 	if (angle < 0) angle += M_PI*2;
 	if (angle > M_PI*2) angle -= M_PI*2;
 }
+void normalizeAngle(float &angle) {
+	double a = angle;
+	normalizeAngle(a);
+	angle = a;
+}
 #if 0
 static Vector2d line2Vector(const Line &line) {
 	return Vector2d(line.a, -line.b);

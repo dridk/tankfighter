@@ -1,0 +1,27 @@
+{
+	"type": "ktank-ctrl-map"
+	, "CommandMap" : {
+		"E": "tank move forward2",
+		"D": "tank move backward2",
+		"S": "tank turn left2",
+		"F": "tank turn right2",
+		"Space": "shoot2",
+
+		"Left": "left1",
+		"Right": "right1",
+		"Up": "up1",
+		"Down": "down1",
+		"Mouse Left": "shoot1",
+		"Mouse Position": "canon lookat1",
+
+		"Joy axis X left": "tank move left",
+		"Joy axis X right": "tank move right",
+		"Joy axis Y up": "tank move up",
+		"Joy axis Y down": "tank move down",
+		"Joy axis Z left": "canon direction left",
+		"Joy axis Z right": "canon direction right",
+		"Joy axis R up": "canon direction up",
+		"Joy axis R down": "canon direction down",
+		"Joy button A": "shoot"
+	}
+}

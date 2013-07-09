@@ -56,4 +56,5 @@ double vectorModule(const Vector2d &v);
 void normalizeVector(Vector2d &v, double new_module);
 double angle_from_dxdy(double dx, double dy);
 void normalizeAngle(double &angle);
+void normalizeAngle(float &angle);
 #endif

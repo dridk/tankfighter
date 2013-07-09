@@ -11,6 +11,7 @@
 #include <SFML/Window/Window.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <stdio.h>
+#include "commands.h"
 
 using namespace sf;
 
@@ -22,8 +23,19 @@ void Engine::play(void) {
 		while (window.pollEvent(e)) {
 			if (e.type == Event::Closed)
 				{quit();}
+			if (e.type == Event::KeyPressed) {
+				if (e.key.code == Keyboard::Escape) quit();
+			}
 		}
 	}
+}
+void Engine::addPlayer(int cid) {
+	if (cid >= cdef.forplayer.size()) return;
+	if (!cdef.forplayer[cid]) {
+		fprintf(stderr, "Error: no controller %d found for new player\n", cid);
+		return;
+	}
+	add(new Player(cdef.forplayer[cid]->clone(cid), this));
 }
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;
@@ -44,7 +56,7 @@ Engine::EntitiesIterator Engine::end_entities() {
 Engine::Engine() {
 	first_step = true;
 	must_quit = false;
-	window.create(VideoMode(1920,1080), "Tank window", Style::Fullscreen);
+	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(true);
 	window.clear(Color::White);
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
@@ -54,6 +66,7 @@ Engine::Engine() {
 	background.setTextureRect(IntRect(0,0,sz.x,sz.y));
 	map_boundaries_entity = new Wall(0,0,sz.x,sz.y, NULL, this);
 	add(map_boundaries_entity);
+	load_keymap(cdef, "keymap.json");
 }
 Engine::~Engine() {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {

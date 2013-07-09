@@ -1,1 +1,13 @@
+
+NamedKey joybutton_codemap[]={
+{"A", 0},
+{"B", 1},
+{"X", 2},
+{"Y", 3},
+{"L", 4},
+{"R", 5},
+{"Back", 6},
+{"Home", 7},
+{NULL,0}
 };
+/* end of keys.cpp */

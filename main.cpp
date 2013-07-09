@@ -14,6 +14,7 @@
 #include "load_map.h"
 #include "player.h"
 #include "controller.h"
+#include "commands.h"
 
 using namespace sf;
 using namespace std;
@@ -646,16 +647,20 @@ int nmain() {
 int repl(void) {
 	Engine engine;
 	load_map(&engine, "map2.json");
+#if 0
 	engine.add(new Player(new KeyboardMouseController, &engine));
 	for(unsigned i=0; i < Joystick::Count; i++) {
 		if (Joystick::isConnected(i)) {
 			engine.add(new Player(new JoystickController(i), &engine));
 		}
 	}
+#endif
+	engine.addPlayer(2);
 	engine.play();
 	return 0;
 }
-int main(void) {
+int main(int argc, char **argv) {
+	/* cmdline example: --joystick-player <joyid> --keyb-player <keyb-map-id> */
 	void test_geometry_cpp();
 	test_geometry_cpp();
 	srand(time(NULL));

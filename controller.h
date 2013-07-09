@@ -30,4 +30,5 @@ class KeyboardMouseController: public Controller
 	public:
 	virtual void detectMovement(Player *player);
 };
+
 #endif

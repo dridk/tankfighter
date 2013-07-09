@@ -21,11 +21,19 @@ class Player: public Entity
 	
 	sf::Color getColor(void);
 	double getCanonAngle(void);
+	double getTankAngle(void);
+	Vector2d getPosition(void);
 
 	void setCanonAngle(float angle);
 	void rotateCanon(float angleSpeed);
+
+	void preserveTankAngle(void);
+	void setTankAngle(float angle);
+	void rotateTank (float angleSpeed);
+
 	void move(Vector2d speed);
 	void setPosition(Vector2d position);
+
 	void keepShooting(void);
 	int  getScore(void);
 	void setScore(int score);
@@ -49,9 +57,10 @@ class Player: public Entity
 	int missileCount;
 
 /* dynamic info */
+	bool preserve_tank_angle;
 	bool teleporting;
 	bool is_shooting;
-	double canon_rotation;
+	double canon_rotation, tank_rotation;
 	Vector2d tank_movement;
 	Vector2d tank_goto;
 	void try_shoot(void);

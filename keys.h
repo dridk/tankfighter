@@ -1,11 +1,17 @@
 #ifndef __KEYS_H__
 #define __KEYS_H__
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
+#include <SFML/Window/Joystick.hpp>
+#include <stddef.h>
 
 struct NamedKey {
 	const char *name;
-	sf::Keyboard::Key key;
+	unsigned short keycode;
 };
 
-extern NamedKey named_keys[];
+extern NamedKey key_codemap[];
+extern NamedKey mouse_codemap[];
+extern NamedKey joyaxis_codemap[];
+extern NamedKey joybutton_codemap[];
 #endif

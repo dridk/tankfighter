@@ -3,6 +3,11 @@
 
 using namespace sf;
 
+std::string LowerCaseString(const std::string &str) {
+	std::string data = str;
+	std::transform(data.begin(), data.end(), data.begin(), tolower);
+	return data;
+}
 double get_random(void) {
 	return double(rand())/RAND_MAX;
 }

@@ -6,6 +6,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include "texture_cache.h"
+#include "load_map.h"
 
 class Entity;
 class EngineEvent;
@@ -19,6 +20,7 @@ class Engine
 	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
+	void addPlayer(int controllerType);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
 	void destroy(Entity *entity); /* Removes entity from engine and deletes the underlying object */
 	void broadcast(EngineEvent *event);
@@ -41,6 +43,7 @@ class Engine
 
 	mutable TextureCache texture_cache;
 
+	ControllerDefinitions cdef;
 	sf::Font score_font;
 	Entity *map_boundaries_entity;
 	sf::Texture background_texture;

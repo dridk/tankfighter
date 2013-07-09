@@ -30,7 +30,8 @@ void Engine::play(void) {
 			} else if (e.type == Event::JoystickDisconnected) {
 				Player *pl = getPlayerByJoystickId(e.joystickConnect.joystickId);
 				if (pl) {destroy(pl);destroy_flagged();}
-			} else if (KeymapController::maybeConcerned(e)) {
+			}
+			if (KeymapController::maybeConcerned(e)) {
 				controller_activity(e);
 			}
 		}

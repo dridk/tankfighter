@@ -174,7 +174,7 @@ void KeymapEnumerator::enumerate(const char *control, const char *command) {
 	if (strlen(command) == 0) return;
 	std::string cmd = command;
 	std::string ktype;
-	std::istringstream in(cmd);
+	std::istringstream in(control);
 	int last = command[strlen(command)-1];
 	int idPlayer = 0;
 	if (isdigit(last)) {

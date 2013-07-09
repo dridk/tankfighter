@@ -43,7 +43,7 @@ void Engine::controller_activity(Event &e) {
 		if (!pl) continue;
 		KeymapController *c = dynamic_cast<KeymapController*>(pl->getController());
 		if (c) {
-			int ojoyid = 0;
+			int ojoyid = -1;
 			if (c->isConcerned(e, ojoyid)) return;
 			continue;
 		}
@@ -51,7 +51,7 @@ void Engine::controller_activity(Event &e) {
 	/* this key event is not owned by a player, have a look at controller templates */
 	std::vector<KeymapController*> &cd = cdef.forplayer;
 	for(unsigned i = 0; i < cd.size(); i++) {
-		int ojoyid = 0;
+		int ojoyid = -1;
 		if (cd[i] && cd[i]->isConcerned(e, ojoyid)) {
 			addPlayer(i, ojoyid);
 			break;
@@ -89,6 +89,7 @@ void Engine::addPlayer(unsigned cid, int joyid) {
 		fprintf(stderr, "Error: no controller %d found for new player\n", cid);
 		return;
 	}
+	if (cid > 0) joyid = -1;
 	add(new Player(cdef.forplayer[cid]->clone(joyid), this));
 }
 Entity *Engine::getMapBoundariesEntity() {

@@ -290,10 +290,10 @@ bool KeymapController::isConcerned(const Event &e, int &ojoyid) {
 	}
 	if (e.type == Event::JoystickButtonPressed) {
 		ojoyid = e.joystickButton.joystickId;
-		return isJoystickTemplate || joyid == ojoyid;
+		return isJoystickTemplate && (joyid == ojoyid || joyid == -1);
 	} else if (e.type == Event::JoystickMoved) {
 		ojoyid = e.joystickButton.joystickId;
-		return isJoystickTemplate || joyid == ojoyid;
+		return isJoystickTemplate && (joyid == ojoyid || joyid == -1);
 	} else if (e.type == Event::KeyPressed || e.type == Event::KeyReleased) {
 		for(unsigned i=0; i < commandmap.size(); i++) {
 			if (commandmap[i].trigger.type == TT_KeyboardKey && e.key.code == commandmap[i].trigger.keycode)

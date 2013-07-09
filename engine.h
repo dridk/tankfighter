@@ -5,6 +5,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Window.hpp>
 #include "texture_cache.h"
 #include "load_map.h"
 
@@ -38,6 +39,7 @@ class Engine
 
 	private:
 	Player *getPlayerByJoystickId(int joyid);
+	void controller_activity(sf::Event &e);
 	bool step(void);
 	void draw(void);
 	void compute_physics(void);

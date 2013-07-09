@@ -279,3 +279,26 @@ int KeymapController::getJoystickId(void) const {
 	return joyid;
 }
 
+bool KeymapController::maybeConcerned(const Event &e) {
+	return e.type == Event::JoystickButtonPressed || e.type == Event::JoystickMoved || e.type == Event::KeyPressed || e.type == Event::KeyReleased;
+}
+bool KeymapController::isConcerned(const Event &e, int &ojoyid) {
+	bool isJoystickTemplate = false;
+	if (commandmap.size() > 0) {
+		unsigned type = commandmap[0].trigger.type;
+		if (type == TT_JoystickButton || type == TT_JoystickAxisNeg || type == TT_JoystickAxisPos) isJoystickTemplate = true;
+	}
+	if (e.type == Event::JoystickButtonPressed) {
+		ojoyid = e.joystickButton.joystickId;
+		return isJoystickTemplate || joyid == ojoyid;
+	} else if (e.type == Event::JoystickMoved) {
+		ojoyid = e.joystickButton.joystickId;
+		return isJoystickTemplate || joyid == ojoyid;
+	} else if (e.type == Event::KeyPressed || e.type == Event::KeyReleased) {
+		for(unsigned i=0; i < commandmap.size(); i++) {
+			if (commandmap[i].trigger.type == TT_KeyboardKey && e.key.code == commandmap[i].trigger.keycode)
+				return true;
+		}
+	}
+	return false;
+}

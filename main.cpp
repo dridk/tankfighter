@@ -654,9 +654,9 @@ int repl(void) {
 			engine.add(new Player(new JoystickController(i), &engine));
 		}
 	}
-#endif
 	engine.addPlayer(1);
 	engine.addPlayer(2);
+#endif
 	engine.play();
 	return 0;
 }

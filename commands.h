@@ -2,6 +2,7 @@
 #define __INCL_COMMANDS_H__
 #include "controller.h"
 #include <vector>
+#include <SFML/Window.hpp>
 
 enum TriggerType {TT_JoystickAxisNeg, TT_JoystickAxisPos, TT_JoystickButton, TT_KeyboardKey, TT_MouseButton, TT_MousePosition};
 struct Trigger {
@@ -41,6 +42,8 @@ class KeymapController: public Controller
 	void mapControl(const char *trigger, const char *command);
 	int getJoystickId(void) const;
 	virtual void detectMovement(Player *player);
+	static bool maybeConcerned(const sf::Event &e);
+	bool isConcerned(const sf::Event &e, int &ojoyid);
 
 	private:
 	typedef std::vector<TriggerCommand>::iterator iterator;

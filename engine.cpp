@@ -30,7 +30,31 @@ void Engine::play(void) {
 			} else if (e.type == Event::JoystickDisconnected) {
 				Player *pl = getPlayerByJoystickId(e.joystickConnect.joystickId);
 				if (pl) {destroy(pl);destroy_flagged();}
+			} else if (KeymapController::maybeConcerned(e)) {
+				controller_activity(e);
 			}
+		}
+	}
+}
+
+void Engine::controller_activity(Event &e) {
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); it++) {
+		Player *pl = dynamic_cast<Player*>(*it);
+		if (!pl) continue;
+		KeymapController *c = dynamic_cast<KeymapController*>(pl->getController());
+		if (c) {
+			int ojoyid = 0;
+			if (c->isConcerned(e, ojoyid)) return;
+			continue;
+		}
+	}
+	/* this key event is not owned by a player, have a look at controller templates */
+	std::vector<KeymapController*> &cd = cdef.forplayer;
+	for(unsigned i = 0; i < cd.size(); i++) {
+		int ojoyid = 0;
+		if (cd[i] && cd[i]->isConcerned(e, ojoyid)) {
+			addPlayer(i, ojoyid);
+			break;
 		}
 	}
 }

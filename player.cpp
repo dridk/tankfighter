@@ -55,6 +55,9 @@ void Player::teleport() {
 
 int Player::getScore() {return score;}
 void Player::setScore(int sc) {score = sc;}
+Controller *Player::getController(void) {
+	return controller;
+}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 	preserve_tank_angle = false;
 	adapt_canon_angle   = false;
@@ -165,7 +168,7 @@ void Player::event_received(EngineEvent *event) {
 	}
 	if (EntityDestroyedEvent *ede = dynamic_cast<EntityDestroyedEvent*>(event)) {
 		Missile *missile = dynamic_cast<Missile*>(ede->entity);
-		if (missile->getOwner() == this) {
+		if (missile && missile->getOwner() == this) {
 			missileCount--;
 		}
 	}

@@ -42,6 +42,8 @@ class Player: public Entity
 	void killedBy(Player *player);
 	void killedPlayer(Player *player);
 
+	Controller *getController(void);
+
 	private:
 	static const short maxMissileCount = 3;
 	void teleport(void);

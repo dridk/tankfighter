@@ -148,6 +148,7 @@ static bool translate_trigger_string(Trigger &trigger, const char *name) {
 	return false;
 }
 static double getJoyAxis(int joyid, Joystick::Axis axis) {
+	if (joyid < 0) return 0;
 	double v = Joystick::getAxisPosition(joyid, (Joystick::Axis)axis) / 100;
 	if (fabs(v) <= 0.3) v = 0;
 	return v;
@@ -160,6 +161,7 @@ static double trigger_value(int joyid, Window &window, const Trigger &trigger, d
 		if ((axis > 0) == (trigger.type == TT_JoystickAxisNeg)) return 0;
 		else return fabs(axis);
 	} else if (trigger.type == TT_JoystickButton) {
+		if (joyid < 0) return 0;
 		return Joystick::isButtonPressed(joyid, keycode);
 	} else if (trigger.type == TT_KeyboardKey) {
 		return Keyboard::isKeyPressed((Keyboard::Key)keycode);
@@ -271,5 +273,9 @@ KeymapController *KeymapController::clone(int joyid1) {
 	KeymapController *kmp = new KeymapController(joyid1);
 	kmp->commandmap = commandmap;
 	return kmp;
+}
+
+int KeymapController::getJoystickId(void) const {
+	return joyid;
 }
 

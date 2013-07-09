@@ -17,6 +17,7 @@ class JoystickController: public Controller
 	public:
 	JoystickController(int joyid);
 	virtual void detectMovement(Player *player);
+	int getJoystickId(void) const;
 	private:
 	float getJoyAxis(sf::Joystick::Axis axis);
 	float getAxis(JoystickAxis axis);

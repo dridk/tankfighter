@@ -78,3 +78,6 @@ void JoystickController::detectMovement(Player *player) {
 	}
 }
 
+int JoystickController::getJoystickId(void) const {
+	return joyid;
+}

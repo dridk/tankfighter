@@ -36,14 +36,16 @@ struct TriggerCommand {
 class KeymapController: public Controller
 {
 	public:
-	KeymapController(int joyid = 0);
+	KeymapController(int joyid = -1);
 	KeymapController *clone(int joyid);
 	void mapControl(const char *trigger, const char *command);
+	int getJoystickId(void) const;
 	virtual void detectMovement(Player *player);
 
 	private:
 	typedef std::vector<TriggerCommand>::iterator iterator;
 	std::vector<TriggerCommand> commandmap;
-	unsigned char joyid;
+	signed char joyid;
+
 };
 #endif

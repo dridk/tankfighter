@@ -10,6 +10,7 @@
 
 class Entity;
 class EngineEvent;
+class Player;
 
 class Engine
 {
@@ -20,7 +21,7 @@ class Engine
 	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
-	void addPlayer(unsigned controllerType, int joyid=0);
+	void addPlayer(unsigned controllerType, int joyid=-1);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
 	void destroy(Entity *entity); /* Removes entity from engine and deletes the underlying object */
 	void broadcast(EngineEvent *event);
@@ -36,6 +37,7 @@ class Engine
 	void seekCollisions(Entity *entity);
 
 	private:
+	Player *getPlayerByJoystickId(int joyid);
 	bool step(void);
 	void draw(void);
 	void compute_physics(void);

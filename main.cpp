@@ -655,9 +655,8 @@ int repl(void) {
 		}
 	}
 #endif
-	engine.addPlayer(2);
-	engine.addPlayer(0);
 	engine.addPlayer(1);
+	engine.addPlayer(2);
 	engine.play();
 	return 0;
 }

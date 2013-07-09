@@ -21,16 +21,46 @@ void Engine::play(void) {
 	while (step()) {
 		Event e;
 		while (window.pollEvent(e)) {
-			if (e.type == Event::Closed)
-				{quit();}
-			if (e.type == Event::KeyPressed) {
+			if (e.type == Event::Closed) {
+				quit();
+			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) quit();
+			} else if (e.type == Event::JoystickConnected) {
+				addPlayer(0, e.joystickConnect.joystickId);
+			} else if (e.type == Event::JoystickDisconnected) {
+				Player *pl = getPlayerByJoystickId(e.joystickConnect.joystickId);
+				if (pl) {destroy(pl);destroy_flagged();}
 			}
 		}
 	}
 }
+Player *Engine::getPlayerByJoystickId(int joyid) {
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); it++) {
+		Player *pl = dynamic_cast<Player*>(*it);
+		if (!pl) continue;
+		KeymapController *c = dynamic_cast<KeymapController*>(pl->getController());
+		if (c) {
+			if (c->getJoystickId() == joyid) return pl;
+			continue;
+		}
+		JoystickController *j = dynamic_cast<JoystickController*>(pl->getController());
+		if (j) {
+			if (j->getJoystickId() == joyid) return pl;
+		}
+	}
+	return NULL;
+}
 void Engine::addPlayer(unsigned cid, int joyid) {
 	if (cid >= cdef.forplayer.size()) return;
+	if (cid == 0 && joyid ==  -1) {
+		/* search a free joystick */
+		for(unsigned i=0; i < Joystick::Count; i++) {
+			if (Joystick::isConnected(i) && !getPlayerByJoystickId(i)) {
+				joyid = i;
+				break;
+			}
+		}
+	}
 	if (!cdef.forplayer[cid]) {
 		fprintf(stderr, "Error: no controller %d found for new player\n", cid);
 		return;
@@ -105,8 +135,12 @@ void Engine::destroy(Entity *entity) { /* Removes entity from engine and deletes
 	entity->setKilled();
 }
 void Engine::broadcast(EngineEvent *event) {
-	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
-		(*it)->event_received(event);
+	/* assume iterators may be invalidated during event processing, because new items may be added */
+	/* note that entities may be set to killed, but cannot be removed from the list (they are only flagged) */
+
+	for(size_t i=0; i < entities.size(); ++i) {
+		Entity *entity = entities[i];
+		if (!entity->isKilled()) entity->event_received(event);
 	}
 }
 void Engine::quit(void) {
@@ -258,12 +292,24 @@ void Engine::destroy_flagged(void) {
 				EntityDestroyedEvent e;
 				e.type = ENTITY_DESTROYED_EVENT;
 				e.entity = entity;
-				entities.erase(entities.begin()+i);
 				broadcast(&e);
+				entities.erase(entities.begin()+i);
 				delete entity;
 				--i;
 			}
 		}
 	} while(some_got_deleted);
+#if 0
+	if (some_got_deleted) fprintf(stderr, "[now, I'm going to physically destroy things]\n");
+	for(size_t i=0; i < entities.size(); ++i) {
+		Entity *entity = entities[i];
+		if (entity->isKilled()) {
+			entities.erase(entities.begin()+i);
+			delete entity;
+			--i;
+		}
+	}
+	if (some_got_deleted) fprintf(stderr, "[/physically destroyed things]\n");
+#endif
 }
 

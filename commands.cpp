@@ -190,7 +190,7 @@ void KeymapController::mapControl(const char *trigger_name, const char *command_
 	}
 	commandmap.push_back(tc);
 }
-void KeymapController::detectMovement(Player *player) {
+void KeymapController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
 	Window &window = player->getEngine()->getWindow();
 	Vector2d rela[CP_Shooter+1]; /* CP_Tank_Orientation, CP_Tank_Position, CP_Canon_Orientation, CP_Shooter */
 	Vector2d absa[CP_Shooter+1];
@@ -242,29 +242,29 @@ void KeymapController::detectMovement(Player *player) {
 		unsigned index = (i==0?CP_Tank_Orientation:CP_Canon_Orientation);
 		if (notzero(absa[index])) {
 			double angle = angle_from_dxdy(absa[index].x, absa[index].y);
-			if (index) player->setCanonAngle(angle); else player->setTankAngle(angle);
+			if (index) pcd.setCanonAngle(angle); else pcd.setTankAngle(angle);
 		} else if (fabs(rotate[index])>1e-3) {
 			double r = rotate[index];
 			if (fabs(r) > 1) r = r/fabs(r);
-			if (index) player->rotateCanon(r); else player->rotateTank(r);
+			if (index) pcd.rotateCanon(r); else pcd.rotateTank(r);
 		}
 	}
 	/* define tank position */
 	if (defined_absa[CP_Tank_Position]) {
-		player->setPosition(absa[CP_Tank_Position]);
+		pcd.setPosition(absa[CP_Tank_Position]);
 	} else if (notzero(rela[CP_Tank_Position])) {
 		Vector2d v = rela[CP_Tank_Position];
 		if (vectorModule(v) >= 1) normalizeVector(v, 1); /* FIXME: Make vector module equal to 0.5 rather than 0.5*sqrt(2) when moving diagonally with half pressure on an analog stick */
-		player->move(v);
+		pcd.move(v);
 	}
 	if (notzero(absa[CP_Shooter]) || notzero(absa[CP_Shooter])) {
-		player->keepShooting();
+		pcd.keepShooting();
 	}
 	if (defined_absa[CP_Tank_Orientation] || defined_rela[CP_Tank_Orientation] || defined_rotate[CP_Tank_Orientation]) {
-		player->preserveTankAngle();
+		pcd.preserveTankAngle();
 	}
 	if (!(defined_absa[CP_Canon_Orientation] || defined_rela[CP_Canon_Orientation] || defined_rotate[CP_Canon_Orientation])) {
-		player->adaptCanonAngle();
+		pcd.adaptCanonAngle();
 	}
 }
 

@@ -9,7 +9,7 @@
 
 using namespace sf;
 
-void detectKeyboardMovement(Player *player) {
+static void detectKeyboardMovement(Player *player, PlayerControllingData &pcd) {
 	int vertical = 0;
 	int horiz    = 0;
 	if (Keyboard::isKeyPressed(Keyboard::Up) && !Keyboard::isKeyPressed(Keyboard::Down)) {
@@ -27,13 +27,13 @@ void detectKeyboardMovement(Player *player) {
 	v.x = horiz;
 	if (horiz != 0 || vertical !=0) {
 		normalizeVector(v, 1);
-		player->move(v);
+		pcd.move(v);
 	}
 	if (Keyboard::isKeyPressed(Keyboard::Escape)) {
 		player->getEngine()->quit();
 	}
 }
-void detectMouseMovement(Player *player) {
+static void detectMouseMovement(Player *player, PlayerControllingData &pcd) {
 	double dx, dy;
 	double angle = -1;
 	RenderWindow &window = player->getEngine()->getWindow();
@@ -42,13 +42,13 @@ void detectMouseMovement(Player *player) {
 	dx = pos.x - player->position.x;
 	if (dx != 0 && dy != 0) angle = angle_from_dxdy(dx, dy);
 	if (angle >= 0 && angle <= 2*M_PI) {
-		player->setCanonAngle(angle);
+		pcd.setCanonAngle(angle);
 	}
 }
-void KeyboardMouseController::KeyboardMouseController::detectMovement(Player *player) {
-	detectKeyboardMovement(player);
-	detectMouseMovement(player);
+void KeyboardMouseController::KeyboardMouseController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
+	detectKeyboardMovement(player, pcd);
+	detectMouseMovement(player, pcd);
 	if (Mouse::isButtonPressed(Mouse::Left) || Keyboard::isKeyPressed(Keyboard::RControl) || Keyboard::isKeyPressed(Keyboard::LControl)) {
-		player->keepShooting();
+		pcd.keepShooting();
 	}
 }

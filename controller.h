@@ -3,11 +3,15 @@
 #include <SFML/Window/Joystick.hpp>
 
 class Player;
+class Missile;
+class MissileControllingData;
+class PlayerControllingData;
 
 class Controller
 {
 	public:
-	virtual void detectMovement(Player *player)=0;
+	virtual void reportMissileMovement(Missile *missile, MissileControllingData &mcd);
+	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd)=0;
 	virtual ~Controller();
 };
 
@@ -16,7 +20,7 @@ class JoystickController: public Controller
 {
 	public:
 	JoystickController(int joyid);
-	virtual void detectMovement(Player *player);
+	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
 	int getJoystickId(void) const;
 	private:
 	float getJoyAxis(sf::Joystick::Axis axis);
@@ -29,7 +33,7 @@ class JoystickController: public Controller
 class KeyboardMouseController: public Controller
 {
 	public:
-	virtual void detectMovement(Player *player);
+	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
 };
 
 #endif

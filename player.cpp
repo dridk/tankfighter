@@ -59,12 +59,14 @@ Controller *Player::getController(void) {
 	return controller;
 }
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
+#if 0
 	preserve_tank_angle = false;
 	adapt_canon_angle   = false;
 	tank_rotation = canon_rotation = 0;
+	is_shooting = false;
+#endif
 	missileCount = 0;
 	score = 0;
-	is_shooting = false;
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(128)+127, get_random(128)+127, get_random(128)+127);
@@ -101,14 +103,64 @@ static const double tank_rotation_speed = 3e-4/180*M_PI;
 static const double linear_speed = 3e-4; /* pixels per microsecond */
 
 void Player::try_shoot() {
-	if (is_shooting && shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000 && missileCount < maxMissileCount) {
+	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000 && missileCount < maxMissileCount) {
 		shoot_clock.restart();
 		getEngine()->add(new Missile(this));
 		missileCount++;
 	}
 }
 
+PlayerControllingData::PlayerControllingData() {
+	flags = 0;
+	canon_rotation = tank_rotation = 0;
+	position = movement = Vector2d(0,0);
+	new_score = 0;
+}
+void PlayerControllingData::setCanonAngle(float angle) {
+	flags |= PCD_Canon_Angle;
+	canon_rotation = 0;
+	canon_angle = angle;
+}
+void PlayerControllingData::rotateCanon(float angleSpeed) {
+	canon_rotation = angleSpeed;
+}
+
+void PlayerControllingData::preserveTankAngle(void) {
+	flags|=PCD_Preserve_Tank_Rotation;
+}
+void PlayerControllingData::adaptCanonAngle(void) {
+	flags|=PCD_Adapt_Canon_Angle;
+}
+void PlayerControllingData::setTankAngle(float angle) {
+	flags |= PCD_Tank_Angle;
+	tank_rotation = 0;
+	tank_angle = angle;
+}
+void PlayerControllingData::rotateTank(float angleSpeed) {
+	tank_rotation = angleSpeed;
+}
+
+void PlayerControllingData::move(Vector2d speed) {
+	movement = speed;
+}
+void PlayerControllingData::setPosition(Vector2d position) {
+	flags |= PCD_Position;
+	movement.x = 0;
+	movement.y = 0;
+}
+
+void PlayerControllingData::keepShooting(void) {
+	flags |= PCD_Shoot;
+}
+void PlayerControllingData::setScore(int sc) {
+	flags |= PCD_Score;
+	new_score = sc;
+}
 Vector2d Player::movement(Int64 tm) {
+	PlayerControllingData pcd;
+	Vector2d tank_movement;
+	tank_movement.x = tank_movement.y = 0;
+#if 0
 	teleporting = false;
 
 	is_shooting = false;
@@ -117,36 +169,36 @@ Vector2d Player::movement(Int64 tm) {
 	tank_goto = Vector2d(-1,-1);
 	preserve_tank_angle = false;
 	adapt_canon_angle   = false;
+#endif
 
-	controller->detectMovement(this);
-	try_shoot();
+	controller->reportPlayerMovement(this, pcd);
+	if (pcd.flags & PCD_Shoot) try_shoot();
 
-	canon_direction += canon_rotation * tm * canon_rotation_speed;
-	tank_direction  += tank_rotation  * tm * tank_rotation_speed;
+	if (pcd.flags & PCD_Tank_Angle)  tank_direction  = pcd.tank_angle;
+	if (pcd.flags & PCD_Canon_Angle) canon_direction = pcd.canon_angle;
+
+	canon_direction += pcd.canon_rotation * tm * canon_rotation_speed;
+	tank_direction  += pcd.tank_rotation  * tm * tank_rotation_speed;
+
 	normalizeAngle(canon_direction);
 	normalizeAngle(tank_direction);
 	
-	if (tank_goto.x >= -0.5 && tank_goto.y >= -0.5) {
-		tank_movement = tank_goto - position;
-	} else if (tank_movement.x != 0 || tank_movement.y != 0) {
-		tank_movement
-		=Vector2d(tank_movement.x * tm * linear_speed,
-			tank_movement.y * tm * linear_speed);
+	if (pcd.flags & PCD_Position) {
+		tank_movement = pcd.position - position;
 	}
-	if ((tank_movement.x != 0 || tank_movement.y != 0) && !preserve_tank_angle) {
+	if (pcd.movement.x != 0 || pcd.movement.y != 0) {
+		tank_movement
+		+=Vector2d(pcd.movement.x * tm * linear_speed,
+			   pcd.movement.y * tm * linear_speed);
+	}
+	if ((tank_movement.x != 0 || tank_movement.y != 0) && !(pcd.flags & PCD_Preserve_Tank_Rotation)) {
 		double angle = angle_from_dxdy(tank_movement.x, tank_movement.y);
 		if (angle >= 0 && angle <= 2*M_PI) tank_direction = angle;
 	}
-	if (adapt_canon_angle) {
+	if (pcd.flags & PCD_Adapt_Canon_Angle) {
 		canon_direction = tank_direction;
 	}
 	return tank_movement;
-}
-void Player::preserveTankAngle(void) {
-	preserve_tank_angle = true;
-}
-void Player::adaptCanonAngle(void) {
-	adapt_canon_angle = true;
 }
 void Player::event_received(EngineEvent *event) {
 	CompletedMovementEvent *e = dynamic_cast<CompletedMovementEvent*>(event);
@@ -175,6 +227,13 @@ void Player::event_received(EngineEvent *event) {
 }
 Sprite &Player::getSprite(const char *name) const {
 	return *getEngine()->getTextureCache()->getSprite(name);
+}
+#if 0
+void Player::preserveTankAngle(void) {
+	preserve_tank_angle = true;
+}
+void Player::adaptCanonAngle(void) {
+	adapt_canon_angle = true;
 }
 
 void Player::keepShooting(void) {
@@ -205,3 +264,4 @@ void Player::setPosition(Vector2d position) {
 	tank_goto = position;
 }
 
+#endif

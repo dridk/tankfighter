@@ -62,19 +62,19 @@ bool JoystickController::is_shooting() {
 	}
 	return false;
 }
-void JoystickController::detectMovement(Player *player) {
+void JoystickController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
 	bool moving = false;
-	if (is_shooting()) player->keepShooting();
+	if (is_shooting()) pcd.keepShooting();
 	Vector2d mv = Vector2d(getAxis(HorizontalMove), getAxis(VerticalMove));
 	Vector2d ca = Vector2d(getAxis(HorizontalDirection), getAxis(VerticalDirection));
 	if (fabs(mv.x)+fabs(mv.y) >= 0.3) {
 		normalizeVector(mv, 1);
-		player->move(mv);
+		pcd.move(mv);
 		moving = true;
 	}
-	if (fabs(ca.x)+fabs(ca.y) >= 0.3) player->setCanonAngle(angle_from_dxdy(ca.x, ca.y));
+	if (fabs(ca.x)+fabs(ca.y) >= 0.3) pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
 	else if (moving) {
-		player->setCanonAngle(angle_from_dxdy(mv.x, mv.y));
+		pcd.setCanonAngle(angle_from_dxdy(mv.x, mv.y));
 	}
 }
 

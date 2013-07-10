@@ -7,6 +7,7 @@
 #include "geometry.h"
 #include <math.h>
 #include <stdio.h>
+#include "controller.h"
 
 using namespace sf;
 
@@ -39,11 +40,49 @@ void Missile::draw(sf::RenderTarget &target) const {
 	}
 	target.draw(sprite);
 }
+double Missile::getAngle(void) const {return angle;}
+MissileControllingData::MissileControllingData() {
+	flags = 0;
+	movement = Vector2d(0,0);
+	assigned_position = Vector2d(0, 0);
+	new_angle = 0;
+	must_die = false;
+}
+#if 0
+double Missile::setAngle(double nangle) {angle = nangle;}
+double Missile::setPosition(const Vector2d &pos) {
+	position = pos;
+	movement.x = 0;
+	movement.y = 0;
+}
+void Missile::move(const Vector2d &vect) {
+	movement = vect;
+}
+void Missile::Die(void) {
+	setKilled();
+}
+#endif
+Int64 Missile::usecGetLifetime(void) {
+	return lifetime.getElapsedTime().asMicroseconds();
+}
 Vector2d Missile::movement(Int64 tm) {
 	Vector2d v;
-	v.x = cos(angle) * tm * speed;
-	v.y = sin(angle) * tm * speed;
-	if (lifetime.getElapsedTime().asMicroseconds() >= 1000*(Int64)maxLifeDuration) {
+	MissileControllingData mcd;
+
+	player->getController()->reportMissileMovement(this, mcd);
+
+	if (mcd.flags & MCD_Position) {
+		position = mcd.assigned_position;
+		v.x = 0;
+		v.y = 0;
+	} else if (mcd.flags & MCD_Movement) {
+		v.x = mcd.movement.x * tm * speed;
+		v.y = mcd.movement.y * tm * speed;
+	}
+	if (mcd.flags & MCD_Angle) {
+		angle = mcd.new_angle;
+	}
+	if (mcd.must_die) {
 		getEngine()->destroy(this);
 	}
 	return v;

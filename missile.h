@@ -6,6 +6,16 @@
 
 class Player;
 
+enum MCDFlags {MCD_Movement = 1, MCD_Position = 2, MCD_Angle = 4};
+struct MissileControllingData
+{
+	unsigned char flags;
+	Vector2d movement;
+	Vector2d assigned_position;
+	double new_angle;
+	bool must_die;
+	MissileControllingData();
+};
 class Missile: public Entity
 {
 	public:
@@ -17,9 +27,19 @@ class Missile: public Entity
 	virtual void event_received(EngineEvent *event);
 	Player *getOwner() const;
 
+	double getAngle(void) const;
+#if 0
+	double setAngle(double angle);
+	double setPosition(const Vector2d &pos);
+	void move(const Vector2d &vect);
+	void Die(void);
+	Vector2d movement;
+#endif
+	sf::Int64 usecGetLifetime(void);
+	static const float maxLifeDuration = 2000; /* milliseconds */
+
 	private:
 	static const float speed = 9e-4;
-	static const float maxLifeDuration = 2000; /* milliseconds */
 	sf::Clock lifetime;
 	double angle;
 	Player *player;

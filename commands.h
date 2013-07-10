@@ -41,7 +41,7 @@ class KeymapController: public Controller
 	KeymapController *clone(int joyid);
 	void mapControl(const char *trigger, const char *command);
 	int getJoystickId(void) const;
-	virtual void detectMovement(Player *player);
+	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
 	static bool maybeConcerned(const sf::Event &e);
 	bool isConcerned(const sf::Event &e, int &ojoyid);
 

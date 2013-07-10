@@ -13,7 +13,7 @@ static void dispPoint(Vector2d pt) {
 	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
 }
 #endif
-static const double minWallDistance = 1e-4;
+static const double minWallDistance = 1e-3;
 
 Line Segment::toLine() const {
 	Line res;
@@ -318,6 +318,7 @@ static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vec
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
 		if (!inside) prolongateSegment(s, -augment+minWallDistance/2);
+		else prolongateSegment(s, minWallDistance);
 		shapes[i].type = CSIT_SEGMENT;
 		shapes[i].segment = s;
 

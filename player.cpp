@@ -71,6 +71,7 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 	color = Color(get_random(128)+127, get_random(128)+127, get_random(128)+127);
 	teleporting = true;
 	computeRandomPosition();
+	if (controller) controller->setPlayer(this);
 }
 
 Vector2d Player::getSize() const {

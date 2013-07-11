@@ -12,7 +12,12 @@ class Controller
 	public:
 	virtual void reportMissileMovement(Missile *missile, MissileControllingData &mcd);
 	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd)=0;
+	Controller();
 	virtual ~Controller();
+	void    setPlayer(Player *player);
+	Player *getPlayer(void) const;
+	private:
+	Player *player;
 };
 
 enum JoystickAxis {HorizontalMove, VerticalMove, HorizontalDirection, VerticalDirection};

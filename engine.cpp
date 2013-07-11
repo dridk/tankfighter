@@ -15,6 +15,8 @@
 
 using namespace sf;
 
+const unsigned Engine::minFPS = 15;
+const unsigned Engine::maxFPS = 120;
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
 
 void Engine::play(void) {
@@ -113,7 +115,8 @@ Engine::Engine() {
 	first_step = true;
 	must_quit = false;
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
-	window.setVerticalSyncEnabled(true);
+	window.setVerticalSyncEnabled(false);
+	window.setFramerateLimit(0);
 	window.clear(Color::White);
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 

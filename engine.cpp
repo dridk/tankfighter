@@ -249,7 +249,15 @@ static bool quasi_equals(double a, double b) {
 }
 void Engine::compute_physics(void) {
 	Int64 tm = clock.getElapsedTime().asMicroseconds();
+	if (tm < 1000000L/maxFPS) {
+		unsigned long rtm = 1000000L/maxFPS - tm;
+		if (rtm < 100) return;
+		usleep(rtm - 100);
+		sf::sleep(microseconds(rtm - 100));
+		return;
+	}
 	if (tm == 0) return;
+	if (tm > 1000000L/minFPS) tm = 1000000L/minFPS;
 	clock.restart();
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		Entity *entity = (*it);

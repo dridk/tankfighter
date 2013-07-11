@@ -58,6 +58,9 @@ void Player::setScore(int sc) {score = sc;}
 Controller *Player::getController(void) {
 	return controller;
 }
+Uint32 Player::getUID(void) {
+	return UID;
+}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 #if 0
 	preserve_tank_angle = false;
@@ -160,8 +163,8 @@ Vector2d Player::movement(Int64 tm) {
 	PlayerControllingData pcd;
 	Vector2d tank_movement;
 	tank_movement.x = tank_movement.y = 0;
-#if 0
 	teleporting = false;
+#if 0
 
 	is_shooting = false;
 	tank_rotation = canon_rotation = 0;

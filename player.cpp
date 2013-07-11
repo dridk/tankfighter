@@ -13,7 +13,6 @@
 using namespace sf;
 
 const float Player::missileDelay = 200;
-int Player::UID = 0;
 
 Vector2d Player::getPosition() {
 	return position;
@@ -58,9 +57,6 @@ void Player::setScore(int sc) {score = sc;}
 Controller *Player::getController(void) {
 	return controller;
 }
-Uint32 Player::getUID(void) {
-	return UID;
-}
 Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, engine),controller(controller0) {
 #if 0
 	preserve_tank_angle = false;
@@ -73,7 +69,6 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
 	color = Color(get_random(128)+127, get_random(128)+127, get_random(128)+127);
-	playerUID = ++UID;
 	teleporting = true;
 	computeRandomPosition();
 }

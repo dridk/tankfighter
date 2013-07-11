@@ -68,7 +68,6 @@ class Player: public Entity
 
 	void killedBy(Player *player);
 	void killedPlayer(Player *player);
-	sf::Uint32 getUID(void);
 
 	Controller *getController(void);
 
@@ -82,8 +81,6 @@ class Player: public Entity
 	sf::Color color;
 	sf::Clock shoot_clock;
 
-	sf::Uint32 playerUID;
-	static int UID;
 	int score;
 	short missileCount;
 

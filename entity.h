@@ -28,7 +28,10 @@ class Entity
 	bool isKilled(void) {return isKilledFlag;}
 	void setEngine(Engine *eng) {engine = eng;}
 	Engine *getEngine(void) const {return engine;}
+	sf::Uint32 getUID(void) const;
 	private:
+	static sf::Uint32 globalUID;
+	sf::Uint32 UID;
 	bool isKilledFlag;
 	Engine *engine;
 };

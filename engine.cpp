@@ -12,6 +12,7 @@
 #include <SFML/Graphics/Text.hpp>
 #include <stdio.h>
 #include "commands.h"
+#include "missile.h"
 
 using namespace sf;
 
@@ -76,6 +77,18 @@ Player *Engine::getPlayerByJoystickId(int joyid) {
 		}
 	}
 	return NULL;
+}
+Entity *Engine::getEntityByUID(Uint32 uid) {
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); it++) {
+		if ((*it)->getUID() == uid) return (*it);
+	}
+	return NULL;
+}
+Player *Engine::getPlayerByUID(Uint32 uid) {
+	return dynamic_cast<Player*>(getEntityByUID(uid));
+}
+Missile *Engine::getMissileByUID(Uint32 uid) {
+	return dynamic_cast<Missile*>(getEntityByUID(uid));
 }
 void Engine::addPlayer(unsigned cid, int joyid) {
 	if (cid >= cdef.forplayer.size()) return;

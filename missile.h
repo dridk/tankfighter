@@ -28,6 +28,8 @@ class Missile: public Entity
 	Player *getOwner() const;
 
 	double getAngle(void) const;
+	void setAngle(double angle);
+	void setPosition(const Vector2d &position);
 #if 0
 	double setAngle(double angle);
 	double setPosition(const Vector2d &pos);

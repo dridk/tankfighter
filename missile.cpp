@@ -122,3 +122,10 @@ void Missile::event_received(EngineEvent *event) {
 	}
 }
 
+void Missile::setAngle(double angle0) {
+	angle = angle0;
+}
+void Missile::setPosition(const Vector2d &position0) {
+	position = position0;
+}
+

@@ -40,3 +40,6 @@ Vector2d Wall::movement(sf::Int64 tm) {
 }
 void Wall::event_received(EngineEvent *event) {
 }
+std::string Wall::getTextureName(void) const {
+	return texture_name;
+}

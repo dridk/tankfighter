@@ -15,3 +15,4 @@ Entity::~Entity() {
 
 Uint32 Entity::globalUID = 0;
 Uint32 Entity::getUID(void) const {return UID;}
+void Entity::setUID(Uint32 uid) {UID = uid;}

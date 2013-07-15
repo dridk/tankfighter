@@ -45,6 +45,7 @@ class Player: public Entity
 	virtual void event_received(EngineEvent *event);
 	
 	sf::Color getColor(void);
+	void setColor(sf::Color color);
 	double getCanonAngle(void);
 	double getTankAngle(void);
 	Vector2d getPosition(void);

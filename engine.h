@@ -12,6 +12,7 @@
 class Entity;
 class EngineEvent;
 class Player;
+class Missile;
 
 class Engine
 {
@@ -39,6 +40,9 @@ class Engine
 
 	private:
 	Player *getPlayerByJoystickId(int joyid);
+	Entity *getEntityByUID(sf::Uint32 uid);
+	Player *getPlayerByUID(sf::Uint32 uid);
+	Missile *getMissileByUID(sf::Uint32 uid);
 	void controller_activity(sf::Event &e);
 	bool step(void);
 	void draw(void);

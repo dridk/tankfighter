@@ -29,6 +29,7 @@ class Entity
 	void setEngine(Engine *eng) {engine = eng;}
 	Engine *getEngine(void) const {return engine;}
 	sf::Uint32 getUID(void) const;
+	void setUID(sf::Uint32 uid);
 	private:
 	static sf::Uint32 globalUID;
 	sf::Uint32 UID;

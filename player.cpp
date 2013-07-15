@@ -29,6 +29,9 @@ Player::~Player() {
 Color Player::getColor() {
 	return color;
 }
+void Player::setColor(Color c) {
+	color = c;
+}
 void Player::killedBy(Player *player) {
 	teleport();
 }

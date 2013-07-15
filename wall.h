@@ -15,6 +15,7 @@ class Wall: public Entity
 	virtual void draw(sf::RenderTarget &target) const;
 	virtual Vector2d movement(sf::Int64 tm);
 	virtual void event_received(EngineEvent *event);
+	std::string getTextureName(void) const;
 
 	private:
 	sf::Vector2f size;

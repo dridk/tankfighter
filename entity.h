@@ -24,7 +24,7 @@ class Entity
 	/* then, the physics engine call the HIT functions if an obstacle is in the way of the movement */
 	virtual void event_received(EngineEvent *event) = 0;
 
-	void setKilled(void) {isKilledFlag=true;}
+	void setKilled(bool flag=true) {isKilledFlag=flag;}
 	bool isKilled(void) {return isKilledFlag;}
 	void setEngine(Engine *eng) {engine = eng;}
 	Engine *getEngine(void) const {return engine;}

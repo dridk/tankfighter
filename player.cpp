@@ -14,6 +14,9 @@ using namespace sf;
 
 const float Player::missileDelay = 200;
 
+void Player::setController(Controller *newc) {
+	controller = newc;
+}
 Vector2d Player::getPosition() {
 	return position;
 }
@@ -158,6 +161,23 @@ void PlayerControllingData::setScore(int sc) {
 	flags |= PCD_Score;
 	new_score = sc;
 }
+void Player::applyPCD(const PlayerControllingData &pcd) {
+	if (pcd.flags & PCD_Tank_Angle)  tank_direction  = pcd.tank_angle;
+	if (pcd.flags & PCD_Canon_Angle) canon_direction = pcd.canon_angle;
+
+	normalizeAngle(canon_direction);
+	normalizeAngle(tank_direction);
+	
+	if (pcd.flags & PCD_Position) {
+		position = pcd.position;
+	}
+	if (pcd.flags & PCD_Adapt_Canon_Angle) {
+		canon_direction = tank_direction;
+	}
+	if (pcd.flags & PCD_Score) {
+		setScore(pcd.new_score);
+	}
+}
 Vector2d Player::movement(Int64 tm) {
 	PlayerControllingData pcd;
 	Vector2d tank_movement;
@@ -199,6 +219,9 @@ Vector2d Player::movement(Int64 tm) {
 	}
 	if (pcd.flags & PCD_Adapt_Canon_Angle) {
 		canon_direction = tank_direction;
+	}
+	if (pcd.flags & PCD_Score) {
+		setScore(pcd.new_score);
 	}
 	return tank_movement;
 }

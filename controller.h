@@ -1,6 +1,7 @@
 #ifndef __CONTROLLER_H__
 #define __CONTROLLER_H__
 #include <SFML/Window/Joystick.hpp>
+#include <SFML/Window/Window.hpp>
 
 class Player;
 class Missile;
@@ -27,6 +28,7 @@ class JoystickController: public Controller
 	JoystickController(int joyid);
 	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
 	int getJoystickId(void) const;
+	bool isConcerned(const sf::Event &e);
 	private:
 	float getJoyAxis(sf::Joystick::Axis axis);
 	float getAxis(JoystickAxis axis);

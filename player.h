@@ -64,6 +64,7 @@ class Player: public Entity
 
 	void keepShooting(void);
 #endif
+	void applyPCD(const PlayerControllingData &pcd);
 	void setScore(int score);
 	int  getScore(void);
 
@@ -71,6 +72,7 @@ class Player: public Entity
 	void killedPlayer(Player *player);
 
 	Controller *getController(void);
+	void        setController(Controller *newc);
 
 	private:
 	static const short maxMissileCount = 3;

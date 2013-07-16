@@ -1,6 +1,8 @@
 #include "controller.h"
 #include "player.h"
 #include <SFML/Window/Joystick.hpp>
+#include <SFML/Window/Window.hpp>
+#include <SFML/Window/Event.hpp>
 #include "geometry.h"
 #include <math.h>
 #include <stdio.h>
@@ -8,7 +10,7 @@
 using namespace sf;
 
 
-enum JoystickType {JT_UNKNOWN, JT_XYZR, JT_XYUV, JT_XYUZ, JT_XBOX};
+enum JoystickType {JT_UNKNOWN, JT_XYZR, JT_XYUV, JT_XYUZ, JT_XYUR, JT_XBOX};
 JoystickController::JoystickController(int joyid0):joyid(joyid0) {
 	joytype = JT_UNKNOWN;
 	bool hasZR = Joystick::hasAxis(joyid, Joystick::Z) && Joystick::hasAxis(joyid, Joystick::R);
@@ -16,6 +18,7 @@ JoystickController::JoystickController(int joyid0):joyid(joyid0) {
 	if (hasZR && !hasUV) joytype = JT_XYZR;
 	if (hasUV && !hasZR) joytype = JT_XYUV;
 	if (hasUV && hasZR) joytype = JT_XYUZ;
+	if (Joystick::hasAxis(joyid, Joystick::R) && Joystick::hasAxis(joyid, Joystick::U) && !Joystick::hasAxis(joyid, Joystick::V)) joytype = JT_XYUR;
 	if (fabs(fabs(getJoyAxis(Joystick::Z))-1)<1e-3) {
 		joytype = JT_XBOX;
 	}
@@ -37,11 +40,13 @@ float JoystickController::getAxis(JoystickAxis axis) {
 			return getJoyAxis(Joystick::Y)+getJoyAxis(Joystick::PovY);
 		case HorizontalDirection:
 			if (joytype == JT_XYZR) return getJoyAxis(Joystick::Z);
+			else if (joytype == JT_XYUR) return getJoyAxis(Joystick::U);
 			else return getJoyAxis(Joystick::U); /* XBOX or XYUV or XYUZ */
 		case VerticalDirection:
 			{
 			if (joytype == JT_XBOX) return getJoyAxis(Joystick::V);
 			if (joytype == JT_XYZR) return getJoyAxis(Joystick::R);
+			if (joytype == JT_XYUR) return getJoyAxis(Joystick::R);
 			if (joytype == JT_XYUV) return getJoyAxis(Joystick::V);
 			if (joytype == JT_XYUZ) return getJoyAxis(Joystick::Z);
 			return 0;
@@ -80,4 +85,14 @@ void JoystickController::reportPlayerMovement(Player *player, PlayerControllingD
 
 int JoystickController::getJoystickId(void) const {
 	return joyid;
+}
+
+bool JoystickController::isConcerned(const Event &e) {
+	int ojoyid = -1;
+	if (e.type == Event::JoystickButtonPressed) {
+		ojoyid = e.joystickButton.joystickId;
+	} else if (e.type == Event::JoystickMoved) {
+		ojoyid = e.joystickMove.joystickId;
+	} else return false;
+	return ojoyid == joyid;
 }

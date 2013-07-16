@@ -37,6 +37,9 @@ void Engine::play(void) {
 			if (KeymapController::maybeConcerned(e)) {
 				controller_activity(e);
 			}
+			if (e.type == Event::JoystickMoved) {
+				fprintf(stderr, "[moved axis %u %u %lf]\n", e.joystickMove.joystickId, e.joystickMove.axis, e.joystickMove.position);
+			}
 		}
 	}
 }
@@ -49,6 +52,11 @@ void Engine::controller_activity(Event &e) {
 		if (c) {
 			int ojoyid = -1;
 			if (c->isConcerned(e, ojoyid)) return;
+			continue;
+		}
+		JoystickController *j = dynamic_cast<JoystickController*>(pl->getController());
+		if (j) {
+			if (j->isConcerned(e)) return;
 			continue;
 		}
 	}
@@ -73,6 +81,7 @@ Player *Engine::getPlayerByJoystickId(int joyid) {
 		}
 		JoystickController *j = dynamic_cast<JoystickController*>(pl->getController());
 		if (j) {
+			fprintf(stderr, "joyid = %d\n", j->getJoystickId());
 			if (j->getJoystickId() == joyid) return pl;
 		}
 	}
@@ -91,6 +100,7 @@ Missile *Engine::getMissileByUID(Uint32 uid) {
 	return dynamic_cast<Missile*>(getEntityByUID(uid));
 }
 void Engine::addPlayer(unsigned cid, int joyid) {
+	Controller *newc;
 	if (cid >= cdef.forplayer.size()) return;
 	if (cid == 0 && joyid ==  -1) {
 		/* search a free joystick */
@@ -106,7 +116,9 @@ void Engine::addPlayer(unsigned cid, int joyid) {
 		return;
 	}
 	if (cid > 0) joyid = -1;
-	add(new Player(cdef.forplayer[cid]->clone(joyid), this));
+	if (cid == 0) newc = new JoystickController(joyid);
+	else newc = cdef.forplayer[cid]->clone(joyid);
+	add(new Player(newc, this));
 }
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;
@@ -140,10 +152,13 @@ Engine::Engine() {
 	add(map_boundaries_entity);
 	load_keymap(cdef, "keymap.json");
 }
-Engine::~Engine() {
+void Engine::clear_entities(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		delete (*it);
 	}
+}
+Engine::~Engine() {
+	clear_entities();
 	window.close();
 }
 void Engine::seekCollisions(Entity *entity) {

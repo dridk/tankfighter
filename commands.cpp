@@ -292,7 +292,7 @@ bool KeymapController::isConcerned(const Event &e, int &ojoyid) {
 		ojoyid = e.joystickButton.joystickId;
 		return isJoystickTemplate && (joyid == ojoyid || joyid == -1);
 	} else if (e.type == Event::JoystickMoved) {
-		ojoyid = e.joystickButton.joystickId;
+		ojoyid = e.joystickMove.joystickId;
 		return isJoystickTemplate && (joyid == ojoyid || joyid == -1);
 	} else if (e.type == Event::KeyPressed || e.type == Event::KeyReleased) {
 		for(unsigned i=0; i < commandmap.size(); i++) {

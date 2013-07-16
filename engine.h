@@ -23,6 +23,7 @@ class Engine
 	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
+	void clear_entities(void);
 	void addPlayer(unsigned controllerType, int joyid=-1);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
 	void destroy(Entity *entity); /* Removes entity from engine and deletes the underlying object */
@@ -38,11 +39,11 @@ class Engine
 	Vector2d map_size(void);
 	void seekCollisions(Entity *entity);
 
-	private:
-	Player *getPlayerByJoystickId(int joyid);
 	Entity *getEntityByUID(sf::Uint32 uid);
 	Player *getPlayerByUID(sf::Uint32 uid);
 	Missile *getMissileByUID(sf::Uint32 uid);
+	private:
+	Player *getPlayerByJoystickId(int joyid);
 	void controller_activity(sf::Event &e);
 	bool step(void);
 	void draw(void);

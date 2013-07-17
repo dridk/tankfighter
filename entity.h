@@ -30,6 +30,7 @@ class Entity
 	Engine *getEngine(void) const {return engine;}
 	sf::Uint32 getUID(void) const;
 	void setUID(sf::Uint32 uid);
+	static void useUpperUID(void);
 	private:
 	static sf::Uint32 globalUID;
 	sf::Uint32 UID;

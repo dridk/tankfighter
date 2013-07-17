@@ -75,7 +75,6 @@ class Player: public Entity
 	void        setController(Controller *newc);
 
 	private:
-	static const short maxMissileCount = 3;
 	void teleport(void);
 	Controller *controller;
 	static const float missileDelay; /* milliseconds */
@@ -85,7 +84,6 @@ class Player: public Entity
 	sf::Clock shoot_clock;
 
 	int score;
-	short missileCount;
 
 /* dynamic info */
 	bool teleporting;

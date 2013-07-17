@@ -13,6 +13,9 @@ class Controller
 	public:
 	virtual void reportMissileMovement(Missile *missile, MissileControllingData &mcd);
 	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd)=0;
+	virtual bool missileCreation(Missile *ml);
+	virtual bool missileCollision(Missile *ml, Player *other);
+	virtual void teleported(void);
 	Controller();
 	virtual ~Controller();
 	void    setPlayer(Player *player);
@@ -21,14 +24,20 @@ class Controller
 	Player *player;
 };
 
+class LocalController:public Controller
+{
+	public:
+	virtual bool isConcerned(const sf::Event &e) const;
+};
+
 enum JoystickAxis {HorizontalMove, VerticalMove, HorizontalDirection, VerticalDirection};
-class JoystickController: public Controller
+class JoystickController: public LocalController
 {
 	public:
 	JoystickController(int joyid);
 	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
+	virtual bool isConcerned(const sf::Event &e) const;
 	int getJoystickId(void) const;
-	bool isConcerned(const sf::Event &e);
 	private:
 	float getJoyAxis(sf::Joystick::Axis axis);
 	float getAxis(JoystickAxis axis);

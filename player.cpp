@@ -27,6 +27,7 @@ double Player::getTankAngle() {
 	return tank_direction;
 }
 Player::~Player() {
+	fprintf(stderr, "[player %d deleted]\n", getUID());
 	delete controller;
 }
 Color Player::getColor() {
@@ -36,7 +37,7 @@ void Player::setColor(Color c) {
 	color = c;
 }
 void Player::killedBy(Player *player) {
-	teleport();
+	if (!getEngine()->getNetwork()->isClient()) teleport();
 }
 void Player::killedPlayer(Player *player) {
 	setScore(getScore()+1);
@@ -56,6 +57,7 @@ void Player::teleport() {
 	computeRandomPosition();
 	getEngine()->seekCollisions(this);
 	teleporting = false;
+	controller->teleported();
 }
 
 int Player::getScore() {return score;}
@@ -70,7 +72,6 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 	tank_rotation = canon_rotation = 0;
 	is_shooting = false;
 #endif
-	missileCount = 0;
 	score = 0;
 	tank_direction = get_random(2*M_PI);
 	canon_direction = get_random(2*M_PI);
@@ -108,10 +109,14 @@ static const double tank_rotation_speed = 3e-4/180*M_PI;
 static const double linear_speed = 3e-4; /* pixels per microsecond */
 
 void Player::try_shoot() {
-	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000 && missileCount < maxMissileCount) {
+	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000) {
+		Missile *ml = new Missile(this);
 		shoot_clock.restart();
-		getEngine()->add(new Missile(this));
-		missileCount++;
+		if (controller->missileCreation(ml)) {
+			getEngine()->add(ml);
+		} else {
+			delete ml;
+		}
 	}
 }
 
@@ -148,10 +153,11 @@ void PlayerControllingData::rotateTank(float angleSpeed) {
 void PlayerControllingData::move(Vector2d speed) {
 	movement = speed;
 }
-void PlayerControllingData::setPosition(Vector2d position) {
+void PlayerControllingData::setPosition(Vector2d position0) {
 	flags |= PCD_Position;
 	movement.x = 0;
 	movement.y = 0;
+	position = position0;
 }
 
 void PlayerControllingData::keepShooting(void) {
@@ -242,12 +248,6 @@ void Player::event_received(EngineEvent *event) {
 			coll->interaction = IT_SLIDE;
 		}
 		return;
-	}
-	if (EntityDestroyedEvent *ede = dynamic_cast<EntityDestroyedEvent*>(event)) {
-		Missile *missile = dynamic_cast<Missile*>(ede->entity);
-		if (missile && missile->getOwner() == this) {
-			missileCount--;
-		}
 	}
 }
 Sprite &Player::getSprite(const char *name) const {

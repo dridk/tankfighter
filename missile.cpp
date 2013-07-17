@@ -104,11 +104,13 @@ void Missile::event_received(EngineEvent *event) {
 			if (dynamic_cast<Wall*>(ce->second)) {
 				ce->interaction = IT_BOUNCE;
 			} else if (static_cast<Entity*>(player) != ce->second && (dying = dynamic_cast<Player*>(ce->second))) {
-				dying->killedBy(player);
-				player->killedPlayer(dying);
-				/* missile dies */
 				ce->interaction = IT_GHOST;
-				getEngine()->destroy(this);
+				if (player->getController()->missileCollision(this,dying)) {
+					dying->killedBy(player);
+					player->killedPlayer(dying);
+					/* missile dies */
+					getEngine()->destroy(this);
+				}
 			}
 		}
 	} else if (CompletedMovementEvent *cme = dynamic_cast<CompletedMovementEvent*>(event)) {

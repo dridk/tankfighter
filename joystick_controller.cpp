@@ -72,12 +72,12 @@ void JoystickController::reportPlayerMovement(Player *player, PlayerControllingD
 	if (is_shooting()) pcd.keepShooting();
 	Vector2d mv = Vector2d(getAxis(HorizontalMove), getAxis(VerticalMove));
 	Vector2d ca = Vector2d(getAxis(HorizontalDirection), getAxis(VerticalDirection));
-	if (fabs(mv.x)+fabs(mv.y) >= 0.3) {
+	if (sqrt(mv.x*mv.x+mv.y*mv.y) >= 0.3) {
 		normalizeVector(mv, 1);
 		pcd.move(mv);
 		moving = true;
 	}
-	if (fabs(ca.x)+fabs(ca.y) >= 0.3) pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
+	if (sqrt(ca.x*ca.x+ca.y*ca.y) >= 0.15) pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
 	else if (moving) {
 		pcd.setCanonAngle(angle_from_dxdy(mv.x, mv.y));
 	}
@@ -87,7 +87,7 @@ int JoystickController::getJoystickId(void) const {
 	return joyid;
 }
 
-bool JoystickController::isConcerned(const Event &e) {
+bool JoystickController::isConcerned(const Event &e) const {
 	int ojoyid = -1;
 	if (e.type == Event::JoystickButtonPressed) {
 		ojoyid = e.joystickButton.joystickId;

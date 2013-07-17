@@ -11,10 +11,12 @@
 #include "engine.h"
 #include "misc.h"
 
+#if 0
 struct Block {
 	unsigned short x,y,width,height;
 	char *texture_name;
 };
+#endif
 class BlockEnumerator {
 	public:
 	BlockEnumerator(Engine *engine);

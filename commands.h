@@ -34,7 +34,7 @@ struct TriggerCommand {
 */
 
 
-class KeymapController: public Controller
+class KeymapController: public LocalController
 {
 	public:
 	KeymapController(int joyid = -1);
@@ -43,7 +43,8 @@ class KeymapController: public Controller
 	int getJoystickId(void) const;
 	virtual void reportPlayerMovement(Player *player, PlayerControllingData &pcd);
 	static bool maybeConcerned(const sf::Event &e);
-	bool isConcerned(const sf::Event &e, int &ojoyid);
+	virtual bool isConcerned(const sf::Event &e) const;
+	bool isConcernedAndAffects(const sf::Event &e, int &ojoyid) const;
 
 	private:
 	typedef std::vector<TriggerCommand>::iterator iterator;

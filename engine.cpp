@@ -20,6 +20,35 @@ const unsigned Engine::minFPS = 15;
 const unsigned Engine::maxFPS = 120;
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
 
+
+struct MissileCounter
+{
+	size_t i;
+	Player *pl;
+	MissileCounter(Player *pl0):i(0),pl(pl0) {}
+	bool operator()(Missile *e) {
+		i += (e->getOwner() == pl);
+		return true;
+	}
+};
+template <class EType, class Accumulator>
+bool ApplyEntities(Engine *engine, Accumulator &acc) {
+	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); e != it; ++it) {
+		EType *e = dynamic_cast<EType*>(*it);
+		if (e) {
+			if (!acc(e)) return false;
+		}
+	}
+	return true;
+}
+size_t CountMissiles(Engine *engine, Player *pl) {
+	MissileCounter counter(pl);
+	ApplyEntities<Missile>(engine, counter);
+	return counter.i;
+}
+bool Engine::canCreateMissile(Player *pl) {
+	return CountMissiles(this, pl) < 3;
+}
 void Engine::play(void) {
 	while (step()) {
 		Event e;
@@ -28,6 +57,17 @@ void Engine::play(void) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) quit();
+				if (e.key.code == Keyboard::J && network.isLocal()) {
+					RemoteClient remote;
+					remote.port = 1330;
+					remote.addr = IpAddress(127,0,0,1);
+					network.requestConnection(remote);
+					destroy_flagged();
+				}
+				if (e.key.code == Keyboard::K && network.isLocal()) {
+					network.declareAsServer();
+					destroy_flagged();
+				}
 			} else if (e.type == Event::JoystickConnected) {
 				addPlayer(0, e.joystickConnect.joystickId);
 			} else if (e.type == Event::JoystickDisconnected) {
@@ -37,34 +77,38 @@ void Engine::play(void) {
 			if (KeymapController::maybeConcerned(e)) {
 				controller_activity(e);
 			}
+#ifdef DEBUG_JOYSTICK
 			if (e.type == Event::JoystickMoved) {
 				fprintf(stderr, "[moved axis %u %u %lf]\n", e.joystickMove.joystickId, e.joystickMove.axis, e.joystickMove.position);
 			}
+#endif
 		}
 	}
 }
 
+Controller *decapsulateController(Controller *ctrl) {
+	if (!ctrl) return NULL;
+	if (MasterController *mctrl = dynamic_cast<MasterController*>(ctrl)) {
+		return mctrl->getOrigController();
+	}
+	return ctrl;
+}
 void Engine::controller_activity(Event &e) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); it++) {
 		Player *pl = dynamic_cast<Player*>(*it);
 		if (!pl) continue;
-		KeymapController *c = dynamic_cast<KeymapController*>(pl->getController());
+		LocalController *c = dynamic_cast<LocalController*>(decapsulateController(pl->getController()));
 		if (c) {
-			int ojoyid = -1;
-			if (c->isConcerned(e, ojoyid)) return;
-			continue;
-		}
-		JoystickController *j = dynamic_cast<JoystickController*>(pl->getController());
-		if (j) {
-			if (j->isConcerned(e)) return;
+			if (c->isConcerned(e)) return;
 			continue;
 		}
 	}
+	if (network.isPendingPlayerConcerned(e)) return;
 	/* this key event is not owned by a player, have a look at controller templates */
 	std::vector<KeymapController*> &cd = cdef.forplayer;
 	for(unsigned i = 0; i < cd.size(); i++) {
 		int ojoyid = -1;
-		if (cd[i] && cd[i]->isConcerned(e, ojoyid)) {
+		if (cd[i] && cd[i]->isConcernedAndAffects(e, ojoyid)) {
 			addPlayer(i, ojoyid);
 			break;
 		}
@@ -74,14 +118,14 @@ Player *Engine::getPlayerByJoystickId(int joyid) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); it++) {
 		Player *pl = dynamic_cast<Player*>(*it);
 		if (!pl) continue;
-		KeymapController *c = dynamic_cast<KeymapController*>(pl->getController());
+		Controller *ctrl = decapsulateController(pl->getController());
+		KeymapController *c = dynamic_cast<KeymapController*>(ctrl);
 		if (c) {
 			if (c->getJoystickId() == joyid) return pl;
 			continue;
 		}
-		JoystickController *j = dynamic_cast<JoystickController*>(pl->getController());
+		JoystickController *j = dynamic_cast<JoystickController*>(ctrl);
 		if (j) {
-			fprintf(stderr, "joyid = %d\n", j->getJoystickId());
 			if (j->getJoystickId() == joyid) return pl;
 		}
 	}
@@ -118,7 +162,16 @@ void Engine::addPlayer(unsigned cid, int joyid) {
 	if (cid > 0) joyid = -1;
 	if (cid == 0) newc = new JoystickController(joyid);
 	else newc = cdef.forplayer[cid]->clone(joyid);
-	add(new Player(newc, this));
+	
+	if (network.isLocal()) {
+		add(new Player(newc, this));
+	} else if (network.isServer()) {
+		Player *pl = new Player(new MasterController(&network, newc), this);
+		network.reportNewPlayer(pl);
+		add(pl);
+	} else if (network.isClient()) {
+		network.requestPlayerCreation(newc);
+	}
 }
 Entity *Engine::getMapBoundariesEntity() {
 	return map_boundaries_entity;
@@ -136,7 +189,8 @@ Engine::EntitiesIterator Engine::begin_entities() {
 Engine::EntitiesIterator Engine::end_entities() {
 	return entities.end();
 }
-Engine::Engine() {
+Engine::Engine():network(this) {
+	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
@@ -147,15 +201,24 @@ Engine::Engine() {
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
 	Vector2d sz = map_size();
-	background.setTextureRect(IntRect(0,0,sz.x,sz.y));
-	map_boundaries_entity = new Wall(0,0,sz.x,sz.y, NULL, this);
-	add(map_boundaries_entity);
+	defineMapBoundaries(sz.x, sz.y);
 	load_keymap(cdef, "keymap.json");
+}
+void Engine::defineMapBoundaries(unsigned width, unsigned height) {
+	if (map_boundaries_entity) {
+		delete map_boundaries_entity;
+		map_boundaries_entity = NULL;
+	}
+	background.setTextureRect(IntRect(0,0,width, height));
+	map_boundaries_entity = new Wall(0,0,width, height, NULL, this);
+	add(map_boundaries_entity);
 }
 void Engine::clear_entities(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		delete (*it);
 	}
+	map_boundaries_entity = NULL;
+	entities.resize(0);
 }
 Engine::~Engine() {
 	clear_entities();
@@ -209,6 +272,10 @@ bool Engine::step(void) {
 	draw();
 	compute_physics();
 	destroy_flagged();
+	if (!network.isLocal()) {
+		network.transmitToServer();
+		network.receiveFromServer();
+	}
 	return !must_quit;
 }
 void draw_score(RenderTarget &target, Font &ft, int score, Color color, Vector2d pos) {
@@ -378,3 +445,4 @@ void Engine::destroy_flagged(void) {
 #endif
 }
 
+NetworkClient *Engine::getNetwork(void) {return &network;}

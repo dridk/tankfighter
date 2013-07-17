@@ -282,7 +282,11 @@ int KeymapController::getJoystickId(void) const {
 bool KeymapController::maybeConcerned(const Event &e) {
 	return e.type == Event::JoystickButtonPressed || e.type == Event::JoystickMoved || e.type == Event::KeyPressed || e.type == Event::KeyReleased;
 }
-bool KeymapController::isConcerned(const Event &e, int &ojoyid) {
+bool KeymapController::isConcerned(const Event &e) const {
+	int ojoyid = -1;
+	return isConcernedAndAffects(e, ojoyid);
+}
+bool KeymapController::isConcernedAndAffects(const Event &e, int &ojoyid) const {
 	bool isJoystickTemplate = false;
 	if (commandmap.size() > 0) {
 		unsigned type = commandmap[0].trigger.type;

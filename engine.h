@@ -8,6 +8,7 @@
 #include <SFML/Window.hpp>
 #include "texture_cache.h"
 #include "load_map.h"
+#include "network_controller.h"
 
 class Entity;
 class EngineEvent;
@@ -23,6 +24,9 @@ class Engine
 	EntitiesIterator end_entities();
 	Engine();
 	~Engine();
+	NetworkClient *getNetwork(void);
+	bool canCreateMissile(Player *pl);
+	void defineMapBoundaries(unsigned width, unsigned height);
 	void clear_entities(void);
 	void addPlayer(unsigned controllerType, int joyid=-1);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
@@ -62,6 +66,7 @@ class Engine
 	sf::RenderWindow window;
 	Entities entities;
 	sf::Clock clock;
+	NetworkClient network;
 	bool first_step;
 	bool must_quit;
 };

@@ -2,6 +2,7 @@
 #include "missile.h"
 #include <math.h>
 #include "coretypes.h"
+#include "engine.h"
 
 using namespace sf;
 
@@ -19,3 +20,15 @@ void Controller::setPlayer(Player *player0) {
 	player = player0;
 }
 Player *Controller::getPlayer(void) const {return player;}
+
+bool LocalController::isConcerned(const sf::Event &e) const {
+	return false;
+}
+bool Controller::missileCreation(Missile *ml) {
+	return ml->getEngine()->canCreateMissile(ml->getOwner());
+}
+bool Controller::missileCollision(Missile *, Player *) {
+	return true;
+}
+void Controller::teleported(void) {
+}

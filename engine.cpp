@@ -296,13 +296,24 @@ void Engine::draw(void) {
 	scorepos.y = 16;
 	window.clear();
 	window.draw(background);
+	/* draw walls before other entities */
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
-		(*it)->draw(window);
-
+		Wall *wall = dynamic_cast<Wall*>(*it);
+		if (wall) wall->draw(window);
+	}
+	/* then, draw players (before missiles) */
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		if (Player *pl = dynamic_cast<Player*>((*it))) {
+			pl->draw(window);
 			draw_score(window, score_font, pl->getScore(), pl->getColor(), scorepos);
 			scorepos.x += 384+16;
 		}
+	}
+	/* then, draw other entities */
+	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
+		Entity *e=*it;
+		if (dynamic_cast<Player*>(e) || dynamic_cast<Wall*>(e)) continue;
+		e->draw(window);
 	}
 	window.display();
 }

@@ -12,14 +12,21 @@
 #include <string.h>
 #include <stdio.h>
 
+#undef LOG_LLPACKET
+
+#ifdef LOG_LLPACKET
+#define LOG_LLPACKETR 1
+#define LOG_LLPACKETS 1
+#endif
+
 using namespace sf;
 
 static void getPlayerPosition(Player *player, PlayerPosition &pos);
 static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 
 const unsigned NetworkClient::C2S_Packet_interval = 10000; /* 10 milliseconds, 100 fps */
-static const char *NMF_PlayerPosition = "ussssu";
-static const char *NMF_MissilePosition = "uufff";
+static const char *NMF_PlayerPosition = "uusscc";
+static const char *NMF_MissilePosition = "uussspp";
 static const char *NMF_PlayerMovement = "8" "uffff" "ff";
 static const char *NMF_Block = "ssssS";
 static const char *NMF_PlayerScore = "uu";
@@ -111,25 +118,35 @@ static void getPlayerPosition(Player *player, PlayerPosition &pos) {
 	pos.tank_angle  = player->getTankAngle();
 	pos.canon_angle = player->getCanonAngle();
 }
-static unsigned short fl2us(double fl) {
-	return static_cast<unsigned short>(fl*65536.0);
+static unsigned short fl2us(double fl, double maxval) {
+	return static_cast<unsigned short>(fl/maxval*65536.0);
+}
+static Uint8 fl2b(double fl, double maxval) {
+	return static_cast<Uint8>(fl/maxval*256.0);
+}
+static double us2fl(unsigned short us, double maxval) {
+	return us*maxval/65536.0;
+}
+static double b2fl(Uint8 b, double maxval) {
+	return b*maxval/256.0;
 }
 static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos) {
 	Vector2d map_size = player->getEngine()->map_size();
 	pos.playerUID   = player->getUID();
-	pos.x           = fl2us(player->position.x/map_size.x);
-	pos.y           = fl2us(player->position.y/map_size.y);
+	pos.x           = fl2us(player->position.x, map_size.x);
+	pos.y           = fl2us(player->position.y, map_size.y);
 	pos.score       = player->getScore();
-	pos.tank_angle  = fl2us(player->getTankAngle()/(2*M_PI));
-	pos.canon_angle = fl2us(player->getCanonAngle()/(2*M_PI));
+	pos.tank_angle  = fl2b(player->getTankAngle(), 2*M_PI);
+	pos.canon_angle = fl2b(player->getCanonAngle(), 2*M_PI);
 }
 static bool getMissilePosition(Missile *ml, MissilePosition &pos) {
 	if (!ml->getOwner()) return false;
+	Vector2d map_size = ml->getOwner()->getEngine()->map_size();
 	pos.missileUID  = ml->getUID();
 	pos.origPlayer  = ml->getOwner()->getUID();
-	pos.cur_x       = ml->position.x;
-	pos.cur_y       = ml->position.y;
-	pos.curAngle    = ml->getAngle();
+	pos.cur_x       = fl2us(ml->position.x, map_size.x);
+	pos.cur_y       = fl2us(ml->position.y, map_size.y);
+	pos.curAngle    = fl2us(ml->getAngle(), 2*M_PI);
 	return true;
 }
 
@@ -142,6 +159,7 @@ size_t format_size(const char *s) {
 		else if (c=='8') sz+=8;
 		else if (c=='s') sz+=2;
 		else if (c=='S') sz+=sizeof(char*);
+		else if (c=='p') sz++;
 	}
 	return sz;
 }
@@ -177,7 +195,7 @@ bool Output(Packet &pkt, const char *signature, const void * const data) {
 			pkt << (Uint32)(i8 >> 32);
 			pkt << (Uint32)(i8 & 0xFFFFFFFF);
 			dat += sizeof(Uint64);
-		}
+		} else if (c == 'p') dat ++;
 	}
 	return true;
 }
@@ -218,7 +236,7 @@ bool Input(Packet &pkt, const char *signature, void * const data) {
 			Uint64 b1 = a1, b2 = a2;
 			*(Uint64*)dat = (b1 << 32) + b2;
 			dat += sizeof(Uint64);
-		}
+		} else if (c == 'p') dat ++;
 #undef CONDOUT
 	}
 	return true;
@@ -247,16 +265,15 @@ bool Message::OutputToPacket(sf::Packet &opacket) {
 	if (dsz >= 32000) return false;
 	struct {
 		Uint32 mseqid;
-		Uint16 size;
-		bool must_acknowledge;
-		Uint8 type;
-	} msg = {mseqid, (Uint16)dsz, must_acknowledge, (Uint8)type};
-#if LOG_LLPACKET
+		Uint32 size;
+		Uint8 type; /* High bit is must_acknowledge */
+	} msg = {mseqid, (Uint32)dsz, (Uint8)(type | (must_acknowledge*128))};
+#if LOG_LLPACKETS
 	fprintf(stderr, "[sending message seqid %08X sz %04X ack %02X type %02X]\n"
-		,(unsigned)msg.mseqid, (unsigned)msg.size
-		, (unsigned)msg.must_acknowledge, (unsigned)msg.type);
+		,(unsigned)mseqid, (unsigned)dsz
+		, (unsigned)must_acknowledge, (unsigned)type);
 #endif
-	if (!::Output(opacket, "usbc", &msg)) return false;
+	if (!::Output(opacket, "uuc", &msg)) return false;
 	if (overflows(opacket, dsz)) return false;
 	opacket.append(packet.getData(), dsz);
 	return true;
@@ -364,24 +381,24 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 bool Message::DefineInput(sf::Packet &ipacket) {
 	struct {
 		Uint32 mseqid;
-		Uint16 size;
-		bool must_acknowledge;
+		Uint32 size;
 		Uint8 type;
 	} msg;
-	if (!::Input(ipacket, "usbc", &msg)) return false;
+	if (!::Input(ipacket, "uuc", &msg)) return false;
 	mseqid = msg.mseqid;
-	must_acknowledge = msg.must_acknowledge;
-	type = (NetworkMessageType)msg.type;
+	must_acknowledge = !!(msg.type & 128);
+	type = (NetworkMessageType)(msg.type & 127);
+	if (msg.size >= 32000) return false;
 	std::vector<Uint8> data(msg.size);
 	for(size_t i=0;i < msg.size; i++) {
 		if (!(ipacket >> data[i])) return false;
 	}
 	packet = sf::Packet();
 	packet.append(&data[0], data.size());
-#ifdef LOG_LLPACKET
+#ifdef LOG_LLPACKETR
 	fprintf(stderr, "[receiving message seqid %08X sz %04X ack %02X type %02X]\n"
-		,(unsigned)msg.mseqid, (unsigned)msg.size
-		, (unsigned)msg.must_acknowledge, (unsigned)msg.type);
+		,(unsigned)mseqid, (unsigned)msg.size
+		, (unsigned)must_acknowledge, (unsigned)type);
 #endif
 	return true;
 }
@@ -402,11 +419,11 @@ void setPlayerPosition(Player *player, ApproxPlayerPosition &ppos) {
 	PlayerControllingData pcd;
 	Engine *engine = player->getEngine();
 	Vector2d map_size = engine->map_size();
-	double x = (ppos.x*map_size.x)/65536.0;
-	double y = (ppos.y*map_size.y)/65536.0;
+	double x = us2fl(ppos.x, map_size.x);
+	double y = us2fl(ppos.y, map_size.y);
 	pcd.setPosition(Vector2d(x,y));
-	pcd.setCanonAngle(ppos.canon_angle*2*M_PI/65536.0);
-	pcd.setTankAngle (ppos.tank_angle *2*M_PI/65536.0);
+	pcd.setCanonAngle(b2fl(ppos.canon_angle,2*M_PI));
+	pcd.setTankAngle (b2fl(ppos.tank_angle, 2*M_PI));
 	pcd.setScore(ppos.score);
 	player->applyPCD(pcd);
 }
@@ -432,8 +449,9 @@ void NetworkClient::setMissilePosition(MissilePosition &mpos) {
 		ml->setUID(mpos.missileUID);
 		getEngine()->add(ml);
 	}
-	ml->setPosition(Vector2d(mpos.cur_x, mpos.cur_y));
-	ml->setAngle(mpos.curAngle);
+	Vector2d map_size = getEngine()->map_size();
+	ml->setPosition(Vector2d(us2fl(mpos.cur_x, map_size.x), us2fl(mpos.cur_y, map_size.y)));
+	ml->setAngle(us2fl(mpos.curAngle, 2*M_PI));
 }
 void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<Block> &blocks) {
 	engine->defineMapBoundaries(width, height);
@@ -680,9 +698,10 @@ void logPacket(sf::Packet &packet) {
 	for(;p < e; p++) {
 		fprintf(stderr, "%02X ", *p);
 	}
+	fprintf(stderr, "\n");
 }
 bool UdpConnection::Send(sf::Packet &packet, const RemoteClient *client) {
-#ifdef LOG_LLPACKET
+#ifdef LOG_LLPACKETS
 	fprintf(stderr, "Sending packet: ");
 	logPacket(packet);
 #endif
@@ -692,7 +711,7 @@ bool UdpConnection::Receive(sf::Packet &packet, RemoteClient *client) {
 	IpAddress raddr;
 	unsigned short rport;
 	while (sock.receive(packet, raddr, rport) == sf::Socket::Done) {
-#ifdef LOG_PACKET
+#ifdef LOG_LLPACKETR
 		fprintf(stderr, "Received packet: ");
 		logPacket(packet);
 #endif

@@ -13,6 +13,7 @@ class Engine;
 using sf::IpAddress;
 using sf::Uint32;
 using sf::Uint16;
+using sf::Uint8;
 using sf::Vector2f;
 using sf::Int64;
 using sf::Color;
@@ -91,6 +92,10 @@ class Message {
 	bool InputV(std::vector<Item> &items, const char *item_format) {
 		Uint32 cnt;
 		if (!Input(&cnt, "u")) return false;
+		if (cnt >= 256) {
+			fprintf(stderr, "Error: Received malformed UDP packet with array length greater than 256\n");
+			return false;
+		}
 		items.resize(cnt);
 		return InputVector(&items[0], item_format, cnt);
 	}
@@ -116,11 +121,11 @@ struct PlayerPosition {
 };
 struct ApproxPlayerPosition { /* sent from server to client */
 	Uint32 playerUID;
-	Uint16 tank_angle; /* 65536 = 2*pi radians */
-	Uint16 canon_angle;
+	Uint32 score;
 	Uint16 x; /* 65536 = map_width */
 	Uint16 y;
-	Uint32 score;
+	Uint8 tank_angle; /* 256 = 2*pi radians */
+	Uint8 canon_angle;
 };
 struct PlayerScore {
 	Uint32 playerUID;
@@ -129,8 +134,10 @@ struct PlayerScore {
 struct MissilePosition {
 	Uint32 missileUID;
 	Uint32 origPlayer;
-	float cur_x,cur_y;
-	float curAngle;
+	Uint16 curAngle;
+	Uint16 cur_x;
+	Uint16 cur_y;
+	Uint8 padding1, padding2;
 };
 struct PlayerMovement { /* sent from client to server to notify how the client moved between the previous packet and this one */
 	Int64 tmEnd;

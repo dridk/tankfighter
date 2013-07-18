@@ -10,8 +10,10 @@ else(PKG_CONFIG_FOUND)
  message(STATUS "PkgConfig Not Found.")
 endif(PKG_CONFIG_FOUND)
 
-set (CMAKE_CXX_FLAGS "-Wall -O2")
-set (CMAKE_C_FLAGS "-Wall -O2")
+set (CMAKE_CXX_FLAGS_DEBUG "-Wall -O2 -pedantic -std=c++0x")
+set (CMAKE_C_FLAGS_DEBUG "-Wall -O2 -pedantic -std=c99")
+set (CMAKE_CXX_FLAGS_RELEASE "-O2")
+set (CMAKE_C_FLAGS_RELEASE "-O2")
 pkg_search_module(SFML2 REQUIRED sfml-all >= 2.00)
 
 include_directories (${SFML2_INCLUDE_DIRS})

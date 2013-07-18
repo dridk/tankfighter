@@ -7,10 +7,10 @@
 
 #ifdef DEBUG
 static void dispLine(const Line &line) {
-	fprintf(stderr, "[line %lg*x+%lg*y+%lg = 0]\n", line.a, line.b, line.c);
+	fprintf(stderr, "[line %g*x+%g*y+%g = 0]\n", line.a, line.b, line.c);
 }
 static void dispPoint(Vector2d pt) {
-	fprintf(stderr, "[point %lg %lg]\n", pt.x, pt.y);
+	fprintf(stderr, "[point %g %g]\n", pt.x, pt.y);
 }
 #endif
 static const double minWallDistance = 1e-3;
@@ -137,7 +137,7 @@ static bool circleIntersectsSegment(Vector2d &res, const Segment &segt, const Ci
 	Vector2d p1, p2;
 	if (segmentModule(segt) < 1e-6) return false;
 	if (!circleIntersectsLine(&p1, &p2, segt.toLine(), ci)) return false;
-	/*fprintf(stderr, "[circle intersects line %lg,%lg and %lg,%lg]\n", p1.x, p1.y, p2.x, p2.y);*/
+	/*fprintf(stderr, "[circle intersects line %g,%g and %g,%g]\n", p1.x, p1.y, p2.x, p2.y);*/
 	if (pointsDistance(p1, segt.pt1) < pointsDistance(p2, segt.pt1)) res = p1; else res = p2;
 	return isLPointOnSegment(res, segt);
 }
@@ -260,10 +260,10 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 		return true;
 	}
 	if (!circleIntersectsSegment(A, vect, circle)) return false;
-	/*fprintf(stderr, "[pmc (%lg,%lg)-(%lg,%lg) (%lg,%lg)-%lg [%lg-%lg]]\n"
+	/*fprintf(stderr, "[pmc (%g,%g)-(%g,%g) (%g,%g)-%g [%g-%g]]\n"
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
-	fprintf(stderr, "[pmc intersects at %lg,%lg]\n", A.x, A.y);*/
+	fprintf(stderr, "[pmc intersects at %g,%g]\n", A.x, A.y);*/
 	Segment AB, OA;
 	OA.pt2 = A; OA.pt1 = circle.center;
 	double angle = trigoAngleFromSegment(OA);
@@ -276,14 +276,14 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Vector2d proj;
 	Segment segt = segt0;
 	if (segmentModule(vect) < 1e-6) return false;
-	/*fprintf(stderr, "[pos %lg,%lg]\n", vect.pt1.x, vect.pt1.y);*/
+	/*fprintf(stderr, "[pos %g,%g]\n", vect.pt1.x, vect.pt1.y);*/
 	if (!intersectSegments(A, vect, segt)) {
 		return false;
 	} /*else {
-	fprintf(stderr, "[pmt (%lg,%lg)-(%lg,%lg) (%lg,%lg)-(%lg,%lg)]\n"
+	fprintf(stderr, "[pmt (%g,%g)-(%g,%g) (%g,%g)-(%g,%g)]\n"
 		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
 		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
-		fprintf(stderr, "[intersects at %lg,%lg]\n", A.x, A.y);
+		fprintf(stderr, "[intersects at %g,%g]\n", A.x, A.y);
 	}*/
 	return pointMovesAgainstWall(ctx, segt.toLine(), A);
 }
@@ -418,7 +418,7 @@ static void test_segments() {
 	MoveContext ctx(IT_SLIDE, v);
 	if (pointMovesToSegment(ctx, s1)) {
 		v = ctx.vect;
-		fprintf(stderr, "[point moves to segt %lg x %lg]\n", v.pt2.x, v.pt2.y);
+		fprintf(stderr, "[point moves to segt %g x %g]\n", v.pt2.x, v.pt2.y);
 	} else {
 		fprintf(stderr, "[point doesn't move to segt]\n");
 	}
@@ -440,11 +440,11 @@ static void test_circles() {
 	translateSegment(vect, repere);
 	circle.center += repere;
 	if (circleIntersectsSegment(A, vect, circle)) {
-		fprintf(stderr, "[intersection %lg,%lg]\n", A.x, A.y);
+		fprintf(stderr, "[intersection %g,%g]\n", A.x, A.y);
 	} else {
 		fprintf(stderr, "[no intersection between segment and circle]\n");
 	}
-	fprintf(stderr, "[radius = %lg]\n", pointsDistance(circle.center, A));
+	fprintf(stderr, "[radius = %g]\n", pointsDistance(circle.center, A));
 }
 void test_geometry_cpp() {
 	test_segments();

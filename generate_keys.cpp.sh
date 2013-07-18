@@ -8,7 +8,7 @@ fi
 
 extract_enum() {
 	echo "NamedKey $3[]={"
-	sed -n "/ *enum $1/,/};/p"|sed '1d'|sed 's/ *\([^, =]*\)[, =].*/\1/'|sed '/{\|}\|^[[:space:]]*$/d'|sed '/^\(Key\|Button\)Count$/d'|sed "s/.*/{\"&\", $2::&},/"
+	sed -n "/ *enum $1/,/};/p"|sed '1d'|sed 's/ *\([^, =]*\)[, =].*/\1/'|sed '/{\|}\|^[[:space:]]*$/d'|sed '/^\(Key\|Button\)Count$/d'|sed "s/.*/{\"&\", (unsigned short)$2::&},/"
 	echo "{NULL, 0}"
 	echo "};"
 }

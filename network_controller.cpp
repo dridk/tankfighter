@@ -227,20 +227,22 @@ bool Message::InputVector(void *data, const char *format, size_t count) {
 	return true;
 }
 bool Message::OutputToPacket(sf::Packet &opacket) {
+	size_t dsz = packet.getDataSize();
+	if (dsz >= 32000) return false;
 	struct {
 		Uint32 mseqid;
 		Uint16 size;
 		bool must_acknowledge;
 		Uint8 type;
-	} msg = {mseqid, packet.getDataSize(), must_acknowledge, type};
+	} msg = {mseqid, (Uint16)dsz, must_acknowledge, (Uint8)type};
 #if LOG_LLPACKET
 	fprintf(stderr, "[sending message seqid %08X sz %04X ack %02X type %02X]\n"
 		,(unsigned)msg.mseqid, (unsigned)msg.size
 		, (unsigned)msg.must_acknowledge, (unsigned)msg.type);
 #endif
 	if (!::Output(opacket, "usbc", &msg)) return false;
-	if (overflows(opacket, packet.getDataSize())) return false;
-	opacket.append(packet.getData(), packet.getDataSize());
+	if (overflows(opacket, dsz)) return false;
+	opacket.append(packet.getData(), dsz);
 	return true;
 }
 static int seqid = 1;
@@ -523,7 +525,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 			Player *pl = getEngine()->getPlayerByUID(pmov[i].latestPosition.playerUID);
 			const PlayerPosition &pos = pmov[i].latestPosition;
 			if (pl && dynamic_cast<MasterController*>(pl->getController())) {
-				fprintf(stderr, "[Master Controller player got teleported to %lg %lg]\n"
+				fprintf(stderr, "[Master Controller player got teleported to %g %g]\n"
 					,pos.x, pos.y);
 			}
 #endif

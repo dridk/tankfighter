@@ -11,6 +11,8 @@
 
 using namespace sf;
 
+const float Missile::speed = 9e-4;
+const float Missile::maxLifeDuration = 2000; /* in milliseconds */
 Missile::Missile(Player *player0)
 	:Entity(SHAPE_CIRCLE, player0->getEngine()),player(player0) {
 	position = player->position;

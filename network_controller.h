@@ -6,6 +6,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Network/IpAddress.hpp>
 #include <SFML/Network/Packet.hpp>
+#include <cmath>
 #include "controller.h"
 
 

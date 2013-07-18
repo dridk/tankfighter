@@ -11,7 +11,6 @@
 #include <SFML/Window/Window.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <stdio.h>
-#include <unistd.h>
 #include "commands.h"
 #include "missile.h"
 
@@ -362,7 +361,6 @@ void Engine::compute_physics(void) {
 	if (tm < 1000000L/maxFPS) {
 		unsigned long rtm = 1000000L/maxFPS - tm;
 		if (rtm < 100) return;
-		usleep(rtm - 100);
 		sf::sleep(microseconds(rtm - 100));
 		return;
 	}

@@ -15,11 +15,12 @@
 using namespace sf;
 
 static void getPlayerPosition(Player *player, PlayerPosition &pos);
+static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 
 const unsigned NetworkClient::C2S_Packet_interval = 10000; /* 10 milliseconds, 100 fps */
-static const char *NMF_PlayerPosition = "uffffu";
+static const char *NMF_PlayerPosition = "ussssu";
 static const char *NMF_MissilePosition = "uufff";
-static const char *NMF_PlayerMovement = "8" "uffffu" "ff";
+static const char *NMF_PlayerMovement = "8" "uffff" "ff";
 static const char *NMF_Block = "ssssS";
 static const char *NMF_PlayerScore = "uu";
 
@@ -93,7 +94,7 @@ bool RemoteController::missileCollision(Missile *ml, Player *other) {
 }
 
 void RemoteController::teleported(void) {
-	PlayerPosition ppos;
+	ApproxPlayerPosition ppos;
 	getPlayerPosition(getPlayer(), ppos);
 	client->reportPlayerPosition(ppos);
 }
@@ -107,9 +108,20 @@ static void getPlayerPosition(Player *player, PlayerPosition &pos) {
 	pos.playerUID   = player->getUID();
 	pos.x           = player->position.x;
 	pos.y           = player->position.y;
-	pos.score       = player->getScore();
 	pos.tank_angle  = player->getTankAngle();
 	pos.canon_angle = player->getCanonAngle();
+}
+static unsigned short fl2us(double fl) {
+	return static_cast<unsigned short>(fl*65536.0);
+}
+static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos) {
+	Vector2d map_size = player->getEngine()->map_size();
+	pos.playerUID   = player->getUID();
+	pos.x           = fl2us(player->position.x/map_size.x);
+	pos.y           = fl2us(player->position.y/map_size.y);
+	pos.score       = player->getScore();
+	pos.tank_angle  = fl2us(player->getTankAngle()/(2*M_PI));
+	pos.canon_angle = fl2us(player->getCanonAngle()/(2*M_PI));
 }
 static bool getMissilePosition(Missile *ml, MissilePosition &pos) {
 	if (!ml->getOwner()) return false;
@@ -220,6 +232,10 @@ bool Message::Input(void *data, const char *format) {
 bool Message::InputVector(void *data, const char *format, size_t count) {
 	char *p=static_cast<char*>(data);
 	size_t sz = format_size(format);
+	if (count >= 256) {
+		fprintf(stderr, "Error in received packet: array size is limited to 256 in UDP packet\n");
+		return false;
+	}
 	for(size_t i=0; i < count;i++) {
 		if (!Input(p, format)) return false;
 		p += sz;
@@ -375,18 +391,34 @@ void NetworkClient::willSendMessage(Message *msg) {
 void NetworkClient::Acknowledge(Uint32 seqid) { /* FIXME: Eliminate duplicate packets */
 	willSendMessage(new Message(&seqid, NMT_Acknowledge));
 }
-void setPlayerPosition(Player *player, PlayerPosition &ppos, bool set_score=true) {
+void setPlayerPosition(Player *player, PlayerPosition &ppos) {
 	PlayerControllingData pcd;
 	pcd.setPosition(Vector2d(ppos.x, ppos.y));
 	pcd.setCanonAngle(ppos.canon_angle);
 	pcd.setTankAngle(ppos.tank_angle);
-	if (set_score) pcd.setScore(ppos.score);
 	player->applyPCD(pcd);
 }
-void NetworkClient::setPlayerPosition(PlayerPosition &ppos, bool set_score) {
+void setPlayerPosition(Player *player, ApproxPlayerPosition &ppos) {
+	PlayerControllingData pcd;
+	Engine *engine = player->getEngine();
+	Vector2d map_size = engine->map_size();
+	double x = (ppos.x*map_size.x)/65536.0;
+	double y = (ppos.y*map_size.y)/65536.0;
+	pcd.setPosition(Vector2d(x,y));
+	pcd.setCanonAngle(ppos.canon_angle*2*M_PI/65536.0);
+	pcd.setTankAngle (ppos.tank_angle *2*M_PI/65536.0);
+	pcd.setScore(ppos.score);
+	player->applyPCD(pcd);
+}
+void NetworkClient::setPlayerPosition(PlayerPosition &ppos) {
 	Player *pl = getEngine()->getPlayerByUID(ppos.playerUID);
 	if (!pl) return; /* player not yet created (packet will be probably received soon) */
-	::setPlayerPosition(pl, ppos, set_score);
+	::setPlayerPosition(pl, ppos);
+}
+void NetworkClient::setPlayerPosition(ApproxPlayerPosition &ppos) {
+	Player *pl = getEngine()->getPlayerByUID(ppos.playerUID);
+	if (!pl) return;
+	::setPlayerPosition(pl, ppos);
 }
 
 void NetworkClient::setMissilePosition(MissilePosition &mpos) {
@@ -529,12 +561,12 @@ bool NetworkClient::treatMessage(Message &msg) {
 					,pos.x, pos.y);
 			}
 #endif
-			setPlayerPosition(pmov[i].latestPosition,false);
+			setPlayerPosition(pmov[i].latestPosition);
 		}
 	} else if (msg.type == NMT_S2C_ReportPMPositions) {
 		Int32 i = msg.mseqid - last_pm_seqid;
 		if (i <= 0) return true; /* this late message is obsolete */
-		std::vector<PlayerPosition> ppos;
+		std::vector<ApproxPlayerPosition> ppos;
 		std::vector<MissilePosition> mpos;
 		std::vector<PlayerScore> pscore;
 		if (!msg.InputV(ppos, NMF_PlayerPosition)) return false;
@@ -701,7 +733,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 	 */
 	for(size_t icl=0; icl < pairs.size(); ++icl) {
 		RemoteClient cl = pairs[icl];
-		PlayerPosition ppos0;
+		ApproxPlayerPosition ppos0;
 		MissilePosition mpos0;
 		/*std::vector<PlayerPosition> ppos;*/
 		std::vector<MissilePosition> mpos;
@@ -791,7 +823,7 @@ void NetworkClient::reportPlayerMovement(const PlayerMovement &plpos) {
 	}
 	plmovements.push_back(plpos);
 }
-void NetworkClient::reportPlayerPosition(const PlayerPosition ppos) {
+void NetworkClient::reportPlayerPosition(const ApproxPlayerPosition ppos) {
 	if (isClient()) return;
 	for(size_t i=0; i < plpositions.size(); ++i) {
 		if (plpositions[i].playerUID == ppos.playerUID) {

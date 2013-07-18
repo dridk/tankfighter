@@ -12,6 +12,7 @@
 class Engine;
 using sf::IpAddress;
 using sf::Uint32;
+using sf::Uint16;
 using sf::Vector2f;
 using sf::Int64;
 using sf::Color;
@@ -108,11 +109,17 @@ struct AcknowledgeM {
 };
 struct RequestConnectionM {
 };
-struct PlayerPosition { /* sent from server to client */
+struct PlayerPosition {
 	Uint32 playerUID;
-	float tank_angle;
-	float canon_angle;
+	float tank_angle, canon_angle;
 	float x,y;
+};
+struct ApproxPlayerPosition { /* sent from server to client */
+	Uint32 playerUID;
+	Uint16 tank_angle; /* 65536 = 2*pi radians */
+	Uint16 canon_angle;
+	Uint16 x; /* 65536 = map_width */
+	Uint16 y;
 	Uint32 score;
 };
 struct PlayerScore {
@@ -131,7 +138,7 @@ struct PlayerMovement { /* sent from client to server to notify how the client m
 	float latestSpeed_x, latestSpeed_y;
 };
 struct PMPositionsM {
-	std::vector<PlayerPosition> players;
+	std::vector<ApproxPlayerPosition> players;
 	std::vector<MissilePosition> missiles;
 	std::vector<PlayerScore> additionnal_scores;
 };
@@ -187,13 +194,8 @@ class NetworkClient {
 	void reportNewPlayer(Player *player, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target);
 	void reportNewPlayer(Player *player, const RemoteClient *target = NULL);
 	void reportPlayerDeath(Player *killing, Player *dying);
-	void reportPlayerPosition(const PlayerPosition ppos);
+	void reportPlayerPosition(const ApproxPlayerPosition ppos);
 
-#if 0
-	/* returns false if the client didn't receive any new player position since server packet numbered by seqid */
-	/* on output: seqid is set to the latest received packet number */
-	bool getPlayerPosition(Uint32 /* in+out */ &seqid, Uint32 playerUID, PlayerPosition &plpos);
-#endif
 	bool transmitToServer(); /* returns false if no packet is transmitted to the server */
 	bool receiveFromServer(); /* returns false if nothing new has been received from the server */
 
@@ -202,7 +204,7 @@ class NetworkClient {
 	private:
 	void willSendMessage(Message *msg); /* used to report one message (structure is allocated by caller, freed by callee) */
 	bool is_server;
-	std::vector<PlayerPosition> plpositions; /* used on server */
+	std::vector<ApproxPlayerPosition> plpositions; /* used on server */
 	std::vector<PlayerMovement> plmovements; /* used on client */
 	std::vector<RemoteClient> pairs;
 	Engine *engine;
@@ -217,7 +219,8 @@ class NetworkClient {
 	bool transmitMessageSet(std::vector<Message*> &messages);
 	bool treatMessage(Message &msg);
 	void setMissilePosition(MissilePosition &mpos);
-	void setPlayerPosition(PlayerPosition &ppos, bool set_score = true);
+	void setPlayerPosition(PlayerPosition &ppos);
+	void setPlayerPosition(ApproxPlayerPosition &ppos);
 	void Acknowledge(Uint32 seqid);
 	void reportPlayerAndMissilePositions(void);
 	void setPlayerScore(const PlayerScore &score);

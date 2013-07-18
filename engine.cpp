@@ -11,6 +11,7 @@
 #include <SFML/Window/Window.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <stdio.h>
+#include <unistd.h>
 #include "commands.h"
 #include "missile.h"
 

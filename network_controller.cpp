@@ -433,8 +433,8 @@ bool hasRemoteController(Player *pl) {
 template <class EType>
 void killAllEntities(Engine *engine, bool killFlag, bool (*pred)(EType *entity) = NULL) {
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
-		EType *e = dynamic_cast<EType*>(*it);
-		if (e && ((!pred) || pred(e))) e->setKilled(killFlag);
+		EType *en = dynamic_cast<EType*>(*it);
+		if (en && ((!pred) || pred(en))) en->setKilled(killFlag);
 	}
 }
 void NetworkClient::reportNewPlayer(Player *pl, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target) {
@@ -475,7 +475,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 #endif
 		pairs.push_back(msg.client); /* accept new client */
 		Vector2d sz = getEngine()->map_size();
-		DefineMapM mh = {sz.x, sz.y};
+		DefineMapM mh = {(unsigned short)sz.x, (unsigned short)sz.y};
 		Message *nmsg = new Message(&mh, NMT_S2C_DefineMap);
 		nmsg->client = msg.client; /* send back DefineMap to client */
 		std::vector<Block> blocks;

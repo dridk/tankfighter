@@ -34,9 +34,9 @@ struct MissileCounter
 template <class EType, class Accumulator>
 bool ApplyEntities(Engine *engine, Accumulator &acc) {
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); e != it; ++it) {
-		EType *e = dynamic_cast<EType*>(*it);
-		if (e) {
-			if (!acc(e)) return false;
+		EType *en = dynamic_cast<EType*>(*it);
+		if (en) {
+			if (!acc(en)) return false;
 		}
 	}
 	return true;

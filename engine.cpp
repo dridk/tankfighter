@@ -84,6 +84,7 @@ void Engine::play(void) {
 #endif
 		}
 	}
+	network.requestDisconnection();
 }
 
 Controller *decapsulateController(Controller *ctrl) {

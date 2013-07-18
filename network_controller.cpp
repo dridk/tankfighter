@@ -347,6 +347,7 @@ bool PacketAppend(Packet &pkt, const void *data, size_t size) {
 bool PacketAppend(Packet &pkt, const Packet &pkt2) {
 	return PacketAppend(pkt, pkt2.getData(), pkt.getDataSize());
 }
+static int resendPacketAfterMS = 2000;
 bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	sf::Packet pkt;
 	std::vector<Message*> out;
@@ -356,11 +357,11 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	if (cli == pairs.size() && is_server) {
 		continue;
 	}
-	for (size_t i=0; i < messages.size(); i++) {
+	for (size_t i=0; i < messages.size();) {
 		Message * msg = messages[i];
-		if (!(msg->client == cl)) continue;
-		if (msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  2000)
-			continue;
+		if (!(msg->client == cl)) {i++;continue;}
+		if (msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  resendPacketAfterMS)
+			{i++;continue;}
 		if (!msg->OutputToPacket(pkt)) {
 			transmitPacket(pkt, &cl);
 			pkt=sf::Packet();
@@ -370,7 +371,10 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 		msg->lastTransmission.restart();
 		if (msg->must_acknowledge) {
 			out.push_back(msg);
-		} else delete msg;
+		} else {
+			delete msg;
+		}
+		messages.erase(messages.begin()+i);
 	}
 	if (pkt.getDataSize() > 0) {transmitPacket(pkt, &cl);}
 	}
@@ -405,8 +409,11 @@ bool Message::DefineInput(sf::Packet &ipacket) {
 void NetworkClient::willSendMessage(Message *msg) {
 	c2sMessages.push_back(msg);
 }
-void NetworkClient::Acknowledge(Uint32 seqid) { /* FIXME: Eliminate duplicate packets */
-	willSendMessage(new Message(&seqid, NMT_Acknowledge));
+void NetworkClient::Acknowledge(const Message &msg) { /* FIXME: Eliminate duplicate packets */
+	Uint32 seqid = msg.mseqid;
+	Message *newm = new Message(&seqid, NMT_Acknowledge);
+	newm->client = msg.client;
+	willSendMessage(newm);
 }
 void setPlayerPosition(Player *player, PlayerPosition &ppos) {
 	PlayerControllingData pcd;
@@ -444,7 +451,7 @@ void NetworkClient::setMissilePosition(MissilePosition &mpos) {
 		Player *pl = getEngine()->getPlayerByUID(mpos.origPlayer);
 		/* Creation of missiles can apply to RemoteController as well as MasterControllers */
 		if (!pl) return;
-		if (!getEngine()->canCreateMissile(pl)) return;
+		/* if (!getEngine()->canCreateMissile(pl)) return; */
 		ml = new Missile(pl);
 		ml->setUID(mpos.missileUID);
 		getEngine()->add(ml);
@@ -521,7 +528,20 @@ bool NetworkClient::treatMessage(Message &msg) {
 #endif
 	if (is_server    && !messages_structures[msg.type].C2S_allowed) return false;
 	if ((!is_server) && !messages_structures[msg.type].S2C_allowed) return false;
-	if (msg.type == NMT_C2S_RequestConnection) {
+	if (msg.type == NMT_Acknowledge) {
+		fprintf(stderr, "[ack packet]\n");
+		Uint32 seqid;
+		if (!msg.Input(&seqid, messages_structures[msg.type].format)) return false;
+		for(size_t i=0; i < c2sMessages.size(); ++i) {
+			if (c2sMessages[i]->mseqid == seqid) {
+				Message *dmsg = c2sMessages[i];
+				c2sMessages.erase(c2sMessages.begin()+i);
+				delete dmsg;
+				break;
+			}
+		}
+		return true;
+	} else if (msg.type == NMT_C2S_RequestConnection) {
 #ifdef LOG_PACKET
 		fprintf(stderr, "[request connection from client port %d]\n", msg.client.port);
 #endif
@@ -560,6 +580,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 		if (!msg.Input(&rnm, messages_structures[msg.type].format)) return false;
 		Player *pl = getEngine()->getPlayerByUID(rnm.origPlayer);
 		if (!pl) return false;
+		if (!getEngine()->canCreateMissile(pl)) return true;
 		Missile *ml = new Missile(pl);
 		ml->setPosition(Vector2d(rnm.x, rnm.y));
 		ml->setAngle(rnm.origAngle);
@@ -581,6 +602,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 #endif
 			setPlayerPosition(pmov[i].latestPosition);
 		}
+		return true;
 	} else if (msg.type == NMT_S2C_ReportPMPositions) {
 		Int32 i = msg.mseqid - last_pm_seqid;
 		if (i <= 0) return true; /* this late message is obsolete */
@@ -656,6 +678,11 @@ bool NetworkClient::treatMessage(Message &msg) {
 		Player *killed = getEngine()->getPlayerByUID(pd.killedPlayer);
 		killed->killedBy(killer);
 		killer->killedPlayer(killed);
+		return true;
+	} else if (msg.type == NMT_C2S_RequestDisconnection) {
+		fprintf(stderr, "Client requested disconnection\n");
+		disconnectClient(msg.client);
+		return true;
 	}
 	return false;
 }
@@ -666,7 +693,7 @@ bool NetworkClient::receiveFromServer() {
 	Message msg;
 	while (msg.DefineInput(pkt)) {
 		msg.client = client;
-		if (msg.must_acknowledge) Acknowledge(msg.mseqid);
+		if (msg.must_acknowledge) Acknowledge(msg);
 		if (msg.type >= NMT_Last) continue; /* unknown packet */
 		treatMessage(msg);
 	}
@@ -709,11 +736,17 @@ void NetworkClient::cleanupClients(void) {
 			fprintf(stderr, "Error: Client %s:%d timeout\n"
 				,client.addr.toString().c_str(), client.port);
 			disconnectClient(client);
-			pairs.erase(pairs.begin()+i);
+			/*pairs.erase(pairs.begin()+i);*/
 		} else i++;
 	}
 }
 void NetworkClient::disconnectClient(const RemoteClient &client) {
+	for(size_t i=0; i < pairs.size(); i++) {
+		if (client == pairs[i].client) {
+			pairs.erase(pairs.begin()+i);
+			break;
+		}
+	}
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
 		Player *pl=dynamic_cast<Player*>(*it);
 		if (!pl) continue;
@@ -849,6 +882,27 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 	Entity::useUpperUID();
 	return true;
 }
+static int disconnectionTimeoutMS = 2000;
+void NetworkClient::requestDisconnection(void) {
+	if (!isClient()) return;
+	sf::Clock wait_ack;
+	resendPacketAfterMS = 500;
+	fprintf(stderr, "Request disconnection\n");
+	willSendMessage(new Message(NULL, NMT_C2S_RequestDisconnection));
+	bool message_found = true;
+	while (message_found && wait_ack.getElapsedTime().asMilliseconds() < disconnectionTimeoutMS) {
+		receiveFromServer();
+		transmitToServer();
+		message_found = false;
+		/* search whether disconnection message has been removed (acknowledged) */
+		for(size_t i=0; i < c2sMessages.size(); ++i) {
+			if (c2sMessages[i]->type == NMT_C2S_RequestDisconnection) {
+				message_found = true;
+				break;
+			}
+		}
+	}
+}
 void NetworkClient::declareAsServer(void) {
 	is_server = true;
 	remote.rebind(1330);
@@ -909,5 +963,9 @@ void NetworkClient::reportPlayerDeath(Player *killer, Player *killed) {
 	PlayerDeathM pd;
 	pd.killerPlayer = killer->getUID();
 	pd.killedPlayer = killed->getUID();
-	willSendMessage(new Message(&pd, NMT_S2C_PlayerDeath));
+	for(size_t i=0; i < pairs.size(); i++) {
+		Message *newm = new Message(&pd, NMT_S2C_PlayerDeath);
+		newm->client = pairs[i].client;
+		willSendMessage(newm);
+	}
 }

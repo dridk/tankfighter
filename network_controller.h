@@ -35,7 +35,9 @@ class UdpConnection {
 };
 enum NetworkMessageType {NMT_None, NMT_Acknowledge,
                         NMT_C2S_RequestConnection, NMT_C2S_ReportPlayersMovements, NMT_C2S_RequestNewPlayer, NMT_C2S_PlayerDisconnects, NMT_C2S_RequestNewMissile
-                      , NMT_S2C_DefineMap, NMT_S2C_Refusal, NMT_S2C_PlayerDeath, NMT_S2C_NewPlayer, NMT_S2C_ReportPMPositions, NMT_Last};
+                      , NMT_S2C_DefineMap, NMT_S2C_Refusal, NMT_S2C_PlayerDeath, NMT_S2C_NewPlayer, NMT_S2C_ReportPMPositions
+		      , NMT_C2S_RequestDisconnection
+		      , NMT_Last};
 
 /* we don't need NMT_S2C_EntityDestroyed message as it's simply seen by client when ReportPMPositions don't report a player or missile */
 /* Similarly, we don't need a NMT_S2C_NewMissile, as it's seen by client when ReportPMPositions report a new missile */
@@ -62,7 +64,8 @@ const MessageStructure messages_structures[]={
 	{NMT_S2C_Refusal,"Refusal",true,"u",false,true},
 	{NMT_S2C_PlayerDeath,"Player death",true,"uu",false,true},
 	{NMT_S2C_NewPlayer,"Report player creation",true,"uffffuuub",false,true},
-	{NMT_S2C_ReportPMPositions,"Report players & missiles positions", false,"",false,true}
+	{NMT_S2C_ReportPMPositions,"Report players & missiles positions", false,"",false,true},
+	{NMT_C2S_RequestDisconnection,"Request client disconnection",true,"",true,false}
 };
 
 
@@ -74,6 +77,8 @@ struct RefusalM {
 struct PlayerDeathM {
 	Uint32 killerPlayer;
 	Uint32 killedPlayer;
+};
+struct RequestDisconnectionM {
 };
 class Message {
 	public:
@@ -201,6 +206,7 @@ class NetworkClient {
 	bool isLocal(void) const;
 	void declareAsServer(void);
 	bool requestConnection(const RemoteClient &server);
+	void requestDisconnection(void);
 	void requestPlayerCreation(Controller *controller);
 	void requestMissileCreation(Player *player);
 	void reportPlayerMovement(const PlayerMovement &plpos);
@@ -235,7 +241,7 @@ class NetworkClient {
 	void setMissilePosition(MissilePosition &mpos);
 	void setPlayerPosition(PlayerPosition &ppos);
 	void setPlayerPosition(ApproxPlayerPosition &ppos);
-	void Acknowledge(Uint32 seqid);
+	void Acknowledge(const Message &msg);
 	void reportPlayerAndMissilePositions(void);
 	void setPlayerScore(const PlayerScore &score);
 	void cleanupClients(void);

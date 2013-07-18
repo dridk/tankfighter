@@ -87,7 +87,7 @@ void RemoteController::reportMissileMovement(Missile *missile, MissileControllin
 		Controller::reportMissileMovement(missile, mcd);
 }
 void RemoteController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
-	/* On server, we update player position in C2S_ReportPlayersMovement messages, and so, we've nothing to do there: TODO next: extrapolate movement */
+	/* On server, we update player position in C2S_ReportPlayersMovement messages, and so, we've nothing to do there: FIXME next: extrapolate movement */
 	/* On client, we update player position in C2S_ReportPMPositions messages, and so, we've nothing to do there */
 }
 RemoteController::~RemoteController() {
@@ -108,6 +108,8 @@ void RemoteController::teleported(void) {
 
 
 /**************************** Helper functions ************************/
+RemoteClientInfo::RemoteClientInfo(const RemoteClient &rc):client(rc) {
+}
 bool operator ==(const RemoteClient &a, const RemoteClient &b) {
 	return a.addr == b.addr && a.port == b.port;
 }
@@ -329,14 +331,12 @@ bool NetworkClient::transmitToServer() { /* returns false if no packet is transm
 	if (c2s_time.getElapsedTime().asMicroseconds() < C2S_Packet_interval) return false;
 	if (is_server) reportPlayerAndMissilePositions();
 	c2s_time.restart();
-	if (plmovements.size() > 0) {
-		if (!is_server) {
-			Message *nmsg=new Message(NULL, NMT_C2S_ReportPlayersMovements);
-			nmsg->AppendV(plmovements, NMF_PlayerMovement);
-			willSendMessage(nmsg);
-		}
-		plmovements.resize(0);
+	if (!is_server) {
+		Message *nmsg=new Message(NULL, NMT_C2S_ReportPlayersMovements);
+		nmsg->AppendV(plmovements, NMF_PlayerMovement);
+		willSendMessage(nmsg);
 	}
+	plmovements.resize(0);
 	return transmitMessageSet(c2sMessages);
 }
 bool PacketAppend(Packet &pkt, const void *data, size_t size) {
@@ -352,7 +352,7 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	std::vector<Message*> out;
 	for (size_t cli=0; cli <= pairs.size(); cli++) {
 	RemoteClient cl;
-	if (cli < pairs.size()) cl = pairs[cli];
+	if (cli < pairs.size()) cl = pairs[cli].client;
 	if (cli == pairs.size() && is_server) {
 		continue;
 	}
@@ -499,10 +499,10 @@ void NetworkClient::reportNewPlayer(Player *pl, Uint32 toseqid, const RemoteClie
 	mh.seqid = toseqid;
 	/* send back one NewPlayer message for each pair */
 	for(size_t i=0; i < pairs.size(); i++) {
-		if ((!(target == nulcreator)) && !(target == pairs[i])) continue;
-		mh.is_yours =  (pairs[i] == creator && !(creator == nulcreator));
+		if ((!(target == nulcreator)) && !(target == pairs[i].client)) continue;
+		mh.is_yours =  (pairs[i].client == creator && !(creator == nulcreator));
 		Message *nmsg = new Message(&mh, NMT_S2C_NewPlayer);
-		nmsg->client = pairs[i];
+		nmsg->client = pairs[i].client;
 		willSendMessage(nmsg);
 	}
 }
@@ -525,7 +525,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 #ifdef LOG_PACKET
 		fprintf(stderr, "[request connection from client port %d]\n", msg.client.port);
 #endif
-		pairs.push_back(msg.client); /* accept new client */
+		pairs.push_back(RemoteClientInfo(msg.client)); /* accept new client */
 		Vector2d sz = getEngine()->map_size();
 		DefineMapM mh = {(unsigned short)sz.x, (unsigned short)sz.y};
 		Message *nmsg = new Message(&mh, NMT_S2C_DefineMap);
@@ -673,17 +673,55 @@ bool NetworkClient::receiveFromServer() {
 	return true;
 }
 bool NetworkClient::transmitPacket(sf::Packet &pkt, const RemoteClient *client) {
+	cleanupClients();
 	if (NULL==client || (client->port == 0 && client->addr.toInteger() == 0)) {
 		if (pairs.size() == 0) {
 			fprintf(stderr, "Error: No pair to send packet\n");
 			return true;
 		}
-		client = &pairs[0];
+		client = &pairs[0].client;
 	}
 	return remote.Send(pkt, client);
 }
 bool NetworkClient::receivePacket(sf::Packet &pkt, RemoteClient *client) {
-	return remote.Receive(pkt, client);
+	RemoteClient client0;
+	bool success = remote.Receive(pkt, &client0);
+	if (client) *client = client0;
+	if (success) {
+		for(size_t i=0; i < pairs.size(); i++) {
+			if (pairs[i].client == client0) {
+				pairs[i].lastPacketTime.restart();
+				break;
+			}
+		}
+	}
+	return success;
+}
+static unsigned connectionTimeoutInSecs = 10;
+void NetworkClient::cleanupClients(void) {
+	if (!isServer()) return;
+	if (cleanup_clock.getElapsedTime().asMilliseconds() < 1000) return;
+	cleanup_clock.restart();
+	/* find clients having lost connection */
+	for(size_t i=0; i < pairs.size();) {
+		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000 >= connectionTimeoutInSecs) {
+			RemoteClient client = pairs[i].client;
+			fprintf(stderr, "Error: Client %s:%d timeout\n"
+				,client.addr.toString().c_str(), client.port);
+			disconnectClient(client);
+			pairs.erase(pairs.begin()+i);
+		} else i++;
+	}
+}
+void NetworkClient::disconnectClient(const RemoteClient &client) {
+	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
+		Player *pl=dynamic_cast<Player*>(*it);
+		if (!pl) continue;
+		RemoteController *rctrl = dynamic_cast<RemoteController*>(pl->getController());
+		if (rctrl && rctrl->getMasterClient() == client) {
+			getEngine()->destroy(pl);
+		}
+	}
 }
 UdpConnection::UdpConnection(unsigned short localPort) {
 	rebind(localPort);
@@ -751,7 +789,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 	 * Missile positions are sent to everybody, including the master player
 	 */
 	for(size_t icl=0; icl < pairs.size(); ++icl) {
-		RemoteClient cl = pairs[icl];
+		RemoteClient cl = pairs[icl].client;
 		ApproxPlayerPosition ppos0;
 		MissilePosition mpos0;
 		/*std::vector<PlayerPosition> ppos;*/
@@ -789,7 +827,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 }
 bool NetworkClient::requestConnection(const RemoteClient &server) {
 	remote.rebind(1329);
-	pairs.push_back(server);
+	pairs.push_back(RemoteClientInfo(server));
 	RequestConnectionM rcm;
 	Message *nmsg = new Message(&rcm, NMT_C2S_RequestConnection);
 	Engine *engine = getEngine();

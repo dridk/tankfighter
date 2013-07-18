@@ -185,6 +185,11 @@ struct PlayerCreation {
 /* Send all physical controller info to server.
  * Receive movement directives from server and apply them
  */
+struct RemoteClientInfo {
+	RemoteClient client;
+	sf::Clock lastPacketTime;
+	RemoteClientInfo(const RemoteClient &rc);
+};
 class NetworkClient {
 	public:
 	NetworkClient(Engine *engine);
@@ -214,7 +219,7 @@ class NetworkClient {
 	bool is_server;
 	std::vector<ApproxPlayerPosition> plpositions; /* used on server */
 	std::vector<PlayerMovement> plmovements; /* used on client */
-	std::vector<RemoteClient> pairs;
+	std::vector<RemoteClientInfo> pairs;
 	Engine *engine;
 	static const unsigned C2S_Packet_interval; /* wait time in microseconds between sending two packets to the server */
 	sf::Clock c2s_time;
@@ -222,6 +227,7 @@ class NetworkClient {
 	std::vector<Message*> c2sMessages;
 	std::vector<PlayerCreation> wpc;
 	Uint32 last_pm_seqid;
+	sf::Clock cleanup_clock;
 	bool transmitPacket(sf::Packet &pkt, const RemoteClient *remote);
 	bool receivePacket(sf::Packet &pkt, RemoteClient *remote);
 	bool transmitMessageSet(std::vector<Message*> &messages);
@@ -232,6 +238,8 @@ class NetworkClient {
 	void Acknowledge(Uint32 seqid);
 	void reportPlayerAndMissilePositions(void);
 	void setPlayerScore(const PlayerScore &score);
+	void cleanupClients(void);
+	void disconnectClient(const RemoteClient &client);
 };
 class MasterController: public Controller {
 	public:

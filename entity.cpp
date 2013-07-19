@@ -7,7 +7,12 @@ Entity::Entity(EntityShape shape0, Engine *engine0) {
 	position.x = 0; position.y = 0;
 	isKilledFlag = false;
 	engine = engine0;
-	UID = ++globalUID;
+	if (globalUID & 0x80000000) {
+		globalUID = (globalUID+1) | 0x80000000;
+	} else {
+		globalUID = (globalUID+1) & (~0x80000000);
+	}
+	UID = globalUID;
 }
 Entity::~Entity() {
 	engine = NULL;

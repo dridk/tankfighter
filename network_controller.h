@@ -30,7 +30,6 @@ class UdpConnection {
 	bool Send(sf::Packet &packet, const RemoteClient *client);
 	bool Receive(sf::Packet &packet, RemoteClient *client);
 	void rebind(unsigned short localPort);
-	private:
 	sf::UdpSocket sock;
 };
 enum NetworkMessageType {NMT_None, NMT_Acknowledge,
@@ -243,6 +242,7 @@ class NetworkClient {
 	Uint32 last_pm_seqid;
 	sf::Clock cleanup_clock;
 	bool transmitPacket(sf::Packet &pkt, const RemoteClient *remote);
+	bool transmitMessage(Message *msg);
 	bool receivePacket(sf::Packet &pkt, RemoteClient *remote);
 	bool transmitMessageSet(std::vector<Message*> &messages);
 	bool treatMessage(Message &msg);

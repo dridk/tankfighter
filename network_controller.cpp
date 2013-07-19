@@ -351,6 +351,28 @@ bool PacketAppend(Packet &pkt, const Packet &pkt2) {
 	return PacketAppend(pkt, pkt2.getData(), pkt.getDataSize());
 }
 static int resendPacketAfterMS = 2000;
+
+static bool must_send_now(Message *msg) {
+	return !(msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  resendPacketAfterMS);
+}
+bool NetworkClient::transmitMessage(Message *msg) {
+	Packet pkt;
+	msg->already_sent = true;
+	msg->lastTransmission.restart();
+	if (!msg->OutputToPacket(pkt)) return false;
+	return transmitPacket(pkt, &msg->client);
+}
+static void emitted(Message *msg) {
+#ifdef LOG_PKTLOSS
+	if (msg->must_acknowledge) {
+		if (msg->already_sent) {
+			fprintf(stderr, "Info: Resending lost packet %u\n", msg->mseqid);
+		} else {
+			fprintf(stderr, "Info: Sending important message %u that may be emitted again\n", msg->mseqid);
+		}
+	}
+#endif
+}
 bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	sf::Packet pkt;
 	std::vector<Message*> out;
@@ -363,17 +385,12 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	for (size_t i=0; i < messages.size();) {
 		Message * msg = messages[i];
 		if (!(msg->client == cl)) {i++;continue;}
-		if (msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  resendPacketAfterMS)
-			{
-			i++;
+		if (!must_send_now(msg)) {
 			out.push_back(msg);
+			messages.erase(messages.begin()+i);
 			continue;
 		}
-		if (msg->already_sent) {
-#ifdef LOG_PKTLOSS
-			fprintf(stderr, "Info: Resending lost packet %u\n", msg->mseqid);
-#endif
-		}
+		emitted(msg);
 		if (!msg->OutputToPacket(pkt)) {
 			transmitPacket(pkt, &cl);
 			pkt=sf::Packet();
@@ -382,9 +399,6 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 		msg->already_sent = true;
 		msg->lastTransmission.restart();
 		if (msg->must_acknowledge) {
-#ifdef LOG_PKTLOSS
-			fprintf(stderr, "Info: Important message %u that may be emitted again\n", msg->mseqid);
-#endif
 			out.push_back(msg);
 		} else {
 			delete msg;
@@ -393,8 +407,18 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 	}
 	if (pkt.getDataSize() > 0) {transmitPacket(pkt, &cl);}
 	}
+	for(size_t i=0; i < messages.size();i++) { /* now, deal with messages to non-standard clients */
+		Message *msg = messages[i];
+		if (!must_send_now(msg)) {out.push_back(msg);continue;}
+		emitted(msg);
+		transmitMessage(msg);
+		if (msg->must_acknowledge) {
+			out.push_back(msg);
+		}
+		else delete msg;
+	}
+	messages.clear();
 	messages.swap(out);
-	out.clear();
 	return true;
 }
 bool Message::DefineInput(sf::Packet &ipacket) {
@@ -426,6 +450,10 @@ void NetworkClient::willSendMessage(Message *msg) {
 }
 void NetworkClient::Acknowledge(const Message &msg) { /* FIXME: Eliminate duplicate packets */
 	Uint32 seqid = msg.mseqid;
+#ifdef LOG_PKTLOSS
+	fprintf(stderr, "Info: Acknowleges packet %u to %s:%d\n"
+		, seqid, msg.client.addr.toString().c_str(), msg.client.port);
+#endif
 	Message *newm = new Message(&seqid, NMT_Acknowledge);
 	newm->client = msg.client;
 	willSendMessage(newm);
@@ -949,7 +977,9 @@ void NetworkClient::requestDisconnection(void) {
 	if (!isClient()) return;
 	sf::Clock wait_ack;
 	resendPacketAfterMS = 500;
-	fprintf(stderr, "Request disconnection\n");
+#ifdef LOG_PKTLOSS
+	fprintf(stderr, "Request disconnection at port %d\n", remote.sock.getLocalPort());
+#endif
 	willSendMessage(new Message(NULL, NMT_C2S_RequestDisconnection));
 	bool message_found = true;
 	while (message_found && wait_ack.getElapsedTime().asMilliseconds() < disconnectionTimeoutMS) {
@@ -963,6 +993,7 @@ void NetworkClient::requestDisconnection(void) {
 				break;
 			}
 		}
+		sf::sleep(milliseconds(1));
 	}
 }
 void NetworkClient::declareAsServer(void) {

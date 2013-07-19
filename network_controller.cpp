@@ -529,7 +529,6 @@ bool NetworkClient::treatMessage(Message &msg) {
 	if (is_server    && !messages_structures[msg.type].C2S_allowed) return false;
 	if ((!is_server) && !messages_structures[msg.type].S2C_allowed) return false;
 	if (msg.type == NMT_Acknowledge) {
-		fprintf(stderr, "[ack packet]\n");
 		Uint32 seqid;
 		if (!msg.Input(&seqid, messages_structures[msg.type].format)) return false;
 		for(size_t i=0; i < c2sMessages.size(); ++i) {

@@ -80,6 +80,11 @@ struct PlayerDeathM {
 };
 struct RequestDisconnectionM {
 };
+struct ReceivedMessage {
+	ReceivedMessage(Uint32 mseqid):seqid(mseqid) {}
+	sf::Clock receptionTime;
+	Uint32 seqid;
+};
 class Message {
 	public:
 	Message();
@@ -233,6 +238,7 @@ class NetworkClient {
 	sf::Clock c2s_time;
 	UdpConnection remote;
 	std::vector<Message*> c2sMessages;
+	std::vector<ReceivedMessage> recMessages; /* received messages */
 	std::vector<PlayerCreation> wpc;
 	Uint32 last_pm_seqid;
 	sf::Clock cleanup_clock;
@@ -248,6 +254,9 @@ class NetworkClient {
 	void setPlayerScore(const PlayerScore &score);
 	void cleanupClients(void);
 	void disconnectClient(const RemoteClient &client);
+	void dropOldReceivedMessages(void);
+	bool isDuplicate(const Message &msg);
+	void declareNewReceivedMessage(const Message &msg);
 };
 class MasterController: public Controller {
 	public:

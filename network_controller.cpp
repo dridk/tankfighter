@@ -11,8 +11,11 @@
 #include "engine.h"
 #include <string.h>
 #include <stdio.h>
+#include "misc.h"
 
 #undef LOG_LLPACKET
+#undef LOG_PKTLOSS
+#undef DEBUG_PKTLOSS
 
 #ifdef LOG_LLPACKET
 #define LOG_LLPACKETR 1
@@ -361,7 +364,16 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 		Message * msg = messages[i];
 		if (!(msg->client == cl)) {i++;continue;}
 		if (msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  resendPacketAfterMS)
-			{i++;continue;}
+			{
+			i++;
+			out.push_back(msg);
+			continue;
+		}
+		if (msg->already_sent) {
+#ifdef LOG_PKTLOSS
+			fprintf(stderr, "Info: Resending lost packet %u\n", msg->mseqid);
+#endif
+		}
 		if (!msg->OutputToPacket(pkt)) {
 			transmitPacket(pkt, &cl);
 			pkt=sf::Packet();
@@ -370,6 +382,9 @@ bool NetworkClient::transmitMessageSet(std::vector<Message*> &messages) {
 		msg->already_sent = true;
 		msg->lastTransmission.restart();
 		if (msg->must_acknowledge) {
+#ifdef LOG_PKTLOSS
+			fprintf(stderr, "Info: Important message %u that may be emitted again\n", msg->mseqid);
+#endif
 			out.push_back(msg);
 		} else {
 			delete msg;
@@ -541,6 +556,9 @@ bool NetworkClient::treatMessage(Message &msg) {
 	if (msg.type == NMT_Acknowledge) {
 		Uint32 seqid;
 		if (!msg.Input(&seqid, messages_structures[msg.type].format)) return false;
+#ifdef LOG_PKTLOSS
+		fprintf(stderr, "Info: Received ACK for packet %u\n", seqid);
+#endif
 		for(size_t i=0; i < c2sMessages.size(); ++i) {
 			if (c2sMessages[i]->mseqid == seqid) {
 				Message *dmsg = c2sMessages[i];
@@ -644,25 +662,20 @@ bool NetworkClient::treatMessage(Message &msg) {
 		}
 		return true;
 	} else if (msg.type == NMT_S2C_NewPlayer) {
-		fprintf(stderr, "[NMT_S2C_NewPlayer]\n");
 		NewPlayerM newp;
 		Player *pl = NULL;
 		if (!msg.Input(&newp, messages_structures[msg.type].format)) return false;
-		fprintf(stderr, "[NMT_S2C_NewPlayer OK]\n");
 		if (newp.is_yours) {
 			/* look at the pending player creation request */
 			for(size_t i=0; i < wpc.size(); i++) {
 				if (wpc[i].seqid == newp.seqid) {
 					pl = new Player(new MasterController(this, wpc[i].controller), getEngine());
 					wpc.erase(wpc.begin()+i);
-					fprintf(stderr, "[own player accepted]\n");
 					break;
 				}
 			}
-			fprintf(stderr, "[own player???]\n");
 		} else {
 			/* another player joined */
-			fprintf(stderr, "[player %d joined]\n", newp.pos.playerUID);
 			pl = new Player(new RemoteController(this, msg.client), getEngine());
 		}
 		if (!pl) return false;
@@ -694,15 +707,44 @@ bool NetworkClient::treatMessage(Message &msg) {
 	}
 	return false;
 }
+static int maxDupPacketTimeSecs = 10;
+void NetworkClient::dropOldReceivedMessages(void) {
+	for(size_t i=0; i < recMessages.size();) {
+		if (recMessages[i].receptionTime.getElapsedTime().asSeconds() >= maxDupPacketTimeSecs) {
+			recMessages.erase(recMessages.begin()+i);
+		} else i++;
+	}
+}
+bool NetworkClient::isDuplicate(const Message &msg) {
+	Uint32 seqid = msg.mseqid;
+	for(size_t i=0; i < recMessages.size(); i++) {
+		if (recMessages[i].seqid == seqid) return true;
+	}
+	return false;
+}
+void NetworkClient::declareNewReceivedMessage(const Message &msg) {
+#ifdef LOG_PKTLOSS
+	fprintf(stderr, "Info: Important message %u that may be received again\n", msg.mseqid);
+#endif
+	recMessages.push_back(ReceivedMessage(msg.mseqid));
+}
 bool NetworkClient::receiveFromServer() {
 	sf::Packet pkt;
 	RemoteClient client;
+	dropOldReceivedMessages();
 	if (!receivePacket(pkt, &client)) return false;
 	Message msg;
 	while (msg.DefineInput(pkt)) {
 		msg.client = client;
-		if (msg.must_acknowledge) Acknowledge(msg);
+		if (msg.must_acknowledge) Acknowledge(msg); /* even dup packets are acknowledged */
+		if (msg.must_acknowledge && isDuplicate(msg)) {
+#ifdef LOG_PKTLOSS
+			fprintf(stderr, "Info: Duplicate packet %u received\n", msg.mseqid);
+#endif
+			continue;
+		}
 		if (msg.type >= NMT_Last) continue; /* unknown packet */
+		if (msg.must_acknowledge) declareNewReceivedMessage(msg);
 		treatMessage(msg);
 	}
 	return true;
@@ -783,6 +825,9 @@ bool UdpConnection::Send(sf::Packet &packet, const RemoteClient *client) {
 #ifdef LOG_LLPACKETS
 	fprintf(stderr, "Sending packet: ");
 	logPacket(packet);
+#endif
+#ifdef DEBUG_PKTLOSS
+	if (get_random(2)<=1) return false; /* Explicit packet dropping for testing purposes */
 #endif
 	return sock.send(packet, client->addr, client->port) == sf::Socket::Done;
 }

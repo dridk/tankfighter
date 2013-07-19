@@ -448,7 +448,7 @@ bool Message::DefineInput(sf::Packet &ipacket) {
 void NetworkClient::willSendMessage(Message *msg) {
 	c2sMessages.push_back(msg);
 }
-void NetworkClient::Acknowledge(const Message &msg) { /* FIXME: Eliminate duplicate packets */
+void NetworkClient::Acknowledge(const Message &msg) {
 	Uint32 seqid = msg.mseqid;
 #ifdef LOG_PKTLOSS
 	fprintf(stderr, "Info: Acknowleges packet %u to %s:%d\n"

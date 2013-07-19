@@ -272,11 +272,11 @@ bool Engine::step(void) {
 	if (first_step) {clock.restart();first_step=false;}
 	draw();
 	compute_physics();
-	destroy_flagged();
 	if (!network.isLocal()) {
 		network.transmitToServer();
 		network.receiveFromServer();
 	}
+	destroy_flagged();
 	return !must_quit;
 }
 void draw_score(RenderTarget &target, Font &ft, int score, Color color, Vector2d pos) {

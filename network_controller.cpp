@@ -370,6 +370,9 @@ static void emitted(Message *msg) {
 		} else {
 			fprintf(stderr, "Info: Sending important message %u that may be emitted again\n", msg->mseqid);
 		}
+	} else if (msg->type == NMT_Acknowledge) {
+		fprintf(stderr, "Info: Sending acknowledge message to %s:%u\n"
+			,msg->client.addr.toString().c_str(), msg->client.port);
 	}
 #endif
 }
@@ -728,9 +731,10 @@ bool NetworkClient::treatMessage(Message &msg) {
 		killed->killedBy(killer);
 		killer->killedPlayer(killed);
 		return true;
-	} else if (msg.type == NMT_C2S_RequestDisconnection) {
-		fprintf(stderr, "Client requested disconnection\n");
-		disconnectClient(msg.client);
+	} else if (msg.type == NMT_RequestDisconnection) {
+		fprintf(stderr, "Pair requested disconnection\n");
+		if (isServer()) disconnectClient(msg.client);
+		if (isClient()) serverDisconnected();
 		return true;
 	}
 	return false;
@@ -762,7 +766,7 @@ bool NetworkClient::receiveFromServer() {
 	dropOldReceivedMessages();
 	if (!receivePacket(pkt, &client)) return false;
 	Message msg;
-	while (msg.DefineInput(pkt)) {
+	while ((!isLocal()) && msg.DefineInput(pkt)) {
 		msg.client = client;
 		if (msg.must_acknowledge) Acknowledge(msg); /* even dup packets are acknowledged */
 		if (msg.must_acknowledge && isDuplicate(msg)) {
@@ -818,13 +822,15 @@ void NetworkClient::cleanupClients(void) {
 		} else i++;
 	}
 }
-void NetworkClient::disconnectClient(const RemoteClient &client) {
+void NetworkClient::removePair(const RemoteClient &client) {
 	for(size_t i=0; i < pairs.size(); i++) {
 		if (client == pairs[i].client) {
 			pairs.erase(pairs.begin()+i);
 			break;
 		}
 	}
+}
+void NetworkClient::removeRemote(const RemoteClient &client) {
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
 		Player *pl=dynamic_cast<Player*>(*it);
 		if (!pl) continue;
@@ -833,6 +839,47 @@ void NetworkClient::disconnectClient(const RemoteClient &client) {
 			getEngine()->destroy(pl);
 		}
 	}
+}
+void NetworkClient::disconnectClient(const RemoteClient &client) {
+	if (!isServer()) return;
+	removeRemote(client);
+	removePair(client);
+}
+void NetworkClient::serverDisconnected(void) {
+	if (!isClient()) return;
+	RemoteClient cl = pairs[0].client;
+	/* MasterControllers are de-capsulated */
+	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
+		Player *pl=dynamic_cast<Player*>(*it);
+		if (!pl) continue;
+		MasterController *rctrl = dynamic_cast<MasterController*>(pl->getController());
+		if (rctrl) {
+			Controller *c = rctrl->stealOrigController();
+			pl->setController(c);
+			delete rctrl;
+		}
+	}
+	transmitMessageSet(c2sMessages); /* ensures that the ACK message is sent for NMT_RequestDisconnection */
+	/* cleanup */
+	RemoteClient noname;
+	removeRemote(cl);
+	removeRemote(noname);
+	clear_all();
+}
+void NetworkClient::clear_all(void) {
+	pairs.clear();
+	for(size_t i=0; i < c2sMessages.size(); ++i) delete c2sMessages[i];
+	c2sMessages.clear();
+	wpc.clear();
+	recMessages.clear();
+	plmovements.clear();
+	plpositions.clear();
+	c2s_time.restart();
+	cleanup_clock.restart();
+	last_pm_seqid = 0;
+}
+UdpConnection::UdpConnection() {
+	sock.setBlocking(false);
 }
 UdpConnection::UdpConnection(unsigned short localPort) {
 	rebind(localPort);
@@ -876,7 +923,7 @@ bool UdpConnection::Receive(sf::Packet &packet, RemoteClient *client) {
 	return false;
 }
 
-NetworkClient::NetworkClient(Engine *engine):engine(engine),remote(1330) {
+NetworkClient::NetworkClient(Engine *engine):engine(engine) {
 	last_pm_seqid = 0;
 	is_server = false;
 }
@@ -948,6 +995,8 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 	}
 }
 bool NetworkClient::requestConnection(const RemoteClient &server) {
+	clear_all();
+	is_server = false;
 	remote.rebind(1329);
 	pairs.push_back(RemoteClientInfo(server));
 	RequestConnectionM rcm;
@@ -974,21 +1023,25 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 }
 static int disconnectionTimeoutMS = 2000;
 void NetworkClient::requestDisconnection(void) {
-	if (!isClient()) return;
+	if (isLocal()) return;
 	sf::Clock wait_ack;
 	resendPacketAfterMS = 500;
 #ifdef LOG_PKTLOSS
 	fprintf(stderr, "Request disconnection at port %d\n", remote.sock.getLocalPort());
 #endif
-	willSendMessage(new Message(NULL, NMT_C2S_RequestDisconnection));
+	for(size_t i=0; i < pairs.size(); i++) {
+		Message *nmsg = new Message(NULL, NMT_RequestDisconnection);
+		nmsg->client = pairs[i].client;
+		willSendMessage(nmsg);
+	}
 	bool message_found = true;
 	while (message_found && wait_ack.getElapsedTime().asMilliseconds() < disconnectionTimeoutMS) {
 		receiveFromServer();
 		transmitToServer();
 		message_found = false;
-		/* search whether disconnection message has been removed (acknowledged) */
+		/* search whether all disconnection messages have been acknowledged */
 		for(size_t i=0; i < c2sMessages.size(); ++i) {
-			if (c2sMessages[i]->type == NMT_C2S_RequestDisconnection) {
+			if (c2sMessages[i]->type == NMT_RequestDisconnection) {
 				message_found = true;
 				break;
 			}
@@ -997,6 +1050,7 @@ void NetworkClient::requestDisconnection(void) {
 	}
 }
 void NetworkClient::declareAsServer(void) {
+	clear_all();
 	is_server = true;
 	remote.rebind(1330);
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
@@ -1041,8 +1095,7 @@ bool NetworkClient::isServer(void) const {return is_server;}
 bool NetworkClient::isClient(void) const {return (!is_server) && pairs.size() > 0;}
 bool NetworkClient::isLocal (void) const {return (!is_server) && pairs.size() == 0;}
 NetworkClient::~NetworkClient() {
-	for(size_t i=0; i < c2sMessages.size(); ++i)
-		delete c2sMessages[i];
+	clear_all();
 }
 
 bool NetworkClient::isPendingPlayerConcerned(const Event &e) const {

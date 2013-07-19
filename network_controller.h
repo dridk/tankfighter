@@ -27,6 +27,7 @@ bool operator ==(const RemoteClient &a, const RemoteClient &b);
 class UdpConnection {
 	public:
 	UdpConnection(unsigned short localPort);
+	UdpConnection();
 	bool Send(sf::Packet &packet, const RemoteClient *client);
 	bool Receive(sf::Packet &packet, RemoteClient *client);
 	void rebind(unsigned short localPort);
@@ -35,7 +36,7 @@ class UdpConnection {
 enum NetworkMessageType {NMT_None, NMT_Acknowledge,
                         NMT_C2S_RequestConnection, NMT_C2S_ReportPlayersMovements, NMT_C2S_RequestNewPlayer, NMT_C2S_PlayerDisconnects, NMT_C2S_RequestNewMissile
                       , NMT_S2C_DefineMap, NMT_S2C_Refusal, NMT_S2C_PlayerDeath, NMT_S2C_NewPlayer, NMT_S2C_ReportPMPositions
-		      , NMT_C2S_RequestDisconnection
+		      , NMT_RequestDisconnection
 		      , NMT_Last};
 
 /* we don't need NMT_S2C_EntityDestroyed message as it's simply seen by client when ReportPMPositions don't report a player or missile */
@@ -64,7 +65,7 @@ const MessageStructure messages_structures[]={
 	{NMT_S2C_PlayerDeath,"Player death",true,"uu",false,true},
 	{NMT_S2C_NewPlayer,"Report player creation",true,"uffffuuub",false,true},
 	{NMT_S2C_ReportPMPositions,"Report players & missiles positions", false,"",false,true},
-	{NMT_C2S_RequestDisconnection,"Request client disconnection",true,"",true,false}
+	{NMT_RequestDisconnection,"Request client disconnection",true,"",true,true}
 };
 
 
@@ -257,6 +258,10 @@ class NetworkClient {
 	void dropOldReceivedMessages(void);
 	bool isDuplicate(const Message &msg);
 	void declareNewReceivedMessage(const Message &msg);
+	void serverDisconnected(void);
+	void removeRemote(const RemoteClient &client);
+	void removePair(const RemoteClient &client);
+	void clear_all(void);
 };
 class MasterController: public Controller {
 	public:

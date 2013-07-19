@@ -56,7 +56,7 @@ const MessageStructure messages_structures[]={
 	{NMT_Acknowledge,"Ack",false,"u",true,true},
 	{NMT_C2S_RequestConnection,"Request connection",true,"",true,false},
 	{NMT_C2S_ReportPlayersMovements,"Report players movements",false,"",true,true},
-	{NMT_C2S_RequestNewPlayer,"Request new player", true,"",true,false},
+	{NMT_C2S_RequestNewPlayer,"Request new player", true,"ub",true,false},
 	{NMT_C2S_PlayerDisconnects,"Player disconnects", true,"u",true,false},
 	{NMT_C2S_RequestNewMissile,"Request new missile", true,"8ufff",true,false},
 
@@ -159,6 +159,8 @@ struct PlayerMovementsM {
 	std::vector<PlayerMovement> movements;
 };
 struct RequestNewPlayerM {
+	Uint32 color;
+	bool preferred_color;
 };
 struct PlayerDisconnectsM {
 	Uint32 playerUID;
@@ -207,7 +209,7 @@ class NetworkClient {
 	void declareAsServer(void);
 	bool requestConnection(const RemoteClient &server);
 	void requestDisconnection(void);
-	void requestPlayerCreation(Controller *controller);
+	void requestPlayerCreation(Controller *controller, const sf::Color *color = NULL);
 	void requestMissileCreation(Player *player);
 	void reportPlayerMovement(const PlayerMovement &plpos);
 	void reportNewPlayer(Player *player, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target);

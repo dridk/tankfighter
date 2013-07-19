@@ -496,13 +496,23 @@ void killAllEntities(Engine *engine, bool killFlag, bool (*pred)(EType *entity) 
 		if (en && ((!pred) || pred(en))) en->setKilled(killFlag);
 	}
 }
+static Color u2color(Uint32 c) {
+	Color cc;
+	cc.r = c & 0xFF;
+	cc.g = (c >> 8 ) & 0xFF;
+	cc.b = (c >> 16) & 0xFF;
+	cc.a = (c >> 24) & 0xFF;
+	return cc;
+}
+static Uint32 color2u(Color c) {
+	return c.r + (c.g << 8) + (c.b << 16) + (c.a << 24);
+}
 void NetworkClient::reportNewPlayer(Player *pl, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target) {
 	if (!is_server) return;
 	RemoteClient nulcreator;
 	NewPlayerM mh;
 	getPlayerPosition(pl, mh.pos);
-	Color c = pl->getColor();
-	mh.color = c.r + c.g*256 + c.b*256*256 + c.a*256*256*256;
+	mh.color = color2u(pl->getColor());
 	mh.seqid = toseqid;
 	/* send back one NewPlayer message for each pair */
 	for(size_t i=0; i < pairs.size(); i++) {
@@ -564,7 +574,12 @@ bool NetworkClient::treatMessage(Message &msg) {
 		}
 		return true;
 	} else if (msg.type == NMT_C2S_RequestNewPlayer) {
+		RequestNewPlayerM rnp;
+		if (!msg.Input(&rnp, messages_structures[msg.type].format)) return false;
 		Player *pl = new Player(new RemoteController(this, msg.client), getEngine());
+		if (rnp.preferred_color) {
+			pl->setColor(u2color(rnp.color));
+		}
 		getEngine()->add(pl);
 		RemoteClient none;
 		reportNewPlayer(pl, msg.mseqid, msg.client, none);
@@ -653,13 +668,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 		if (!pl) return false;
 		pl->setUID(newp.pos.playerUID);
 		::setPlayerPosition(pl, newp.pos);
-		Uint32 c = newp.color;
-		Color cc;
-		cc.r = c & 0xFF;
-		cc.g = (c >> 8 ) & 0xFF;
-		cc.b = (c >> 16) & 0xFF;
-		cc.a = (c >> 24) & 0xFF;
-		pl->setColor(cc);
+		pl->setColor(u2color(newp.color));
 		getEngine()->add(pl);
 		return true;
 	} else if (msg.type == NMT_S2C_DefineMap) {
@@ -799,8 +808,16 @@ NetworkClient::NetworkClient(Engine *engine):engine(engine),remote(1330) {
 	is_server = false;
 }
 
-void NetworkClient::requestPlayerCreation(Controller *controller) {
-	Message *nmsg = new Message(NULL, NMT_C2S_RequestNewPlayer);
+void NetworkClient::requestPlayerCreation(Controller *controller, const Color *color) {
+	RequestNewPlayerM rnp;
+	if (color) {
+		rnp.color = color2u(*color);
+		rnp.preferred_color = true;
+	} else {
+		rnp.color = 0;
+		rnp.preferred_color = false;
+	}
+	Message *nmsg = new Message(&rnp, NMT_C2S_RequestNewPlayer);
 	PlayerCreation pc={nmsg->mseqid,controller};
 	wpc.push_back(pc);
 	willSendMessage(nmsg);
@@ -874,7 +891,8 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 		} else {
 			pl->setController(NULL); /* steals controller */
 		}
-		requestPlayerCreation(ctrl);
+		Color c = pl->getColor();
+		requestPlayerCreation(ctrl, &c);
 		getEngine()->destroy(pl);
 	}
 	engine->clear_entities();

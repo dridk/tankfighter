@@ -185,8 +185,20 @@ bool Output(Packet &pkt, const char *signature, const void * const data) {
 		else if (c == 's') {pkt << *(Uint16*)dat;dat +=sizeof(Uint16);}
 		else if (c == 'u') {
 			Uint32 x = *(Uint32*)dat;
-			if (x < 127) pkt << (Uint8)x;
-			else {pkt << Uint8(128+((x>>24) & 0xFF)); pkt << Uint8((x>>16) & 0xFF); pkt << Uint8((x >> 8) & 0xFF); pkt << Uint8(x & 0xFF);}
+			/* use a 1-byte, 3-bytes or 5-bytes representation */
+			if (x <= 127) pkt << (Uint8)x;
+			else if (x < 127*65536L) {
+				pkt << Uint8(128+(x/65536)); /* up to 254 */
+				pkt << Uint8((x%65536)/256);
+				pkt << Uint8(x%256);
+			}
+			else {
+				pkt << Uint8(255);
+				pkt << Uint8(((x>>24) & 0xFF));
+				pkt << Uint8((x>>16) & 0xFF);
+				pkt << Uint8((x >> 8) & 0xFF);
+				pkt << Uint8(x & 0xFF);
+			}
 			dat += sizeof(Uint32);
 		}
 		else if (c == 'f') {pkt << *(float*)dat;dat += sizeof(float);}
@@ -218,12 +230,16 @@ bool Input(Packet &pkt, const char *signature, void * const data) {
 			Uint8 x0;
 			Uint32 x=0;
 			if (!(pkt >> x0)) return false;
-			if (x0 < 127) {
+			if (x0 <= 127) {
 				x=x0;
-			} else {
+			} else if (x0 <= 254) {
 				x0 -= 128;
+				Uint8 x1, x2;
+				if (!((pkt >> x1) && (pkt >> x2))) return false;
+				x = (x0<<16) + (x1 << 8) + x2;
+			} else { /* x0 == 255 */
 				Uint8 x1, x2, x3;
-				if (!((pkt >> x1) && (pkt >> x2) && (pkt >> x3))) return false;
+				if (!((pkt >> x0) && (pkt >> x1) && (pkt >> x2) && (pkt >> x3))) return false;
 				x = (x0<<24) + (x1 << 16) + (x2 << 8) + x3;
 			}
 			*(Uint32*)dat = x;

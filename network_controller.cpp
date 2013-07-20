@@ -825,16 +825,20 @@ bool NetworkClient::receivePacket(sf::Packet &pkt, RemoteClient *client) {
 	return success;
 }
 void NetworkClient::cleanupClients(void) {
-	if (!isServer()) return;
+	if (isLocal()) return;
 	if (cleanup_clock.getElapsedTime().asMilliseconds() < parameters.clientsCleanupIntervalMS()) return;
 	cleanup_clock.restart();
-	/* find clients having lost connection */
+	/* find clients (or server) having lost connection */
 	for(size_t i=0; i < pairs.size();) {
 		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000 >= parameters.connectionTimeoutInSecs()) {
 			RemoteClient client = pairs[i].client;
-			fprintf(stderr, "Error: Client %s:%d timeout\n"
+			fprintf(stderr, "Error: Pair %s:%d timeout\n"
 				,client.addr.toString().c_str(), client.port);
-			disconnectClient(client);
+			if (isServer() || i > 0) {
+				disconnectClient(client);
+			} else if (isClient() && i == 0) {
+				serverDisconnected();
+			}
 			/*pairs.erase(pairs.begin()+i);*/
 		} else i++;
 	}

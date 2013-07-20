@@ -37,6 +37,7 @@ enum NetworkMessageType {NMT_None, NMT_Acknowledge,
                         NMT_C2S_RequestConnection, NMT_C2S_ReportPlayersMovements, NMT_C2S_RequestNewPlayer, NMT_C2S_PlayerDisconnects, NMT_C2S_RequestNewMissile
                       , NMT_S2C_DefineMap, NMT_S2C_Refusal, NMT_S2C_PlayerDeath, NMT_S2C_NewPlayer, NMT_S2C_ReportPMPositions
 		      , NMT_RequestDisconnection
+		      , NMT_S2C_SpawnPlayer /* teleport player after death */
 		      , NMT_Last};
 
 /* we don't need NMT_S2C_EntityDestroyed message as it's simply seen by client when ReportPMPositions don't report a player or missile */
@@ -65,7 +66,8 @@ const MessageStructure messages_structures[]={
 	{NMT_S2C_PlayerDeath,"Player death",true,"uu",false,true},
 	{NMT_S2C_NewPlayer,"Report player creation",true,"uffffuuub",false,true},
 	{NMT_S2C_ReportPMPositions,"Report players & missiles positions", false,"",false,true},
-	{NMT_RequestDisconnection,"Request client disconnection",true,"",true,true}
+	{NMT_RequestDisconnection,"Request client disconnection",true,"",true,true},
+	{NMT_S2C_SpawnPlayer,"Spawn player",true,"uffff",false,true}
 };
 
 
@@ -220,7 +222,7 @@ class NetworkClient {
 	void reportNewPlayer(Player *player, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target);
 	void reportNewPlayer(Player *player, const RemoteClient *target = NULL);
 	void reportPlayerDeath(Player *killing, Player *dying);
-	void reportPlayerPosition(const ApproxPlayerPosition ppos);
+	void reportPlayerSpawned(const PlayerPosition &ppos);
 
 	bool transmitToServer(); /* returns false if no packet is transmitted to the server */
 	bool receiveFromServer(); /* returns false if nothing new has been received from the server */
@@ -230,7 +232,6 @@ class NetworkClient {
 	private:
 	void willSendMessage(Message *msg); /* used to report one message (structure is allocated by caller, freed by callee) */
 	bool is_server;
-	std::vector<ApproxPlayerPosition> plpositions; /* used on server */
 	std::vector<PlayerMovement> plmovements; /* used on client */
 	std::vector<RemoteClientInfo> pairs;
 	Engine *engine;

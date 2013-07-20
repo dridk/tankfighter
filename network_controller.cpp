@@ -104,9 +104,9 @@ bool RemoteController::missileCollision(Missile *ml, Player *other) {
 }
 
 void RemoteController::teleported(void) {
-	ApproxPlayerPosition ppos;
+	PlayerPosition ppos;
 	getPlayerPosition(getPlayer(), ppos);
-	client->reportPlayerPosition(ppos);
+	client->reportPlayerSpawned(ppos);
 }
 
 
@@ -736,6 +736,11 @@ bool NetworkClient::treatMessage(Message &msg) {
 		if (isServer()) disconnectClient(msg.client);
 		if (isClient()) serverDisconnected();
 		return true;
+	} else if (msg.type == NMT_S2C_SpawnPlayer) {
+		PlayerPosition ppos;
+		if (!msg.Input(&ppos, messages_structures[msg.type].format)) return false;
+		setPlayerPosition(ppos);
+		return true;
 	}
 	return false;
 }
@@ -873,7 +878,6 @@ void NetworkClient::clear_all(void) {
 	wpc.clear();
 	recMessages.clear();
 	plmovements.clear();
-	plpositions.clear();
 	c2s_time.restart();
 	cleanup_clock.restart();
 	last_pm_seqid = 0;
@@ -961,7 +965,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 		RemoteClient cl = pairs[icl].client;
 		ApproxPlayerPosition ppos0;
 		MissilePosition mpos0;
-		/*std::vector<PlayerPosition> ppos;*/
+		std::vector<ApproxPlayerPosition> ppos;
 		std::vector<MissilePosition> mpos;
 		std::vector<PlayerScore> pscore;
 		for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
@@ -976,7 +980,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 					continue; /* don't send the position to the master client itself, but give it its score anyway */
 				}
 				getPlayerPosition(pl, ppos0);
-				reportPlayerPosition(ppos0);
+				ppos.push_back(ppos0);
 				continue;
 			}
 			Missile *ml=dynamic_cast<Missile*>(*it);
@@ -986,8 +990,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 			}
 		}
 		Message *nmsg = new Message(NULL, NMT_S2C_ReportPMPositions);
-		nmsg->AppendV(plpositions, NMF_PlayerPosition);
-		plpositions.resize(0);
+		nmsg->AppendV(ppos, NMF_PlayerPosition);
 		nmsg->AppendV(mpos, NMF_MissilePosition);
 		nmsg->AppendV(pscore, NMF_PlayerScore);
 		nmsg->client = cl;
@@ -1081,16 +1084,6 @@ void NetworkClient::reportPlayerMovement(const PlayerMovement &plpos) {
 	}
 	plmovements.push_back(plpos);
 }
-void NetworkClient::reportPlayerPosition(const ApproxPlayerPosition ppos) {
-	if (isClient()) return;
-	for(size_t i=0; i < plpositions.size(); ++i) {
-		if (plpositions[i].playerUID == ppos.playerUID) {
-			plpositions[i] = ppos;
-			return;
-		}
-	}
-	plpositions.push_back(ppos);
-}
 bool NetworkClient::isServer(void) const {return is_server;}
 bool NetworkClient::isClient(void) const {return (!is_server) && pairs.size() > 0;}
 bool NetworkClient::isLocal (void) const {return (!is_server) && pairs.size() == 0;}
@@ -1113,5 +1106,12 @@ void NetworkClient::reportPlayerDeath(Player *killer, Player *killed) {
 		Message *newm = new Message(&pd, NMT_S2C_PlayerDeath);
 		newm->client = pairs[i].client;
 		willSendMessage(newm);
+	}
+}
+void NetworkClient::reportPlayerSpawned(const PlayerPosition &ppos) {
+	for(size_t i=0; i < pairs.size(); ++i) {
+		Message *nmsg = new Message(&ppos, NMT_S2C_SpawnPlayer);
+		nmsg->client = pairs[i].client;
+		willSendMessage(nmsg);
 	}
 }

@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "misc.h"
+#include "parameters.h"
 
 using namespace sf;
 
@@ -150,7 +151,7 @@ static bool translate_trigger_string(Trigger &trigger, const char *name) {
 static double getJoyAxis(int joyid, Joystick::Axis axis) {
 	if (joyid < 0) return 0;
 	double v = Joystick::getAxisPosition(joyid, (Joystick::Axis)axis) / 100;
-	if (fabs(v) <= 0.3) v = 0;
+	if (fabs(v) <= parameters.joyDefaultCalibration()) v = 0;
 	return v;
 }
 static double trigger_value(int joyid, Window &window, const Trigger &trigger, double &value2) {
@@ -254,7 +255,7 @@ void KeymapController::reportPlayerMovement(Player *player, PlayerControllingDat
 		pcd.setPosition(absa[CP_Tank_Position]);
 	} else if (notzero(rela[CP_Tank_Position])) {
 		Vector2d v = rela[CP_Tank_Position];
-		if (vectorModule(v) >= 1) normalizeVector(v, 1); /* FIXME: Make vector module equal to 0.5 rather than 0.5*sqrt(2) when moving diagonally with half pressure on an analog stick */
+		if (vectorModule(v) >= 1) normalizeVector(v, 1);
 		pcd.move(v);
 	}
 	if (notzero(absa[CP_Shooter]) || notzero(absa[CP_Shooter])) {

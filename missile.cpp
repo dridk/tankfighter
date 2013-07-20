@@ -8,11 +8,10 @@
 #include <math.h>
 #include <stdio.h>
 #include "controller.h"
+#include "parameters.h"
 
 using namespace sf;
 
-const float Missile::speed = 9e-4;
-const float Missile::maxLifeDuration = 2000; /* in milliseconds */
 Missile::Missile(Player *player0)
 	:Entity(SHAPE_CIRCLE, player0->getEngine()),player(player0) {
 	position = player->position;
@@ -23,8 +22,8 @@ Missile::~Missile() {
 }
 Vector2d Missile::getSize() const {
 	Vector2d sz;
-	sz.x = 16;
-	sz.y = 16;
+	sz.x = parameters.missileDiameter();
+	sz.y = sz.x;
 	return sz;
 }
 Player *Missile::getOwner(void) const {
@@ -78,8 +77,8 @@ Vector2d Missile::movement(Int64 tm) {
 		v.x = 0;
 		v.y = 0;
 	} else if (mcd.flags & MCD_Movement) {
-		v.x = mcd.movement.x * tm * speed;
-		v.y = mcd.movement.y * tm * speed;
+		v.x = mcd.movement.x * tm * parameters.missileSpeed();
+		v.y = mcd.movement.y * tm * parameters.missileSpeed();
 	}
 	if (mcd.flags & MCD_Angle) {
 		angle = mcd.new_angle;

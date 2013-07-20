@@ -3,6 +3,7 @@
 #include <math.h>
 #include <vector>
 #include <stdio.h>
+#include "parameters.h"
 
 
 #ifdef DEBUG
@@ -13,7 +14,6 @@ static void dispPoint(Vector2d pt) {
 	fprintf(stderr, "[point %g %g]\n", pt.x, pt.y);
 }
 #endif
-static const double minWallDistance = 1e-3;
 
 Line Segment::toLine() const {
 	Line res;
@@ -225,8 +225,8 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 	Vector2d proj;
 	if (orthoProjectOnLine(proj, wall, I)) {
 		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
-		if (vectorModule(v) >= minWallDistance/2) {
-			normalizeVector(v, minWallDistance);
+		if (vectorModule(v) >= parameters.minWallDistance()/2) {
+			normalizeVector(v, parameters.minWallDistance());
 			/*translateSegment(vect, v);*/
 			vect.pt2 += v;
 		}
@@ -250,7 +250,7 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
 			Vector2d OB = (ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1) - circle.center;
 			double module = segmentModule(vect);
-			normalizeVector(OB, circle.radius+minWallDistance);
+			normalizeVector(OB, circle.radius+parameters.minWallDistance());
 			vect.pt2 = circle.center + OB;
 			if (ctx.interaction == IT_BOUNCE) {
 				normalizeVector(OB, module);
@@ -317,8 +317,8 @@ static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vec
 		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
-		if (!inside) prolongateSegment(s, -augment+minWallDistance/2);
-		else prolongateSegment(s, minWallDistance);
+		if (!inside) prolongateSegment(s, -augment+parameters.minWallDistance()/2);
+		else prolongateSegment(s, parameters.minWallDistance());
 		shapes[i].type = CSIT_SEGMENT;
 		shapes[i].segment = s;
 
@@ -365,8 +365,8 @@ bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle 
 			Vector2d B = ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1;
 			Vector2d O = Vector2d(r.left + r.width/2, r.top + r.height/2);
 			Vector2d C;
-			if (B.x <= O.x && r.left > minWallDistance) C.x = r.left - minWallDistance; else C.x = r.left + r.width + minWallDistance;
-			if (B.y <= O.y && r.top > minWallDistance) C.y = r.top - minWallDistance;  else C.y = r.top + r.height + minWallDistance;
+			if (B.x <= O.x && r.left > parameters.minWallDistance()) C.x = r.left - parameters.minWallDistance(); else C.x = r.left + r.width + parameters.minWallDistance();
+			if (B.y <= O.y && r.top > parameters.minWallDistance()) C.y = r.top - parameters.minWallDistance();  else C.y = r.top + r.height + parameters.minWallDistance();
 			if (fabs(C.x - B.x) < fabs(C.y - B.y)) C.y = B.y; else C.x = B.x;
 			double module = segmentModule(vect);
 			vect.pt2 = C;

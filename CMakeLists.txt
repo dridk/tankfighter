@@ -21,7 +21,7 @@ link_directories (${SFML2_LIBRARY_DIRS})
 message(STATUS "link_directories ${LINK_DIRECTORIES}")
 
 # define main executable target
-add_executable (tankfighter network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
+add_executable (tankfighter parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh)
 target_link_libraries (tankfighter ${SFML2_LIBRARIES})
 string (REPLACE ";" " " SFML2_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line

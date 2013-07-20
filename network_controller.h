@@ -235,7 +235,6 @@ class NetworkClient {
 	std::vector<PlayerMovement> plmovements; /* used on client */
 	std::vector<RemoteClientInfo> pairs;
 	Engine *engine;
-	static const unsigned C2S_Packet_interval; /* wait time in microseconds between sending two packets to the server */
 	sf::Clock c2s_time;
 	UdpConnection remote;
 	std::vector<Message*> c2sMessages;

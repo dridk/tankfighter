@@ -38,10 +38,8 @@ class Missile: public Entity
 	Vector2d movement;
 #endif
 	sf::Int64 usecGetLifetime(void);
-	static const float maxLifeDuration;
 
 	private:
-	static const float speed;
 	sf::Clock lifetime;
 	double angle;
 	Player *player;

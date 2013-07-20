@@ -10,6 +10,7 @@
 #include <sstream>
 #include "engine.h"
 #include "misc.h"
+#include "parameters.h"
 
 #if 0
 struct Block {
@@ -73,7 +74,7 @@ static void enum_map(BlockEnumerator *blockenum, const char *json_path) {
 	if (!map_type) {
 		reterror("JSON is not a JSON map (no type field)!");
 	}
-	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, "ktank-map")==0)) {
+	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, parameters.map_magic())==0)) {
 		reterror("JSON is not a JSON map (type field is not ktank-map)!");
 	}
 	const json_value *blocks = access_json_hash(p, "blocks");
@@ -142,7 +143,7 @@ static bool enum_keymap(KeymapEnumerator *kmenum, const char *json_path) {
 	if (!(p=json_load(json_path))) {
 		return false;
 	}
-	if (!json_check_type(p, "ktank-ctrl-map")) {
+	if (!json_check_type(p, parameters.keymap_magic())) {
 		json_value_free(p);
 		return false;
 	}

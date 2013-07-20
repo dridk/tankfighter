@@ -9,10 +9,9 @@
 #include "wall.h"
 #include <stdio.h>
 #include "missile.h"
+#include "parameters.h"
 
 using namespace sf;
-
-const float Player::missileDelay = 200;
 
 void Player::setController(Controller *newc) {
 	controller = newc;
@@ -83,12 +82,12 @@ Player::Player(Controller *controller0, Engine *engine):Entity(SHAPE_CIRCLE, eng
 
 Vector2d Player::getSize() const {
 	Vector2d sz;
-	sz.x = 128;
-	sz.y = 128;
+	sz.x = parameters.tankDiameter(); 
+	sz.y = sz.x;
 	return sz;
 }
 void Player::draw(sf::RenderTarget &target) const {
-	Sprite &body = getSprite("car");
+	Sprite &body = getSprite(parameters.tankSpriteName());
 	FloatRect r = body.getLocalBounds();
 	body.setPosition(Vector2f(position.x, position.y));
 	body.setOrigin(Vector2f(r.width/2, r.height/2));
@@ -96,7 +95,7 @@ void Player::draw(sf::RenderTarget &target) const {
 	body.setColor(color);
 	target.draw(body);
 
-	Sprite &canon = getSprite("canon");
+	Sprite &canon = getSprite(parameters.canonSpriteName());
 	r = canon.getLocalBounds();
 	canon.setPosition(Vector2f(position.x, position.y));
 	canon.setOrigin(Vector2f(r.width/2, r.height/2));
@@ -104,12 +103,8 @@ void Player::draw(sf::RenderTarget &target) const {
 	canon.setColor(color);
 	target.draw(canon);
 }
-static const double canon_rotation_speed = 3e-4/180*M_PI; /* radians per microsecond */
-static const double tank_rotation_speed = 3e-4/180*M_PI;
-static const double linear_speed = 3e-4; /* pixels per microsecond */
-
 void Player::try_shoot() {
-	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)missileDelay)*1000) {
+	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)parameters.missileDelayMS())*1000) {
 		Missile *ml = new Missile(this);
 		shoot_clock.restart();
 		if (controller->missileCreation(ml)) {
@@ -205,8 +200,8 @@ Vector2d Player::movement(Int64 tm) {
 	if (pcd.flags & PCD_Tank_Angle)  tank_direction  = pcd.tank_angle;
 	if (pcd.flags & PCD_Canon_Angle) canon_direction = pcd.canon_angle;
 
-	canon_direction += pcd.canon_rotation * tm * canon_rotation_speed;
-	tank_direction  += pcd.tank_rotation  * tm * tank_rotation_speed;
+	canon_direction += pcd.canon_rotation * tm * parameters.canon_rotation_speed();
+	tank_direction  += pcd.tank_rotation  * tm * parameters.tank_rotation_speed();
 
 	normalizeAngle(canon_direction);
 	normalizeAngle(tank_direction);
@@ -214,6 +209,7 @@ Vector2d Player::movement(Int64 tm) {
 	if (pcd.flags & PCD_Position) {
 		tank_movement = pcd.position - position;
 	}
+	double linear_speed = parameters.linear_tank_speed();
 	if (pcd.movement.x != 0 || pcd.movement.y != 0) {
 		tank_movement
 		+=Vector2d(pcd.movement.x * tm * linear_speed,

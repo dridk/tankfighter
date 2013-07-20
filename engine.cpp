@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include "engine.h"
 #include "entity.h"
 #include "geometry.h"
@@ -13,11 +12,10 @@
 #include <stdio.h>
 #include "commands.h"
 #include "missile.h"
+#include "parameters.h"
 
 using namespace sf;
 
-const unsigned Engine::minFPS = 15;
-const unsigned Engine::maxFPS = 120;
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
 
 
@@ -59,7 +57,7 @@ void Engine::play(void) {
 				if (e.key.code == Keyboard::Escape) quit();
 				if (e.key.code == Keyboard::J && network.isLocal()) {
 					RemoteClient remote;
-					remote.port = 1330;
+					remote.port = parameters.serverPort();
 					remote.addr = IpAddress(127,0,0,1);
 					network.requestConnection(remote);
 					destroy_flagged();
@@ -358,6 +356,8 @@ static bool quasi_equals(double a, double b) {
 	return fabs(a-b) <= 1e-3*(fabs(a)+fabs(b));
 }
 void Engine::compute_physics(void) {
+	unsigned minFPS = parameters.minFPS();
+	unsigned maxFPS = parameters.maxFPS();
 	Int64 tm = clock.getElapsedTime().asMicroseconds();
 	if (tm < 1000000L/maxFPS) {
 		unsigned long rtm = 1000000L/maxFPS - tm;

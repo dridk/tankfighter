@@ -1,8 +1,9 @@
 #include "texture_cache.h"
+#include "parameters.h"
 
 using namespace sf;
 unsigned TextureCache::getTextureID(const char *name) {
-	std::string path = std::string("sprites/") + name + ".png";
+	std::string path = std::string(parameters.spritesDirectory()) + name + parameters.spritesExtension();
 	MapIterator it = idmap.find(path);
 	if (it == idmap.end()) {
 		textures.push_back(Texture());

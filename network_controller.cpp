@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "misc.h"
+#include "parameters.h"
 
 #undef LOG_LLPACKET
 #undef LOG_PKTLOSS
@@ -27,7 +28,6 @@ using namespace sf;
 static void getPlayerPosition(Player *player, PlayerPosition &pos);
 static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 
-const unsigned NetworkClient::C2S_Packet_interval = 10000; /* 10 milliseconds, 100 fps */
 static const char *NMF_PlayerPosition = "uusscc";
 static const char *NMF_MissilePosition = "uussspp";
 static const char *NMF_PlayerMovement = "8" "uffff" "ff";
@@ -171,7 +171,7 @@ size_t format_size(const char *s) {
 
 /************************** Raw UDP packet I/O **********************/
 static bool overflows(const Packet &pkt, unsigned extra=0) {
-	return pkt.getDataSize()+extra >= 512;
+	return pkt.getDataSize()+extra >= parameters.UDP_MTU();
 }
 
 bool Output(Packet &pkt, const char *signature, const void * const data) {
@@ -331,7 +331,7 @@ bool NetworkClient::transmitToServer() { /* returns false if no packet is transm
 		/* You must first request server connection */
 		return false;
 	}
-	if (c2s_time.getElapsedTime().asMicroseconds() < C2S_Packet_interval) return false;
+	if (c2s_time.getElapsedTime().asMicroseconds() < parameters.C2S_Packet_interval_US()) return false;
 	if (is_server) reportPlayerAndMissilePositions();
 	c2s_time.restart();
 	if (!is_server) {
@@ -350,10 +350,8 @@ bool PacketAppend(Packet &pkt, const void *data, size_t size) {
 bool PacketAppend(Packet &pkt, const Packet &pkt2) {
 	return PacketAppend(pkt, pkt2.getData(), pkt.getDataSize());
 }
-static int resendPacketAfterMS = 2000;
-
 static bool must_send_now(Message *msg) {
-	return !(msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  resendPacketAfterMS);
+	return !(msg->must_acknowledge && msg->already_sent && msg->lastTransmission.getElapsedTime().asMilliseconds() <  parameters.resendPacketAfterMS());
 }
 bool NetworkClient::transmitMessage(Message *msg) {
 	Packet pkt;
@@ -744,10 +742,9 @@ bool NetworkClient::treatMessage(Message &msg) {
 	}
 	return false;
 }
-static int maxDupPacketTimeSecs = 10;
 void NetworkClient::dropOldReceivedMessages(void) {
 	for(size_t i=0; i < recMessages.size();) {
-		if (recMessages[i].receptionTime.getElapsedTime().asSeconds() >= maxDupPacketTimeSecs) {
+		if (recMessages[i].receptionTime.getElapsedTime().asSeconds() >= parameters.maxDupPacketTimeSecs()) {
 			recMessages.erase(recMessages.begin()+i);
 		} else i++;
 	}
@@ -811,14 +808,13 @@ bool NetworkClient::receivePacket(sf::Packet &pkt, RemoteClient *client) {
 	}
 	return success;
 }
-static unsigned connectionTimeoutInSecs = 10;
 void NetworkClient::cleanupClients(void) {
 	if (!isServer()) return;
-	if (cleanup_clock.getElapsedTime().asMilliseconds() < 1000) return;
+	if (cleanup_clock.getElapsedTime().asMilliseconds() < parameters.clientsCleanupIntervalMS()) return;
 	cleanup_clock.restart();
 	/* find clients having lost connection */
 	for(size_t i=0; i < pairs.size();) {
-		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000 >= connectionTimeoutInSecs) {
+		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000 >= parameters.connectionTimeoutInSecs()) {
 			RemoteClient client = pairs[i].client;
 			fprintf(stderr, "Error: Client %s:%d timeout\n"
 				,client.addr.toString().c_str(), client.port);
@@ -890,7 +886,7 @@ UdpConnection::UdpConnection(unsigned short localPort) {
 	sock.setBlocking(false);
 }
 void UdpConnection::rebind(unsigned short localPort) {
-	int i=100;
+	int i=parameters.udpPortRange();
 	while (i > 0 && !sock.bind(localPort)) {localPort++;i--;}
 }
 void logPacket(sf::Packet &packet) {
@@ -1000,7 +996,7 @@ void NetworkClient::reportPlayerAndMissilePositions(void) {
 bool NetworkClient::requestConnection(const RemoteClient &server) {
 	clear_all();
 	is_server = false;
-	remote.rebind(1329);
+	remote.rebind(parameters.clientPort());
 	pairs.push_back(RemoteClientInfo(server));
 	RequestConnectionM rcm;
 	Message *nmsg = new Message(&rcm, NMT_C2S_RequestConnection);
@@ -1024,11 +1020,9 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 	Entity::useUpperUID();
 	return true;
 }
-static int disconnectionTimeoutMS = 2000;
 void NetworkClient::requestDisconnection(void) {
 	if (isLocal()) return;
 	sf::Clock wait_ack;
-	resendPacketAfterMS = 500;
 #ifdef LOG_PKTLOSS
 	fprintf(stderr, "Request disconnection at port %d\n", remote.sock.getLocalPort());
 #endif
@@ -1038,7 +1032,7 @@ void NetworkClient::requestDisconnection(void) {
 		willSendMessage(nmsg);
 	}
 	bool message_found = true;
-	while (message_found && wait_ack.getElapsedTime().asMilliseconds() < disconnectionTimeoutMS) {
+	while (message_found && wait_ack.getElapsedTime().asMilliseconds() < parameters.disconnectionTimeoutMS()) {
 		receiveFromServer();
 		transmitToServer();
 		message_found = false;
@@ -1055,7 +1049,7 @@ void NetworkClient::requestDisconnection(void) {
 void NetworkClient::declareAsServer(void) {
 	clear_all();
 	is_server = true;
-	remote.rebind(1330);
+	remote.rebind(parameters.serverPort());
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
 		Player *pl=dynamic_cast<Player*>(*it);
 		if (!pl) continue;

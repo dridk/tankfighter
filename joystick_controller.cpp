@@ -6,6 +6,7 @@
 #include "geometry.h"
 #include <math.h>
 #include <stdio.h>
+#include "parameters.h"
 
 using namespace sf;
 
@@ -72,13 +73,14 @@ void JoystickController::reportPlayerMovement(Player *player, PlayerControllingD
 	if (is_shooting()) pcd.keepShooting();
 	Vector2d mv = Vector2d(getAxis(HorizontalMove), getAxis(VerticalMove));
 	Vector2d ca = Vector2d(getAxis(HorizontalDirection), getAxis(VerticalDirection));
-	if (sqrt(mv.x*mv.x+mv.y*mv.y) >= 0.3) {
+	if (sqrt(mv.x*mv.x+mv.y*mv.y) >= parameters.joyTankSpeedCalibration()) {
 		normalizeVector(mv, 1);
 		pcd.move(mv);
 		moving = true;
 	}
-	if (sqrt(ca.x*ca.x+ca.y*ca.y) >= 0.15) pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
-	else if (moving) {
+	if (sqrt(ca.x*ca.x+ca.y*ca.y) >= parameters.joyCanonDirectionCalibration()) {
+		pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
+	} else if (moving) {
 		pcd.setCanonAngle(angle_from_dxdy(mv.x, mv.y));
 	}
 }

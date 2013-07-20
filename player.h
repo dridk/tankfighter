@@ -77,7 +77,6 @@ class Player: public Entity
 	private:
 	void teleport(void);
 	Controller *controller;
-	static const float missileDelay; /* milliseconds */
 	float tank_direction;
 	float canon_direction;
 	sf::Color color;

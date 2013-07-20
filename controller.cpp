@@ -3,6 +3,7 @@
 #include <math.h>
 #include "coretypes.h"
 #include "engine.h"
+#include "parameters.h"
 
 using namespace sf;
 
@@ -14,7 +15,7 @@ void Controller::reportMissileMovement(Missile *missile, MissileControllingData 
 	double angle = missile->getAngle();
 	mcd.flags = MCD_Movement;
 	mcd.movement = Vector2d(cos(angle), sin(angle));
-	mcd.must_die = missile->usecGetLifetime() >= 1000*(Int64)Missile::maxLifeDuration;
+	mcd.must_die = missile->usecGetLifetime() >= 1000*(Int64)parameters.maxMissileLifeDurationMS();
 }
 void Controller::setPlayer(Player *player0) {
 	player = player0;

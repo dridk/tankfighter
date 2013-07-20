@@ -56,8 +56,6 @@ class Engine
 
 	mutable TextureCache texture_cache;
 
-	static const unsigned minFPS;
-	static const unsigned maxFPS;
 	ControllerDefinitions cdef;
 	sf::Font score_font;
 	Entity *map_boundaries_entity;

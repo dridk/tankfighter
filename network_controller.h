@@ -6,7 +6,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Network/IpAddress.hpp>
 #include <SFML/Network/Packet.hpp>
-#include <cmath>
+#include <string>
 #include "controller.h"
 
 
@@ -38,6 +38,8 @@ enum NetworkMessageType {NMT_None, NMT_Acknowledge,
                       , NMT_S2C_DefineMap, NMT_S2C_Refusal, NMT_S2C_PlayerDeath, NMT_S2C_NewPlayer, NMT_S2C_ReportPMPositions
 		      , NMT_RequestDisconnection
 		      , NMT_S2C_SpawnPlayer /* teleport player after death */
+		      , NMT_C2S_GetServerInfo
+		      , NMT_S2C_ServerInfo
 		      , NMT_Last};
 
 /* we don't need NMT_S2C_EntityDestroyed message as it's simply seen by client when ReportPMPositions don't report a player or missile */
@@ -51,6 +53,7 @@ struct MessageStructure {
 	bool C2S_allowed;
 	bool S2C_allowed;
 };
+
 
 const MessageStructure messages_structures[]={
 	{NMT_None,"Nop",false,"",true,true},
@@ -67,9 +70,17 @@ const MessageStructure messages_structures[]={
 	{NMT_S2C_NewPlayer,"Report player creation",true,"uffffuuub",false,true},
 	{NMT_S2C_ReportPMPositions,"Report players & missiles positions", false,"",false,true},
 	{NMT_RequestDisconnection,"Request client disconnection",true,"",true,true},
-	{NMT_S2C_SpawnPlayer,"Spawn player",true,"uffff",false,true}
+	{NMT_S2C_SpawnPlayer,"Spawn player",true,"uffff",false,true},
+	{NMT_C2S_GetServerInfo, "Get server information",false,"",true,false},
+	{NMT_S2C_ServerInfo, "Report server information",true,"S",false,true}
 };
 
+
+struct GetServerInfoM {
+};
+struct ServerInfoM {
+	char *name;
+};
 
 size_t format_size(const char *s);
 
@@ -204,8 +215,13 @@ struct RemoteClientInfo {
 	sf::Clock lastPacketTime;
 	RemoteClientInfo(const RemoteClient &rc);
 };
+struct ServerInfo {
+	std::string name;
+	RemoteClient remote;
+};
 class NetworkClient {
 	public:
+	typedef std::vector<ServerInfo>::iterator ServerInfoIterator;
 	NetworkClient(Engine *engine);
 	~NetworkClient();
 	Engine *getEngine(void) {return engine;}
@@ -229,9 +245,18 @@ class NetworkClient {
 
 	bool isPendingPlayerConcerned(const sf::Event &e) const;
 
+	void discoverServers(bool wait_now);
+	bool discoveringServers(void);
+	bool shouldEndDiscovery(void);
+	void endServerDiscovery(void);
+	ServerInfoIterator begin_servers();
+	ServerInfoIterator end_servers();
+
 	private:
+	sf::Clock discovery_clock, discovery_period_clock;
 	void willSendMessage(Message *msg); /* used to report one message (structure is allocated by caller, freed by callee) */
 	bool is_server;
+	std::vector<ServerInfo> discoveredServers;
 	std::vector<PlayerMovement> plmovements; /* used on client */
 	std::vector<RemoteClientInfo> pairs;
 	Engine *engine;

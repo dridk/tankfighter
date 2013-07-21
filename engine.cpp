@@ -56,11 +56,7 @@ void Engine::play(void) {
 			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) quit();
 				if (e.key.code == Keyboard::J && network.isLocal()) {
-					RemoteClient remote;
-					remote.port = parameters.serverPort();
-					remote.addr = IpAddress(127,0,0,1);
-					network.requestConnection(remote);
-					destroy_flagged();
+					network.discoverServers(false);
 				}
 				if (e.key.code == Keyboard::K && network.isLocal()) {
 					network.declareAsServer();
@@ -273,6 +269,21 @@ bool Engine::step(void) {
 	if (!network.isLocal()) {
 		network.transmitToServer();
 		network.receiveFromServer();
+		if (network.discoveringServers() && network.shouldEndDiscovery()) {
+			network.endServerDiscovery();
+			size_t i=0;
+			ServerInfo si;
+			for(NetworkClient::ServerInfoIterator it=network.begin_servers(), en=network.end_servers(); it != en; ++it) {
+				si = *it;
+				fprintf(stderr, "Discovered server %s at %s:%d\n"
+					,si.name.c_str()
+					,si.remote.addr.toString().c_str(), si.remote.port);
+				i++;
+			}
+			if (i==1) {
+				network.requestConnection(si.remote);
+			}
+		}
 	}
 	destroy_flagged();
 	return !must_quit;

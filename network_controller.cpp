@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include "misc.h"
 #include "parameters.h"
+#include <math.h>
+#include <unistd.h>
 
 #undef LOG_LLPACKET
 #undef LOG_PKTLOSS
@@ -592,6 +594,17 @@ void NetworkClient::setPlayerScore(const PlayerScore &score) {
 	Player *pl = getEngine()->getPlayerByUID(score.playerUID);
 	if (pl) pl->setScore(score.score);
 }
+static std::string get_server_name(void) {
+	char hostname[256];
+	char domainname[256];
+	if (gethostname(hostname, 256)==-1) strcpy(hostname, "(unknown)");
+	if (getdomainname(domainname, 256)==-1 || strcmp(domainname, "(none)")==0) strcpy(domainname, "");
+	std::string host;
+	if (strcmp(domainname, "")==0) host = hostname; else host = std::string(hostname)+"."+domainname;
+	if (getenv("USER")) {
+		return std::string(getenv("USER")) + "@" + host;
+	} else return host;
+}
 bool NetworkClient::treatMessage(Message &msg) {
 #ifdef LOG_PACKET
 	fprintf(stderr, "[treatMessage %s]\n", messages_structures[msg.type].name);
@@ -755,6 +768,30 @@ bool NetworkClient::treatMessage(Message &msg) {
 		if (!msg.Input(&ppos, messages_structures[msg.type].format)) return false;
 		setPlayerPosition(ppos);
 		return true;
+	} else if (msg.type == NMT_C2S_GetServerInfo) {
+		ServerInfoM si;
+		std::string server_name = get_server_name();
+		si.name = const_cast<char*>(server_name.c_str());
+		Message *nmsg = new Message(&si, NMT_S2C_ServerInfo);
+		nmsg->client = msg.client;
+		willSendMessage(nmsg);
+		return true;
+	} else if (msg.type == NMT_S2C_ServerInfo) {
+		ServerInfoM sim;
+		if (!msg.Input(&sim, messages_structures[msg.type].format)) return false;
+		ServerInfo si;
+		si.name = std::string(sim.name);
+		si.remote = msg.client;
+		free(sim.name);
+		bool is_known = false;
+		for(size_t i=0; i < discoveredServers.size(); ++i) {
+			if (discoveredServers[i].remote == si.remote) {
+				is_known = true;
+				break;
+			}
+		}
+		if (!is_known) discoveredServers.push_back(si);
+		return true;
 	}
 	return false;
 }
@@ -897,6 +934,9 @@ void NetworkClient::clear_all(void) {
 	c2s_time.restart();
 	cleanup_clock.restart();
 	last_pm_seqid = 0;
+	discoveredServers.clear();
+	discovery_clock.restart();
+	discovery_period_clock.restart();
 }
 UdpConnection::UdpConnection() {
 	sock.setBlocking(false);
@@ -1128,4 +1168,71 @@ void NetworkClient::reportPlayerSpawned(const PlayerPosition &ppos) {
 		nmsg->client = pairs[i].client;
 		willSendMessage(nmsg);
 	}
+}
+void NetworkClient::discoverServers(bool wait_now) {
+	if (!isLocal()) return;
+	RemoteClient cl;
+	cl.port = parameters.serverPort();
+	cl.addr = sf::IpAddress::Broadcast;
+	pairs.push_back(RemoteClientInfo(cl)); /* Now, isClient() becomes true */
+
+	Message *nmsg = new Message(NULL, NMT_C2S_GetServerInfo);
+	nmsg->client = cl;
+	willSendMessage(nmsg);
+
+	if (!wait_now) {
+		discovery_clock.restart();
+		discovery_period_clock.restart();
+	}
+	Clock timeout;
+	Clock period;
+	bool first_time = true;
+	do {
+		if (first_time || period.getElapsedTime().asMilliseconds() >= parameters.serverDiscoveryPeriodMS()) {
+			Message *nmsg = new Message(NULL, NMT_C2S_GetServerInfo);
+			nmsg->client = cl;
+			willSendMessage(nmsg);
+			period.restart();
+			first_time = false;
+		}
+		if (!wait_now) return;
+		receiveFromServer();
+		transmitToServer();
+		sf::sleep(milliseconds(10));
+	} while (timeout.getElapsedTime().asMilliseconds() < parameters.serverDiscoveryTimeoutMS());
+	pairs.clear();
+}
+bool NetworkClient::discoveringServers(void) {
+	if (!isClient()) return false;
+	if (pairs.size() != 1) return false;
+	RemoteClient cl = pairs[0].client;
+	if (cl.addr == sf::IpAddress::Broadcast) {
+		return true;
+	}
+	return false;
+}
+bool NetworkClient::shouldEndDiscovery(void) {
+	if (!discoveringServers()) return false;
+	bool should_end = discovery_clock.getElapsedTime().asMilliseconds() >= parameters.serverDiscoveryTimeoutMS();
+	if (should_end) {
+		return true;
+	}
+	if (discovery_period_clock.getElapsedTime().asMilliseconds() >= parameters.serverDiscoveryPeriodMS()) {
+		Message *nmsg = new Message(NULL, NMT_C2S_GetServerInfo);
+		nmsg->client = pairs[0].client;
+		willSendMessage(nmsg);
+		discovery_period_clock.restart();
+	}
+	return should_end;
+}
+void NetworkClient::endServerDiscovery(void) {
+	if (!discoveringServers()) return;
+	pairs.clear();
+	/* now, isLocal() == true */
+}
+NetworkClient::ServerInfoIterator NetworkClient::begin_servers() {
+	return discoveredServers.begin();
+}
+NetworkClient::ServerInfoIterator NetworkClient::end_servers() {
+	return discoveredServers.end();
 }

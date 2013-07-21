@@ -14,6 +14,7 @@ class Entity;
 class EngineEvent;
 class Player;
 class Missile;
+class Menu;
 
 class Engine
 {
@@ -67,5 +68,7 @@ class Engine
 	NetworkClient network;
 	bool first_step;
 	bool must_quit;
+	std::vector<ServerInfo> cur_server_info;
+	Menu *network_menu;
 };
 #endif

@@ -13,6 +13,7 @@
 #include "commands.h"
 #include "missile.h"
 #include "parameters.h"
+#include "menu.h"
 
 using namespace sf;
 
@@ -184,7 +185,38 @@ Engine::EntitiesIterator Engine::begin_entities() {
 Engine::EntitiesIterator Engine::end_entities() {
 	return entities.end();
 }
+#if 0
+static void add_test_menu(Engine *engine) {
+	Menu *m = new Menu(engine);
+	m->addItem("Hello world!");
+	m->addItem("How are you?");
+	m->addItem("This is a pretty long string!");
+	m->addItem("This is an even longer string that should reduce char size!");
+	for(size_t i=0;i<200;i++) {
+		char buffer[256];
+		sprintf(buffer, "This is item %u", (unsigned)i);
+		m->addItem(buffer);
+	}
+	engine->add(m);
+}
+#endif
+Menu *networkMenu(Engine *engine, const std::vector<ServerInfo> &si) {
+	Menu *m = new Menu(engine);
+	m->addItem("Play locally");
+	m->addItem("Create server");
+	for(size_t i=0; i < si.size(); ++i) {
+		RemoteClient rc=si[i].remote;
+		char portbuffer[64];
+		sprintf(portbuffer, "%d", rc.port);
+		std::string title = (std::string("Join ")+si[i].name+" at "+rc.addr.toString()+":"+portbuffer);
+		fprintf(stderr, "Adding menu item %s\n", title.c_str());
+		m->addItem(title.c_str());
+	}
+	engine->add(m);
+	return m;
+}
 Engine::Engine():network(this) {
+	network_menu = NULL;
 	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
@@ -266,29 +298,47 @@ bool Engine::step(void) {
 	if (first_step) {clock.restart();first_step=false;}
 	draw();
 	compute_physics();
+	if (network_menu) {
+		if (network_menu->selectionValidated()) {
+			int icl = network_menu->getSelected();
+			fprintf(stderr, "network selection %d\n", icl);
+			destroy(network_menu);
+			network_menu = NULL;
+			if (icl == 1) {
+				network.declareAsServer();
+			} else if (icl >= 2) {
+				network.requestConnection(cur_server_info[icl-2].remote);
+			}
+		}
+	}
 	if (!network.isLocal()) {
 		network.transmitToServer();
 		network.receiveFromServer();
-		if (network.discoveringServers() && network.shouldEndDiscovery()) {
+		if ((!network_menu) && network.discoveringServers() && network.shouldEndDiscovery()) {
 			network.endServerDiscovery();
 			size_t i=0;
 			ServerInfo si;
+			cur_server_info.clear();
 			for(NetworkClient::ServerInfoIterator it=network.begin_servers(), en=network.end_servers(); it != en; ++it) {
 				si = *it;
 				fprintf(stderr, "Discovered server %s at %s:%d\n"
 					,si.name.c_str()
 					,si.remote.addr.toString().c_str(), si.remote.port);
+				cur_server_info.push_back(*it);
 				i++;
 			}
+			network_menu = networkMenu(this, cur_server_info);
+#if 0
 			if (i==1) {
 				network.requestConnection(si.remote);
 			}
+#endif
 		}
 	}
 	destroy_flagged();
 	return !must_quit;
 }
-void draw_score(RenderTarget &target, Font &ft, int score, Color color, Vector2d pos) {
+static void draw_score(RenderTarget &target, Font &ft, int score, Color color, Vector2d pos) {
 	Text text;
 	char sscore[256];
 	sprintf(sscore, "%d", score);

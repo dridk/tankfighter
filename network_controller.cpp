@@ -947,6 +947,7 @@ UdpConnection::UdpConnection(unsigned short localPort) {
 }
 void UdpConnection::rebind(unsigned short localPort) {
 	int i=parameters.udpPortRange();
+	sock.unbind();
 	while (i > 0 && !sock.bind(localPort)) {localPort++;i--;}
 }
 void logPacket(sf::Packet &packet) {

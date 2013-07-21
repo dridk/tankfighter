@@ -49,6 +49,7 @@ bool Engine::canCreateMissile(Player *pl) {
 	return CountMissiles(this, pl) < 3;
 }
 void Engine::play(void) {
+	network.discoverServers(false);
 	while (step()) {
 		Event e;
 		while (window.pollEvent(e)) {
@@ -56,6 +57,7 @@ void Engine::play(void) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) quit();
+#if 0
 				if (e.key.code == Keyboard::J && network.isLocal()) {
 					network.discoverServers(false);
 				}
@@ -63,6 +65,7 @@ void Engine::play(void) {
 					network.declareAsServer();
 					destroy_flagged();
 				}
+#endif
 			} else if (e.type == Event::JoystickConnected) {
 				addPlayer(0, e.joystickConnect.joystickId);
 			} else if (e.type == Event::JoystickDisconnected) {
@@ -159,7 +162,7 @@ void Engine::addPlayer(unsigned cid, int joyid) {
 	if (cid == 0) newc = new JoystickController(joyid);
 	else newc = cdef.forplayer[cid]->clone(joyid);
 	
-	if (network.isLocal()) {
+	if (network.isLocal() || network.discoveringServers()) {
 		add(new Player(newc, this));
 	} else if (network.isServer()) {
 		Player *pl = new Player(new MasterController(&network, newc), this);

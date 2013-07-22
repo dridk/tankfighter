@@ -14,6 +14,7 @@
 #include "missile.h"
 #include "parameters.h"
 #include "menu.h"
+#include "messages.h"
 
 using namespace sf;
 
@@ -57,6 +58,16 @@ void Engine::play(void) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) quit();
+				if (e.key.code == Keyboard::M) {
+					char buffer[256];
+					const char *words[]={"hello", "this", "stuff", "foo", "bar", "baz", "cool", "rocks", "good"};
+					static int n=0;
+					sprintf(buffer, "%s %s %s %d", words[int(get_random(sizeof(words)/sizeof(words[0])))]
+						, words[int(get_random(sizeof(words)/sizeof(words[0])))]
+						, words[int(get_random(sizeof(words)/sizeof(words[0])))]
+						, n++);
+					display(buffer);
+				}
 #if 0
 				if (e.key.code == Keyboard::J && network.isLocal()) {
 					network.discoverServers(false);
@@ -218,7 +229,7 @@ Menu *networkMenu(Engine *engine, const std::vector<ServerInfo> &si) {
 	engine->add(m);
 	return m;
 }
-Engine::Engine():network(this) {
+Engine::Engine():network(this),messages(this) {
 	network_menu = NULL;
 	map_boundaries_entity = NULL;
 	first_step = true;
@@ -382,6 +393,8 @@ void Engine::draw(void) {
 		if (dynamic_cast<Player*>(e) || dynamic_cast<Wall*>(e)) continue;
 		e->draw(window);
 	}
+	messages.movement(0);
+	messages.draw(window);
 	window.display();
 }
 static double getEntityRadius(Entity *a) {
@@ -525,3 +538,7 @@ void Engine::destroy_flagged(void) {
 }
 
 NetworkClient *Engine::getNetwork(void) {return &network;}
+
+void Engine::display(const std::string &text, const sf::Color *c) {
+	messages.display(text, c);
+}

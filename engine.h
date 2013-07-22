@@ -9,6 +9,7 @@
 #include "texture_cache.h"
 #include "load_map.h"
 #include "network_controller.h"
+#include "messages.h"
 
 class Entity;
 class EngineEvent;
@@ -54,6 +55,7 @@ class Engine
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
+	void display(const std::string &text, const sf::Color *c = NULL);
 
 	mutable TextureCache texture_cache;
 
@@ -70,5 +72,6 @@ class Engine
 	bool must_quit;
 	std::vector<ServerInfo> cur_server_info;
 	Menu *network_menu;
+	Messages messages;
 };
 #endif

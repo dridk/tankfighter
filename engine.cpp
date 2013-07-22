@@ -347,9 +347,13 @@ static void draw_score(RenderTarget &target, Font &ft, int score, Color color, V
 	sprintf(sscore, "%d", score);
 	text.setCharacterSize(128);
 	text.setString(sscore);
+	text.setColor(Color(0,0,0));
+	text.setPosition(Vector2f(pos.x+2, pos.y+2));
+	text.setFont(ft);
+	target.draw(text);
+
 	text.setColor(color);
 	text.setPosition(Vector2f(pos.x, pos.y));
-	text.setFont(ft);
 
 	target.draw(text);
 }

@@ -48,6 +48,7 @@ class Engine
 	Entity *getEntityByUID(sf::Uint32 uid);
 	Player *getPlayerByUID(sf::Uint32 uid);
 	Missile *getMissileByUID(sf::Uint32 uid);
+	void display(const std::string &text, const sf::Color *c = NULL);
 	private:
 	Player *getPlayerByJoystickId(int joyid);
 	void controller_activity(sf::Event &e);
@@ -55,7 +56,6 @@ class Engine
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
-	void display(const std::string &text, const sf::Color *c = NULL);
 
 	mutable TextureCache texture_cache;
 

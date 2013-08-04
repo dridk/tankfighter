@@ -7,22 +7,34 @@
 #include <math.h>
 #include <stdio.h>
 #include "parameters.h"
+#include "engine.h"
 
 using namespace sf;
 
 
-enum JoystickType {JT_UNKNOWN, JT_XYZR, JT_XYUV, JT_XYUZ, JT_XYUR, JT_XBOX};
+enum JoystickFlags {JF_ANALOG_USED=1, JF_DV_USED=2, JF_DH_USED=4, JF_SIGNALED=8};
+enum JoystickType {JT_UNKNOWN, JT_XYZR, JT_XYUV, JT_XYUZ, JT_XYUR, JT_XBOX, JT_XY, JT_XYUZR};
 JoystickController::JoystickController(int joyid0):joyid(joyid0) {
+	flags=0;
 	joytype = JT_UNKNOWN;
-	bool hasZR = Joystick::hasAxis(joyid, Joystick::Z) && Joystick::hasAxis(joyid, Joystick::R);
-	bool hasUV = Joystick::hasAxis(joyid, Joystick::U) && Joystick::hasAxis(joyid, Joystick::V);
+	bool hasZ = Joystick::hasAxis(joyid, Joystick::Z);
+	bool hasR = Joystick::hasAxis(joyid, Joystick::R);
+	bool hasU = Joystick::hasAxis(joyid, Joystick::U);
+	bool hasV = Joystick::hasAxis(joyid, Joystick::V);
+	bool hasZR = hasZ && hasR;
+	bool hasUV = hasU && hasV;
+	if (!hasZR && !hasUV) joytype = JT_XY;
 	if (hasZR && !hasUV) joytype = JT_XYZR;
 	if (hasUV && !hasZR) joytype = JT_XYUV;
-	if (hasUV && hasZR) joytype = JT_XYUZ;
-	if (Joystick::hasAxis(joyid, Joystick::R) && Joystick::hasAxis(joyid, Joystick::U) && !Joystick::hasAxis(joyid, Joystick::V)) joytype = JT_XYUR;
-	if (fabs(fabs(getJoyAxis(Joystick::Z))-1)<1e-3) {
+	if (hasU && hasZR) joytype = JT_XYUZR;
+	if (hasZ && hasU && !hasV && !hasR) joytype = JT_XYUZ;
+	if (hasR && hasU && !hasV && !hasZ) joytype = JT_XYUR;
+	if (fabs(fabs(getJoyAxis(Joystick::Z))-1)<1e-3 && hasUV) {
 		joytype = JT_XBOX;
 	}
+#ifdef DEBUG_JOYSTICK
+	fprintf(stderr, "joytype ZRUV=%d%d%d%d %d\n", hasZ, hasR, hasU, hasV, joytype);
+#endif
 }
 float JoystickController::getJoyAxis(Joystick::Axis axis) {
 	if (Joystick::hasAxis(joyid, axis))
@@ -33,6 +45,9 @@ float JoystickController::getJoyAxis(Joystick::Axis axis) {
 		}
 	else return 0;
 }
+bool JoystickController::getButton(int id) {
+	return Joystick::isButtonPressed(joyid, id);
+}
 float JoystickController::getAxis(JoystickAxis axis) {
 	switch(axis) {
 		case HorizontalMove:
@@ -40,17 +55,28 @@ float JoystickController::getAxis(JoystickAxis axis) {
 		case VerticalMove:
 			return getJoyAxis(Joystick::Y)+getJoyAxis(Joystick::PovY);
 		case HorizontalDirection:
-			if (joytype == JT_XYZR) return getJoyAxis(Joystick::Z);
-			else if (joytype == JT_XYUR) return getJoyAxis(Joystick::U);
-			else return getJoyAxis(Joystick::U); /* XBOX or XYUV or XYUZ */
+			{
+			int hd=getButton(1)-getButton(3);
+			double ha;
+			if (joytype == JT_XYZR) ha=getJoyAxis(Joystick::Z);
+			else ha=getJoyAxis(Joystick::U);
+			if (hd) flags|=JF_DH_USED;
+			if (fabs(ha)>=1e-3) flags|=JF_ANALOG_USED;
+			return ha+hd;
+			}
 		case VerticalDirection:
 			{
-			if (joytype == JT_XBOX) return getJoyAxis(Joystick::V);
-			if (joytype == JT_XYZR) return getJoyAxis(Joystick::R);
-			if (joytype == JT_XYUR) return getJoyAxis(Joystick::R);
-			if (joytype == JT_XYUV) return getJoyAxis(Joystick::V);
-			if (joytype == JT_XYUZ) return getJoyAxis(Joystick::Z);
-			return 0;
+			int vd=getButton(2)-getButton(0);
+			double va=0;
+			if (joytype == JT_XBOX) va=getJoyAxis(Joystick::V);
+			if (joytype == JT_XYZR) va=getJoyAxis(Joystick::R);
+			if (joytype == JT_XYUR) va=getJoyAxis(Joystick::R);
+			if (joytype == JT_XYUV) va=getJoyAxis(Joystick::V);
+			if (joytype == JT_XYUZ) va=getJoyAxis(Joystick::Z);
+			if (joytype == JT_XYUZR) va=getJoyAxis(Joystick::Z)+getJoyAxis(Joystick::R);
+			if (vd) flags|=JF_DV_USED;
+			if (fabs(va)>=1e-3) flags|=JF_ANALOG_USED;
+			return va+vd;
 			}
 		default:
 		return 0;
@@ -58,7 +84,7 @@ float JoystickController::getAxis(JoystickAxis axis) {
 }
 
 bool JoystickController::is_shooting() {
-	for(unsigned i=0; i < Joystick::getButtonCount(joyid); i++) {
+	for(unsigned i=4; i < Joystick::getButtonCount(joyid); i++) {
 		if (Joystick::isButtonPressed(joyid, i)) {
 			return true;
 		}
@@ -82,6 +108,10 @@ void JoystickController::reportPlayerMovement(Player *player, PlayerControllingD
 		pcd.setCanonAngle(angle_from_dxdy(ca.x, ca.y));
 	} else if (moving) {
 		pcd.setCanonAngle(angle_from_dxdy(mv.x, mv.y));
+	}
+	if ((flags & (JF_DH_USED | JF_DV_USED)) && !(flags & JF_ANALOG_USED) && joytype!=JT_XY && joytype!=JT_UNKNOWN && !(flags & JF_SIGNALED)) {
+		flags|=JF_SIGNALED;
+		player->getEngine()->display("Select analog mode to get more accurate canon direction");
 	}
 }
 

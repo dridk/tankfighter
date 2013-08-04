@@ -41,9 +41,11 @@ class JoystickController: public LocalController
 	private:
 	float getJoyAxis(sf::Joystick::Axis axis);
 	float getAxis(JoystickAxis axis);
+	bool getButton(int id);
 	bool is_shooting();
 	unsigned char joyid;
 	unsigned char joytype;
+	unsigned char flags;
 };
 
 class KeyboardMouseController: public Controller

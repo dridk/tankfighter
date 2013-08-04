@@ -16,6 +16,7 @@
 #include "menu.h"
 #include "messages.h"
 
+
 using namespace sf;
 
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
@@ -88,7 +89,10 @@ void Engine::play(void) {
 			}
 #ifdef DEBUG_JOYSTICK
 			if (e.type == Event::JoystickMoved) {
-				fprintf(stderr, "[moved axis %u %u %lf]\n", e.joystickMove.joystickId, e.joystickMove.axis, e.joystickMove.position);
+				fprintf(stderr, "[moved axis %u %u %f]\n", e.joystickMove.joystickId, e.joystickMove.axis, e.joystickMove.position);
+			}
+			if (e.type == Event::JoystickButtonPressed) {
+				fprintf(stderr, "[pressed joybutton %u %u]\n", e.joystickMove.joystickId, e.joystickButton.button);
 			}
 #endif
 		}

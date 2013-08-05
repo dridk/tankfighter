@@ -109,7 +109,7 @@ void JoystickController::reportPlayerMovement(Player *player, PlayerControllingD
 	} else if (moving) {
 		pcd.setCanonAngle(angle_from_dxdy(mv.x, mv.y));
 	}
-	if ((flags & (JF_DH_USED | JF_DV_USED)) && !(flags & JF_ANALOG_USED) && joytype!=JT_XY && joytype!=JT_UNKNOWN && !(flags & JF_SIGNALED)) {
+	if ((flags & (JF_DH_USED | JF_DV_USED))==(JF_DH_USED | JF_DV_USED) && !(flags & JF_ANALOG_USED) && joytype!=JT_XY && joytype!=JT_UNKNOWN && !(flags & JF_SIGNALED)) {
 		flags|=JF_SIGNALED;
 		player->getEngine()->display("Select analog mode to get more accurate canon direction");
 	}

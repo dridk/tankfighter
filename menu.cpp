@@ -3,6 +3,8 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Joystick.hpp>
+#include <SFML/Window/Mouse.hpp>
 #include "engine.h"
 
 using namespace sf;
@@ -14,6 +16,8 @@ Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
 	selectedItem = -1;
 	irep = 0;
 	validated = false;
+	ompos = Mouse::getPosition(getEngine()->getWindow());
+	mouseLeftWasPressed = true;
 }
 Vector2d Menu::getSize() const {
 	return Vector2d(0,0);
@@ -46,52 +50,70 @@ Vector2d Menu::text_size(unsigned font_size) const {
 	}
 	return sz;
 }
-void Menu::draw(sf::RenderTarget &target) const {
-	if (items.size() == 0) return;
-	unsigned hmargin = 200, wmargin = 200;
-	unsigned tmargin = 20;
-	double hspacing = 1.5;
-	int start, end;
+Menu::MenuMetrics Menu::getMetrics(void) const {
+	MenuMetrics m;
+	if (items.size() == 0) return m;
+	m.hmargin = 200; m.wmargin = 200;
+	m.tmargin = 20;
+	m.hspacing = 1.5;
+	unsigned hmargin = m.hmargin, wmargin = m.wmargin;
 	Vector2u wsize = getEngine()->getWindow().getSize();
-	int font_size = (wsize.y-hmargin)/((items.size() <= 3 ? 3 : items.size())+3)/hspacing;
+	m.wsize = wsize;
+	int font_size = (wsize.y-hmargin)/((items.size() <= 3 ? 3 : items.size())+3)/m.hspacing;
 	if (font_size < 12) font_size = 12;
 	
 	Vector2d size = text_size(font_size);
-	size.y *= hspacing;
+	size.y *= m.hspacing;
 	if (size.x >= (wsize.x-wmargin)) {
 		font_size = int(((double)font_size)/size.x*(wsize.x-wmargin));
 		size = text_size(font_size);
-		size.y *= hspacing;
+		size.y *= m.hspacing;
 	}
 	if (font_size < 12) font_size = 12;
 
-	double texth = size.y/(items.size());
-	start = 0; end = items.size();
+	m.font_size = font_size;
+
+	m.texth = size.y/(items.size());
+	m.start = 0; m.end = items.size();
 	if (size.y >= (wsize.y-hmargin)) { /* too many items to fit in a screen */
-		int dispCount = (wsize.y-hmargin)/texth;
-		start = selectedItem - dispCount/2;
-		if (start < 0) start = 0;
-		end = start + dispCount;
-		if (end >= int(items.size())) {
-			end = items.size();
-			start = end - dispCount;
+		int dispCount = (wsize.y-hmargin)/m.texth;
+		m.start = selectedItem - dispCount/2;
+		if (m.start < 0) m.start = 0;
+		m.end = m.start + dispCount;
+		if (m.end >= int(items.size())) {
+			m.end = items.size();
+			m.start = m.end - dispCount;
 		}
-		size.y = dispCount * texth;
+		size.y = dispCount * m.texth;
 	}
-	Vector2d pos0;
-	pos0.x = (wsize.x - size.x)/2;
-	pos0.y = (wsize.y - size.y)/2;
+	m.clr.left = (wsize.x - size.x)/2;
+	m.clr.top = (wsize.y - size.y)/2;
+	m.clr.width = size.x;
+	m.clr.height = size.y;
+	return m;
+}
+int Menu::getItemFromPosition(const Vector2f &pos) const {
+	MenuMetrics m = getMetrics();
+	if (pos.x < m.clr.left || pos.x >= m.clr.left+m.clr.width) return -1;
+	if (pos.y < m.clr.top  || pos.y >= m.clr.top+m.clr.height) return -1;
+	int item = m.start+int((pos.y-m.clr.top)/m.texth);
+	if (item >= m.end || item < m.start) return -1;
+	return item;
+}
+void Menu::draw(sf::RenderTarget &target) const {
+	if (items.size() == 0) return;
+	MenuMetrics m = getMetrics();
 	RectangleShape r;
-	r.setSize(Vector2f(size.x+tmargin, size.y+tmargin));
-	r.setPosition(pos0.x-tmargin/2, pos0.y-tmargin/2);
+	r.setPosition(m.clr.left-m.tmargin/2, m.clr.top-m.tmargin/2);
+	r.setSize(Vector2f(m.clr.width+m.tmargin, m.clr.height+m.tmargin));
 	r.setFillColor(Color(128,128,128,160));
 	target.draw(r);
 
-	for(int i=start; i < end; ++i) {
-		Vector2d pos = Vector2d(pos0.x, pos0.y + texth * (i-start));
+	for(int i=m.start; i < m.end; ++i) {
+		Vector2d pos = Vector2d(m.clr.left, m.clr.top + m.texth * (i-m.start));
 		Color color;
 		if (i == selectedItem) color = Color(192,0,0); else color = Color(255,255,255);
-		draw_string(target, items[i].title.c_str(), pos, font_size, color);
+		draw_string(target, items[i].title.c_str(), pos, m.font_size, color);
 	}
 }
 void Menu::event_received(EngineEvent *event) {
@@ -143,6 +165,19 @@ void Menu::controllerFeedback(void) {
 	bool end = Keyboard::isKeyPressed(Keyboard::End);
 	bool pgup = Keyboard::isKeyPressed(Keyboard::PageUp);
 	bool pgdown = Keyboard::isKeyPressed(Keyboard::PageDown);
+	int alljoy=0;
+	bool alljoybut=0;
+	for(unsigned i=0; i < Joystick::Count; i++) {
+		if (!Joystick::isConnected(i)) continue;
+		float ay = Joystick::getAxisPosition(i, Joystick::Y);
+		float dy = Joystick::getAxisPosition(i, Joystick::PovY);
+		alljoy += int((ay+dy)*1.2/100);
+		for(unsigned b=0; b < Joystick::getButtonCount(i); b++) {
+			alljoybut |= Joystick::isButtonPressed(i, b);
+		}
+	}
+	if (alljoy < 0) up=true;
+	if (alljoy > 0) down=true;
 	if (Keyboard::isKeyPressed(Keyboard::Return)) {
 		validated = true;
 		return;
@@ -164,6 +199,18 @@ void Menu::controllerFeedback(void) {
 		if (irep >= 10) irep = 10;
 		key_repeat.restart();
 	}
+	Vector2i mpos = Mouse::getPosition(getEngine()->getWindow());
+	if (mpos != ompos) {
+		int item = getItemFromPosition(Vector2f(mpos.x, mpos.y));
+		if (item >= 0) selectByIndex(item);
+		ompos = mpos;
+	}
+	if (Mouse::isButtonPressed(Mouse::Left) && !mouseLeftWasPressed) {
+		int item = getItemFromPosition(Vector2f(mpos.x, mpos.y));
+		if (item >= 0) {selectByIndex(item);validated=true;}
+	}
+	mouseLeftWasPressed = Mouse::isButtonPressed(Mouse::Left);
+	if (alljoybut) validated = true;
 }
 bool Menu::selectionValidated(void) const {
 	return validated;

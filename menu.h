@@ -33,14 +33,28 @@ class Menu:public Entity
 		std::string title;
 		void *user_data;
 	};
+	struct MenuMetrics {
+		sf::Vector2u wsize;
+		unsigned hmargin, wmargin, tmargin;
+		float hspacing;
+
+		sf::FloatRect clr;
+		int font_size;
+		int start, end;
+		float texth;
+	};
 	std::vector<MenuItem> items;
 	int selectedItem;
 	sf::Font font;
-	void draw_string(sf::RenderTarget &target, const char *str, Vector2d pos, int font_size, sf::Color color) const;
-	Vector2d text_size(unsigned font_size) const;
-	void controllerFeedback(void);
 	sf::Clock key_repeat;
 	unsigned char irep;
 	bool validated;
+	void draw_string(sf::RenderTarget &target, const char *str, Vector2d pos, int font_size, sf::Color color) const;
+	Vector2d text_size(unsigned font_size) const;
+	void controllerFeedback(void);
+	MenuMetrics getMetrics(void) const;
+	int getItemFromPosition(const sf::Vector2f &pos) const;
+	sf::Vector2i ompos;
+	bool mouseLeftWasPressed;
 };
 #endif

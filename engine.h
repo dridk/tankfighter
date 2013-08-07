@@ -50,12 +50,16 @@ class Engine
 	Missile *getMissileByUID(sf::Uint32 uid);
 	void display(const std::string &text, const sf::Color *c = NULL);
 	private:
+	void addJoinItem(const ServerInfo &si);
 	Player *getPlayerByJoystickId(int joyid);
 	void controller_activity(sf::Event &e);
 	bool step(void);
 	void draw(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
+	void PopupMenu(void);
+	void CheckMenu(void);
+	void CloseMenu(void);
 
 	mutable TextureCache texture_cache;
 

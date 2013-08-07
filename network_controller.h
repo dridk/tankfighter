@@ -216,6 +216,7 @@ struct RemoteClientInfo {
 	RemoteClientInfo(const RemoteClient &rc);
 };
 struct ServerInfo {
+	bool operator ==(const ServerInfo &oth) const {return name == oth.name && remote == oth.remote;}
 	std::string name;
 	RemoteClient remote;
 };
@@ -247,7 +248,7 @@ class NetworkClient {
 
 	void discoverServers(bool wait_now);
 	bool discoveringServers(void);
-	bool shouldEndDiscovery(void);
+	bool discoverMoreServers(void);
 	void endServerDiscovery(void);
 	ServerInfoIterator begin_servers();
 	ServerInfoIterator end_servers();

@@ -11,6 +11,7 @@ using namespace sf;
 
 Menu::~Menu() {
 }
+size_t Menu::getItemCount(void) const {return items.size();}
 Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
 	font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 	selectedItem = -1;
@@ -119,11 +120,12 @@ void Menu::draw(sf::RenderTarget &target) const {
 void Menu::event_received(EngineEvent *event) {
 }
 
-void Menu::addItem(const char *item_string, void *user_data) {
+void Menu::addItem(const char *item_string, void *user_data, int beforeItem) {
 	MenuItem item;
 	item.title = item_string;
 	item.user_data = user_data;
-	items.push_back(item);
+	if (beforeItem == -1) items.push_back(item);
+	else items.insert(items.begin()+beforeItem, item);
 	if (selectedItem < 0 && items.size() == 1) selectedItem = 0;
 }
 
@@ -181,10 +183,6 @@ void Menu::controllerFeedback(void) {
 	if (Keyboard::isKeyPressed(Keyboard::Return)) {
 		validated = true;
 		return;
-	} else if (Keyboard::isKeyPressed(Keyboard::Escape)) {
-		validated = true;
-		selectedItem = -1;
-		return;
 	}
 	if (!(up || down || start || end || pgup || pgdown))
 		{key_repeat.restart();irep = 0;}
@@ -214,4 +212,8 @@ void Menu::controllerFeedback(void) {
 }
 bool Menu::selectionValidated(void) const {
 	return validated;
+}
+void Menu::escape(void) {
+	selectedItem = -1;
+	validated = true;
 }

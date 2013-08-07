@@ -867,7 +867,9 @@ void NetworkClient::cleanupClients(void) {
 	cleanup_clock.restart();
 	/* find clients (or server) having lost connection */
 	for(size_t i=0; i < pairs.size();) {
-		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000 >= parameters.connectionTimeoutInSecs()) {
+		if (pairs[i].lastPacketTime.getElapsedTime().asMicroseconds()/1000000
+		           >= parameters.connectionTimeoutInSecs()
+			&& pairs[i].client.addr != IpAddress::Broadcast) {
 			RemoteClient client = pairs[i].client;
 			fprintf(stderr, "Error: Pair %s:%d timeout\n"
 				,client.addr.toString().c_str(), client.port);
@@ -1212,12 +1214,9 @@ bool NetworkClient::discoveringServers(void) {
 	}
 	return false;
 }
-bool NetworkClient::shouldEndDiscovery(void) {
+bool NetworkClient::discoverMoreServers(void) {
 	if (!discoveringServers()) return false;
 	bool should_end = discovery_clock.getElapsedTime().asMilliseconds() >= parameters.serverDiscoveryTimeoutMS();
-	if (should_end) {
-		return true;
-	}
 	if (discovery_period_clock.getElapsedTime().asMilliseconds() >= parameters.serverDiscoveryPeriodMS()) {
 		Message *nmsg = new Message(NULL, NMT_C2S_GetServerInfo);
 		nmsg->client = pairs[0].client;

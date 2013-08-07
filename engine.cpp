@@ -51,14 +51,16 @@ bool Engine::canCreateMissile(Player *pl) {
 	return CountMissiles(this, pl) < 3;
 }
 void Engine::play(void) {
-	network.discoverServers(false);
 	while (step()) {
 		Event e;
 		while (window.pollEvent(e)) {
 			if (e.type == Event::Closed) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {
-				if (e.key.code == Keyboard::Escape) quit();
+				if (e.key.code == Keyboard::Escape) {
+					if (network_menu) network_menu->escape();
+					else PopupMenu();
+				}
 				if (e.key.code == Keyboard::M) {
 					char buffer[256];
 					const char *words[]={"hello", "this", "stuff", "foo", "bar", "baz", "cool", "rocks", "good"};
@@ -69,15 +71,6 @@ void Engine::play(void) {
 						, n++);
 					display(buffer);
 				}
-#if 0
-				if (e.key.code == Keyboard::J && network.isLocal()) {
-					network.discoverServers(false);
-				}
-				if (e.key.code == Keyboard::K && network.isLocal()) {
-					network.declareAsServer();
-					destroy_flagged();
-				}
-#endif
 			} else if (e.type == Event::JoystickConnected) {
 				addPlayer(0, e.joystickConnect.joystickId);
 			} else if (e.type == Event::JoystickDisconnected) {
@@ -218,20 +211,51 @@ static void add_test_menu(Engine *engine) {
 	engine->add(m);
 }
 #endif
-Menu *networkMenu(Engine *engine, const std::vector<ServerInfo> &si) {
-	Menu *m = new Menu(engine);
-	m->addItem("Play locally");
+void Engine::addJoinItem(const ServerInfo &si) {
+	if (!network_menu) return;
+	const RemoteClient &rc = si.remote;
+	char portbuffer[64];
+	sprintf(portbuffer, "%d", rc.port);
+	std::string title = (std::string("Join ")+si.name+" at "+rc.addr.toString()+":"+portbuffer);
+	fprintf(stderr, "Adding menu item %s\n", title.c_str());
+	network_menu->addItem(title.c_str(), NULL, network_menu->getItemCount()-1);
+}
+void Engine::PopupMenu(void) {
+	if (network_menu) return;
+	Menu *m = new Menu(this);
+	network_menu = m;
+	m->addItem("Resume game");
 	m->addItem("Create server");
-	for(size_t i=0; i < si.size(); ++i) {
-		RemoteClient rc=si[i].remote;
-		char portbuffer[64];
-		sprintf(portbuffer, "%d", rc.port);
-		std::string title = (std::string("Join ")+si[i].name+" at "+rc.addr.toString()+":"+portbuffer);
-		fprintf(stderr, "Adding menu item %s\n", title.c_str());
-		m->addItem(title.c_str());
+	m->addItem("Quit game");
+	for(size_t i=0; i < cur_server_info.size(); ++i) {
+		addJoinItem(cur_server_info[i]);
 	}
-	engine->add(m);
-	return m;
+	add(m);
+	network.discoverServers(false);
+}
+void Engine::CloseMenu(void) {
+	network.endServerDiscovery();
+	destroy(network_menu);
+	network_menu = NULL;
+}
+void Engine::CheckMenu(void) {
+	if (network_menu) {
+		if (network_menu->selectionValidated()) {
+			int icl = network_menu->getSelected();
+			fprintf(stderr, "network selection %d\n", icl);
+			CloseMenu();
+			if (icl == 1) {
+				network.declareAsServer();
+			} else if (icl >= 2) {
+				icl -= 2;
+				if (unsigned(icl) >= cur_server_info.size()) {
+					icl -= cur_server_info.size();
+					if (icl == 0) quit();
+				}
+				else network.requestConnection(cur_server_info[icl].remote);
+			}
+		}
+	}
 }
 Engine::Engine():network(this),messages(this) {
 	network_menu = NULL;
@@ -311,46 +335,36 @@ void Engine::broadcast(EngineEvent *event) {
 void Engine::quit(void) {
 	must_quit = true;
 }
+template <class T>
+bool insertInArray(const T &obj, std::vector<T> &v) {
+	for(unsigned i=0; i < v.size(); i++) {
+		if (v[i] == obj) return false;
+	}
+	fprintf(stderr, "[inserted server]\n");
+	v.push_back(obj);
+	return true;
+}
 bool Engine::step(void) {
 	if (must_quit) return false;
 	if (first_step) {clock.restart();first_step=false;}
 	draw();
 	compute_physics();
-	if (network_menu) {
-		if (network_menu->selectionValidated()) {
-			int icl = network_menu->getSelected();
-			fprintf(stderr, "network selection %d\n", icl);
-			destroy(network_menu);
-			network_menu = NULL;
-			if (icl == 1) {
-				network.declareAsServer();
-			} else if (icl >= 2) {
-				network.requestConnection(cur_server_info[icl-2].remote);
-			}
-		}
-	}
+	CheckMenu();
 	if (!network.isLocal()) {
 		network.transmitToServer();
 		network.receiveFromServer();
-		if ((!network_menu) && network.discoveringServers() && network.shouldEndDiscovery()) {
-			network.endServerDiscovery();
-			size_t i=0;
-			ServerInfo si;
-			cur_server_info.clear();
+		if (network.discoveringServers()) {
 			for(NetworkClient::ServerInfoIterator it=network.begin_servers(), en=network.end_servers(); it != en; ++it) {
-				si = *it;
-				fprintf(stderr, "Discovered server %s at %s:%d\n"
-					,si.name.c_str()
-					,si.remote.addr.toString().c_str(), si.remote.port);
-				cur_server_info.push_back(*it);
-				i++;
+				if (insertInArray(*it, cur_server_info)) {
+					if (network_menu) addJoinItem(*it);
+					ServerInfo si;
+					si = *it;
+					fprintf(stderr, "Discovered server %s at %s:%d\n"
+						,si.name.c_str()
+						,si.remote.addr.toString().c_str(), si.remote.port);
+				}
 			}
-			network_menu = networkMenu(this, cur_server_info);
-#if 0
-			if (i==1) {
-				network.requestConnection(si.remote);
-			}
-#endif
+			network.discoverMoreServers();
 		}
 	}
 	destroy_flagged();

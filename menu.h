@@ -17,8 +17,9 @@ class Menu:public Entity
 	virtual Vector2d movement(sf::Int64 tm);
 	virtual void event_received(EngineEvent *event);
 
-	void addItem(const char *item_string, void *user_data = NULL);
+	void addItem(const char *item_string, void *user_data = NULL, int beforeItem=-1);
 	int getSelected(void **puser_data = NULL) const;
+	size_t getItemCount(void) const;
 
 	void selectNext(void);
 	void selectPrevious(void);
@@ -26,6 +27,7 @@ class Menu:public Entity
 	void selectFirst(void);
 	void selectLast(void);
 	bool selectionValidated(void) const;
+	void escape(void);
 
 
 	private:

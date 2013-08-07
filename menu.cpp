@@ -6,6 +6,7 @@
 #include <SFML/Window/Joystick.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include "engine.h"
+#include "input.h"
 
 using namespace sf;
 
@@ -165,18 +166,18 @@ bool altKeyPressed(void) {
 		Keyboard::RShift,Keyboard::RAlt,Keyboard::RSystem,Keyboard::RControl
 	};
 	for(size_t i=0; i < sizeof(keys)/sizeof(keys[0]);i++) {
-		if (Keyboard::isKeyPressed(keys[i])) return true;
+		if (isLocalKeyPressed(keys[i])) return true;
 	}
 	return false;
 }
 void Menu::controllerFeedback(void) {
 	if (validated) return;
-	bool up = Keyboard::isKeyPressed(Keyboard::Up);
-	bool down = Keyboard::isKeyPressed(Keyboard::Down);
-	bool start = Keyboard::isKeyPressed(Keyboard::Home);
-	bool end = Keyboard::isKeyPressed(Keyboard::End);
-	bool pgup = Keyboard::isKeyPressed(Keyboard::PageUp);
-	bool pgdown = Keyboard::isKeyPressed(Keyboard::PageDown);
+	bool up = isLocalKeyPressed(Keyboard::Up);
+	bool down = isLocalKeyPressed(Keyboard::Down);
+	bool start = isLocalKeyPressed(Keyboard::Home);
+	bool end = isLocalKeyPressed(Keyboard::End);
+	bool pgup = isLocalKeyPressed(Keyboard::PageUp);
+	bool pgdown = isLocalKeyPressed(Keyboard::PageDown);
 	int alljoy=0;
 	bool alljoybut=0;
 	for(unsigned i=0; i < Joystick::Count; i++) {
@@ -190,7 +191,7 @@ void Menu::controllerFeedback(void) {
 	}
 	if (alljoy < 0) up=true;
 	if (alljoy > 0) down=true;
-	if (Keyboard::isKeyPressed(Keyboard::Return)) {
+	if (isLocalKeyPressed(Keyboard::Return)) {
 		validated = true;
 		return;
 	}

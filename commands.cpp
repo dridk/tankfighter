@@ -15,6 +15,7 @@
 #include <math.h>
 #include "misc.h"
 #include "parameters.h"
+#include "input.h"
 
 using namespace sf;
 
@@ -165,7 +166,7 @@ static double trigger_value(int joyid, Window &window, const Trigger &trigger, d
 		if (joyid < 0) return 0;
 		return Joystick::isButtonPressed(joyid, keycode);
 	} else if (trigger.type == TT_KeyboardKey) {
-		return Keyboard::isKeyPressed((Keyboard::Key)keycode);
+		return isLocalKeyPressed((Keyboard::Key)keycode);
 	} else if (trigger.type == TT_MouseButton) {
 		return Mouse::isButtonPressed((Mouse::Button)keycode);
 	} else if (trigger.type == TT_MousePosition) {

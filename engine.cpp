@@ -15,6 +15,7 @@
 #include "parameters.h"
 #include "menu.h"
 #include "messages.h"
+#include "input.h"
 
 
 using namespace sf;
@@ -54,6 +55,7 @@ void Engine::play(void) {
 	while (step()) {
 		Event e;
 		while (window.pollEvent(e)) {
+			treatLocalKeyEvent(e);
 			if (e.type == Event::Closed) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {

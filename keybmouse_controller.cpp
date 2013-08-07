@@ -6,20 +6,21 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <math.h>
+#include "input.h"
 
 using namespace sf;
 
 static void detectKeyboardMovement(Player *player, PlayerControllingData &pcd) {
 	int vertical = 0;
 	int horiz    = 0;
-	if (Keyboard::isKeyPressed(Keyboard::Up) && !Keyboard::isKeyPressed(Keyboard::Down)) {
+	if (isLocalKeyPressed(Keyboard::Up) && !isLocalKeyPressed(Keyboard::Down)) {
 		vertical = -1;
-	} else if (Keyboard::isKeyPressed(Keyboard::Down) && !Keyboard::isKeyPressed(Keyboard::Up)) {
+	} else if (isLocalKeyPressed(Keyboard::Down) && !isLocalKeyPressed(Keyboard::Up)) {
 		vertical = 1;
 	}
-	if (Keyboard::isKeyPressed(Keyboard::Left) && !Keyboard::isKeyPressed(Keyboard::Right)) {
+	if (isLocalKeyPressed(Keyboard::Left) && !isLocalKeyPressed(Keyboard::Right)) {
 		horiz = -1;
-	} else if (Keyboard::isKeyPressed(Keyboard::Right) && !Keyboard::isKeyPressed(Keyboard::Left)) {
+	} else if (isLocalKeyPressed(Keyboard::Right) && !isLocalKeyPressed(Keyboard::Left)) {
 		horiz = 1;
 	}
 	Vector2d v;
@@ -29,7 +30,7 @@ static void detectKeyboardMovement(Player *player, PlayerControllingData &pcd) {
 		normalizeVector(v, 1);
 		pcd.move(v);
 	}
-	if (Keyboard::isKeyPressed(Keyboard::Escape)) {
+	if (isLocalKeyPressed(Keyboard::Escape)) {
 		player->getEngine()->quit();
 	}
 }
@@ -48,7 +49,7 @@ static void detectMouseMovement(Player *player, PlayerControllingData &pcd) {
 void KeyboardMouseController::KeyboardMouseController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
 	detectKeyboardMovement(player, pcd);
 	detectMouseMovement(player, pcd);
-	if (Mouse::isButtonPressed(Mouse::Left) || Keyboard::isKeyPressed(Keyboard::RControl) || Keyboard::isKeyPressed(Keyboard::LControl)) {
+	if (Mouse::isButtonPressed(Mouse::Left) || isLocalKeyPressed(Keyboard::RControl) || isLocalKeyPressed(Keyboard::LControl)) {
 		pcd.keepShooting();
 	}
 }

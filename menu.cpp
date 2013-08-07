@@ -159,6 +159,16 @@ void Menu::selectLast(void) {
 	selectedItem = items.size() - 1;
 }
 
+bool altKeyPressed(void) {
+	static Keyboard::Key keys[]={
+		Keyboard::LShift,Keyboard::LAlt,Keyboard::LSystem,Keyboard::LControl,
+		Keyboard::RShift,Keyboard::RAlt,Keyboard::RSystem,Keyboard::RControl
+	};
+	for(size_t i=0; i < sizeof(keys)/sizeof(keys[0]);i++) {
+		if (Keyboard::isKeyPressed(keys[i])) return true;
+	}
+	return false;
+}
 void Menu::controllerFeedback(void) {
 	if (validated) return;
 	bool up = Keyboard::isKeyPressed(Keyboard::Up);
@@ -203,7 +213,7 @@ void Menu::controllerFeedback(void) {
 		if (item >= 0) selectByIndex(item);
 		ompos = mpos;
 	}
-	if (Mouse::isButtonPressed(Mouse::Left) && !mouseLeftWasPressed) {
+	if (Mouse::isButtonPressed(Mouse::Left) && !mouseLeftWasPressed && !altKeyPressed()) {
 		int item = getItemFromPosition(Vector2f(mpos.x, mpos.y));
 		if (item >= 0) {selectByIndex(item);validated=true;}
 	}

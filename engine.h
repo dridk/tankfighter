@@ -66,6 +66,7 @@ class Engine
 	void PopupMenu(void);
 	void CheckMenu(void);
 	void CloseMenu(void);
+	void toggleFullscreen(void);
 
 	mutable TextureCache texture_cache;
 
@@ -84,5 +85,6 @@ class Engine
 	std::vector<ServerInfo> cur_server_info;
 	Menu *network_menu;
 	Messages messages;
+	bool is_fullscreen;
 };
 #endif

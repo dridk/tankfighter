@@ -234,21 +234,6 @@ Engine::EntitiesIterator Engine::begin_entities() {
 Engine::EntitiesIterator Engine::end_entities() {
 	return entities.end();
 }
-#if 0
-static void add_test_menu(Engine *engine) {
-	Menu *m = new Menu(engine);
-	m->addItem("Hello world!");
-	m->addItem("How are you?");
-	m->addItem("This is a pretty long string!");
-	m->addItem("This is an even longer string that should reduce char size!");
-	for(size_t i=0;i<200;i++) {
-		char buffer[256];
-		sprintf(buffer, "This is item %u", (unsigned)i);
-		m->addItem(buffer);
-	}
-	engine->add(m);
-}
-#endif
 void Engine::addJoinItem(const ServerInfo &si) {
 	if (!network_menu) return;
 	const RemoteClient &rc = si.remote;
@@ -263,6 +248,7 @@ void Engine::PopupMenu(void) {
 	network_menu = m;
 	m->addItem("Resume game");
 	m->addItem("Create server");
+	m->addItem("Toggle fullscreen");
 	m->addItem("Quit game");
 	for(size_t i=0; i < cur_server_info.size(); ++i) {
 		addJoinItem(cur_server_info[i]);
@@ -275,6 +261,15 @@ void Engine::CloseMenu(void) {
 	destroy(network_menu);
 	network_menu = NULL;
 }
+void Engine::toggleFullscreen(void) {
+	VideoMode mode = VideoMode::getDesktopMode();
+	if (is_fullscreen) {
+		window.create(mode, "Tank window", Style::Default);
+	} else {
+		window.create(mode, "Tank window", Style::Fullscreen);
+	}
+	is_fullscreen = !is_fullscreen;
+}
 void Engine::CheckMenu(void) {
 	if (network_menu) {
 		if (network_menu->selectionValidated()) {
@@ -282,8 +277,10 @@ void Engine::CheckMenu(void) {
 			CloseMenu();
 			if (icl == 1) {
 				network.declareAsServer();
-			} else if (icl >= 2) {
-				icl -= 2;
+			} else if (icl == 2) {
+				toggleFullscreen();
+			} else if (icl >= 3) {
+				icl -= 3;
 				if (unsigned(icl) >= cur_server_info.size()) {
 					icl -= cur_server_info.size();
 					if (icl == 0) quit();
@@ -298,6 +295,7 @@ Engine::Engine():network(this),messages(this) {
 	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
+	is_fullscreen = false;
 	VideoMode mode = VideoMode::getDesktopMode();
 	window.create(mode, "Tank window", Style::Default);
 	Vector2d msz = map_size();

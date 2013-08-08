@@ -59,8 +59,8 @@ Menu::MenuMetrics Menu::getMetrics(void) const {
 	m.tmargin = 20;
 	m.hspacing = 1.5;
 	unsigned hmargin = m.hmargin, wmargin = m.wmargin;
-	Vector2u wsize = getEngine()->getWindow().getSize();
-	m.wsize = wsize;
+	Vector2d wsize = getEngine()->map_size();
+	m.wsize = Vector2u(wsize.x, wsize.y);
 	int font_size = (wsize.y-hmargin)/((items.size() <= 3 ? 3 : items.size())+3)/m.hspacing;
 	if (font_size < 12) font_size = 12;
 	

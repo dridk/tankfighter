@@ -31,6 +31,8 @@ class Engine
 	Vector2d getMousePosition(void) const;
 	Vector2d map2window(const Vector2d &p) const;
 	Vector2d window2map(const Vector2d &p) const;
+	double map_aspect() const;
+	void window_resized(const sf::Vector2i &sz);
 	bool canCreateMissile(Player *pl);
 	void defineMapBoundaries(unsigned width, unsigned height);
 	void clear_entities(void);

@@ -55,6 +55,23 @@ Vector2d Engine::getMousePosition() const {
 bool Engine::canCreateMissile(Player *pl) {
 	return CountMissiles(this, pl) < 3;
 }
+double Engine::map_aspect() const {
+	Vector2d msz = map_size();
+	return msz.x/msz.y;
+}
+void Engine::window_resized(const Vector2i &wsz) {
+	double ratio = map_aspect();
+	FloatRect r;
+	double w1 = wsz.x;
+	double w2 = wsz.y * ratio;
+	if (w2 < w1) r.width = w2; else r.width = w1;
+	r.height = r.width / ratio;
+	r.left = (wsz.x - r.width)/2;
+	r.top = (wsz.y - r.height)/2;
+	r = FloatRect(r.left/wsz.x, r.top/wsz.y, r.width/wsz.x, r.height/wsz.y);
+	view.setViewport(r);
+	window.setView(view);
+}
 void Engine::play(void) {
 	while (step()) {
 		Event e;
@@ -77,6 +94,8 @@ void Engine::play(void) {
 						, n++);
 					display(buffer);
 				}
+			} else if (e.type == Event::Resized) {
+				window_resized(Vector2i(e.size.width, e.size.height));
 			} else if (e.type == Event::JoystickConnected) {
 				addPlayer(0, e.joystickConnect.joystickId);
 			} else if (e.type == Event::JoystickDisconnected) {
@@ -198,12 +217,16 @@ Vector2d Engine::map_size(void) const {
 Vector2d Engine::map2window(const Vector2d &pos) const {
 	Vector2u wsz = window.getSize();
 	Vector2d msz = map_size();
-	return Vector2d(pos.x/msz.x * wsz.x, pos.y/msz.y * wsz.y);
+	FloatRect vr = view.getViewport();
+	return Vector2d(wsz.x*(pos.x/msz.x * vr.width + vr.left)
+	              , wsz.y*(pos.y/msz.y * vr.height + vr.top));
 }
 Vector2d Engine::window2map(const Vector2d &pos) const {
 	Vector2u wsz = window.getSize();
 	Vector2d msz = map_size();
-	return Vector2d(pos.x/wsz.x * msz.x, pos.y/wsz.y * msz.y);
+	FloatRect vr = view.getViewport();
+	return Vector2d(msz.x*(pos.x/wsz.x - vr.left)/vr.width
+	               ,msz.y*(pos.y/wsz.y - vr.top)/vr.height);
 }
 Engine::EntitiesIterator Engine::begin_entities() {
 	return entities.begin();
@@ -277,8 +300,9 @@ Engine::Engine():network(this),messages(this) {
 	must_quit = false;
 	VideoMode mode = VideoMode::getDesktopMode();
 	window.create(mode, "Tank window", Style::Default);
-	view.reset(FloatRect(0,0,mode.width, mode.height));
-	view.setSize(Vector2f(1920, 1080));
+	Vector2d msz = map_size();
+	view.reset(FloatRect(0,0,mode.width,mode.height));
+	view.setSize(msz.x, msz.y);
 	window.setView(view);
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());
@@ -286,8 +310,7 @@ Engine::Engine():network(this),messages(this) {
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
-	Vector2d sz = map_size();
-	defineMapBoundaries(sz.x, sz.y);
+	defineMapBoundaries(msz.x, msz.y);
 	load_keymap(cdef, "keymap.json");
 }
 void Engine::defineMapBoundaries(unsigned width, unsigned height) {

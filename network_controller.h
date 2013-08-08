@@ -8,6 +8,7 @@
 #include <SFML/Network/Packet.hpp>
 #include <string>
 #include "controller.h"
+#include <stdio.h>
 
 
 class Engine;

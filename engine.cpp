@@ -219,7 +219,6 @@ void Engine::addJoinItem(const ServerInfo &si) {
 	char portbuffer[64];
 	sprintf(portbuffer, "%d", rc.port);
 	std::string title = (std::string("Join ")+si.name+" at "+rc.addr.toString()+":"+portbuffer);
-	fprintf(stderr, "Adding menu item %s\n", title.c_str());
 	network_menu->addItem(title.c_str(), NULL, network_menu->getItemCount()-1);
 }
 void Engine::PopupMenu(void) {
@@ -244,7 +243,6 @@ void Engine::CheckMenu(void) {
 	if (network_menu) {
 		if (network_menu->selectionValidated()) {
 			int icl = network_menu->getSelected();
-			fprintf(stderr, "network selection %d\n", icl);
 			CloseMenu();
 			if (icl == 1) {
 				network.declareAsServer();
@@ -266,7 +264,7 @@ Engine::Engine():network(this),messages(this) {
 	must_quit = false;
 	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
 	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(0);
+	window.setFramerateLimit(parameters.maxFPS());
 	window.clear(Color::White);
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 
@@ -342,7 +340,6 @@ bool insertInArray(const T &obj, std::vector<T> &v) {
 	for(unsigned i=0; i < v.size(); i++) {
 		if (v[i] == obj) return false;
 	}
-	fprintf(stderr, "[inserted server]\n");
 	v.push_back(obj);
 	return true;
 }
@@ -361,9 +358,6 @@ bool Engine::step(void) {
 					if (network_menu) addJoinItem(*it);
 					ServerInfo si;
 					si = *it;
-					fprintf(stderr, "Discovered server %s at %s:%d\n"
-						,si.name.c_str()
-						,si.remote.addr.toString().c_str(), si.remote.port);
 				}
 			}
 			network.discoverMoreServers();
@@ -458,14 +452,7 @@ static bool quasi_equals(double a, double b) {
 }
 void Engine::compute_physics(void) {
 	unsigned minFPS = parameters.minFPS();
-	unsigned maxFPS = parameters.maxFPS();
 	Int64 tm = clock.getElapsedTime().asMicroseconds();
-	if (tm < 1000000L/maxFPS) {
-		unsigned long rtm = 1000000L/maxFPS - tm;
-		if (rtm < 100) return;
-		sf::sleep(microseconds(rtm - 100));
-		return;
-	}
 	if (tm == 0) return;
 	if (tm > 1000000L/minFPS) tm = 1000000L/minFPS;
 	clock.restart();

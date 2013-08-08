@@ -34,7 +34,7 @@ class Parameters
 
 	/* constants for game engine */
 	unsigned minFPS(void) {return 15;}
-	unsigned maxFPS(void) {return 120;}
+	unsigned maxFPS(void) {return 60;}
 
 	/* geometry */
 	double minWallDistance(void) {return 1e-3;} /* in pixels */

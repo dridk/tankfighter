@@ -18,7 +18,7 @@ Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
 	selectedItem = -1;
 	irep = 0;
 	validated = false;
-	ompos = Mouse::getPosition(getEngine()->getWindow());
+	ompos = getEngine()->getMousePosition();
 	mouseLeftWasPressed = true;
 }
 Vector2d Menu::getSize() const {
@@ -208,8 +208,8 @@ void Menu::controllerFeedback(void) {
 		if (irep >= 10) irep = 10;
 		key_repeat.restart();
 	}
-	Vector2i mpos = Mouse::getPosition(getEngine()->getWindow());
-	if (mpos != ompos) {
+	Vector2d mpos = getEngine()->getMousePosition();
+	if ((fabs(mpos.x - ompos.x)+fabs(mpos.y - ompos.y)) > 1e-5) {
 		int item = getItemFromPosition(Vector2f(mpos.x, mpos.y));
 		if (item >= 0) selectByIndex(item);
 		ompos = mpos;

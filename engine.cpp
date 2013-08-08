@@ -48,6 +48,10 @@ size_t CountMissiles(Engine *engine, Player *pl) {
 	ApplyEntities<Missile>(engine, counter);
 	return counter.i;
 }
+Vector2d Engine::getMousePosition() const {
+	Vector2i p = Mouse::getPosition(window);
+	return window2map(Vector2d(p.x, p.y));
+}
 bool Engine::canCreateMissile(Player *pl) {
 	return CountMissiles(this, pl) < 3;
 }
@@ -188,9 +192,18 @@ Entity *Engine::getMapBoundariesEntity() {
 TextureCache *Engine::getTextureCache(void) const {
 	return &texture_cache;
 }
-Vector2d Engine::map_size(void) {
-	Vector2u sz = window.getSize();
-	return Vector2d(sz.x, sz.y);
+Vector2d Engine::map_size(void) const {
+	return Vector2d(1920,1080);
+}
+Vector2d Engine::map2window(const Vector2d &pos) const {
+	Vector2u wsz = window.getSize();
+	Vector2d msz = map_size();
+	return Vector2d(pos.x/msz.x * wsz.x, pos.y/msz.y * wsz.y);
+}
+Vector2d Engine::window2map(const Vector2d &pos) const {
+	Vector2u wsz = window.getSize();
+	Vector2d msz = map_size();
+	return Vector2d(pos.x/wsz.x * msz.x, pos.y/wsz.y * msz.y);
 }
 Engine::EntitiesIterator Engine::begin_entities() {
 	return entities.begin();
@@ -262,7 +275,11 @@ Engine::Engine():network(this),messages(this) {
 	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
-	window.create(VideoMode(1920,1080), "Tank window", Style::Default);
+	VideoMode mode = VideoMode::getDesktopMode();
+	window.create(mode, "Tank window", Style::Default);
+	view.reset(FloatRect(0,0,mode.width, mode.height));
+	view.setSize(Vector2f(1920, 1080));
+	window.setView(view);
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());
 	window.clear(Color::White);

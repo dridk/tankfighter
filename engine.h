@@ -5,6 +5,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Graphics/View.hpp>
 #include <SFML/Window.hpp>
 #include "texture_cache.h"
 #include "load_map.h"
@@ -27,6 +28,9 @@ class Engine
 	Engine();
 	~Engine();
 	NetworkClient *getNetwork(void);
+	Vector2d getMousePosition(void) const;
+	Vector2d map2window(const Vector2d &p) const;
+	Vector2d window2map(const Vector2d &p) const;
 	bool canCreateMissile(Player *pl);
 	void defineMapBoundaries(unsigned width, unsigned height);
 	void clear_entities(void);
@@ -42,7 +46,7 @@ class Engine
 	TextureCache *getTextureCache(void) const;
 	sf::RenderWindow &getWindow(void) {return window;}
 	const sf::RenderWindow &getWindow(void) const {return window;}
-	Vector2d map_size(void);
+	Vector2d map_size(void) const;
 	void seekCollisions(Entity *entity);
 
 	Entity *getEntityByUID(sf::Uint32 uid);
@@ -68,6 +72,7 @@ class Engine
 	Entity *map_boundaries_entity;
 	sf::Texture background_texture;
 	sf::Sprite background;
+	sf::View view;
 	sf::RenderWindow window;
 	Entities entities;
 	sf::Clock clock;

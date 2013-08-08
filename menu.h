@@ -1,5 +1,6 @@
 #ifndef __MENU_H__
 #define __MENU_H__
+#include "coretypes.h"
 #include <vector>
 #include "entity.h"
 #include <SFML/Graphics/Font.hpp>
@@ -56,7 +57,7 @@ class Menu:public Entity
 	void controllerFeedback(void);
 	MenuMetrics getMetrics(void) const;
 	int getItemFromPosition(const sf::Vector2f &pos) const;
-	sf::Vector2i ompos;
+	Vector2d ompos;
 	bool mouseLeftWasPressed;
 };
 #endif

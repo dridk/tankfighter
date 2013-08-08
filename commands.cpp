@@ -21,7 +21,7 @@ using namespace sf;
 
 static bool translate_command_string(Command &desc, const char *cmd);
 static bool translate_trigger_string(Trigger &trigger, const char *name);
-static double trigger_value(int joyid, Window &window, const Trigger &trigger, double &value2);
+static double trigger_value(int joyid, Player *player, const Trigger &trigger, double &value2);
 
 static bool translate_command_string(Command &desc, const char *cmd0) {
 	std::string item;
@@ -155,7 +155,7 @@ static double getJoyAxis(int joyid, Joystick::Axis axis) {
 	if (fabs(v) <= parameters.joyDefaultCalibration()) v = 0;
 	return v;
 }
-static double trigger_value(int joyid, Window &window, const Trigger &trigger, double &value2) {
+static double trigger_value(int joyid, Player *player, const Trigger &trigger, double &value2) {
 	value2 = 0;
 	int keycode = trigger.keycode;
 	if (trigger.type == TT_JoystickAxisNeg || trigger.type == TT_JoystickAxisPos) {
@@ -170,7 +170,7 @@ static double trigger_value(int joyid, Window &window, const Trigger &trigger, d
 	} else if (trigger.type == TT_MouseButton) {
 		return Mouse::isButtonPressed((Mouse::Button)keycode);
 	} else if (trigger.type == TT_MousePosition) {
-		Vector2i pos = Mouse::getPosition(window);
+		Vector2d pos = player->getEngine()->getMousePosition();
 		value2 = pos.y;
 		return pos.x;
 	}
@@ -193,7 +193,6 @@ void KeymapController::mapControl(const char *trigger_name, const char *command_
 	commandmap.push_back(tc);
 }
 void KeymapController::reportPlayerMovement(Player *player, PlayerControllingData &pcd) {
-	Window &window = player->getEngine()->getWindow();
 	Vector2d rela[CP_Shooter+1]; /* CP_Tank_Orientation, CP_Tank_Position, CP_Canon_Orientation, CP_Shooter */
 	Vector2d absa[CP_Shooter+1];
 	bool defined_rela[CP_Shooter+1]={0};
@@ -208,7 +207,7 @@ void KeymapController::reportPlayerMovement(Player *player, PlayerControllingDat
 	for(iterator it = commandmap.begin(); it != commandmap.end(); ++it) {
 		double value = 0, value2 = 0;
 		const Command &cmd = (*it).command;
-		value = trigger_value(joyid, window, (*it).trigger, value2);
+		value = trigger_value(joyid, player, (*it).trigger, value2);
 		if (cmd.sens == CD_Negative) {value = -value;value2 = -value2;}
 		Vector2d &rel=rela[cmd.piece];
 		Vector2d &abs=absa[cmd.piece];

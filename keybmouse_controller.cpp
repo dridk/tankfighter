@@ -37,8 +37,7 @@ static void detectKeyboardMovement(Player *player, PlayerControllingData &pcd) {
 static void detectMouseMovement(Player *player, PlayerControllingData &pcd) {
 	double dx, dy;
 	double angle = -1;
-	RenderWindow &window = player->getEngine()->getWindow();
-	Vector2i pos = Mouse::getPosition(window);
+	Vector2d pos = player->getEngine()->getMousePosition();
 	dy = pos.y - player->position.y;
 	dx = pos.x - player->position.x;
 	if (dx != 0 && dy != 0) angle = angle_from_dxdy(dx, dy);

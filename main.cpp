@@ -23,7 +23,7 @@ using namespace std;
 
 int repl(void) {
 	Engine engine;
-	load_map(&engine, "map2.json");
+	engine.loadMap("map2.json");
 	engine.play();
 	return 0;
 }

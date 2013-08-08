@@ -32,9 +32,9 @@ class Engine
 	Vector2d map2window(const Vector2d &p) const;
 	Vector2d window2map(const Vector2d &p) const;
 	double map_aspect() const;
+	void defineMapSize(double width, double height);
 	void window_resized(const sf::Vector2i &sz);
 	bool canCreateMissile(Player *pl);
-	void defineMapBoundaries(unsigned width, unsigned height);
 	void clear_entities(void);
 	void addPlayer(unsigned controllerType, int joyid=-1);
 	void add(Entity *entity); /* Must be previously allocated with new. Ownership taken by Engine */
@@ -45,6 +45,7 @@ class Engine
 	/* Actually, it only set a flag. Entities are really destroyed at the end of the physical frame */
 
 	void play(void);
+	void loadMap(const char *path);
 	TextureCache *getTextureCache(void) const;
 	sf::RenderWindow &getWindow(void) {return window;}
 	const sf::RenderWindow &getWindow(void) const {return window;}
@@ -56,6 +57,7 @@ class Engine
 	Missile *getMissileByUID(sf::Uint32 uid);
 	void display(const std::string &text, const sf::Color *c = NULL);
 	private:
+	void map_boundaries_changed(void);
 	void addJoinItem(const ServerInfo &si);
 	Player *getPlayerByJoystickId(int joyid);
 	void controller_activity(sf::Event &e);
@@ -70,6 +72,7 @@ class Engine
 
 	mutable TextureCache texture_cache;
 
+	Vector2d msize;
 	ControllerDefinitions cdef;
 	sf::Font score_font;
 	Entity *map_boundaries_entity;

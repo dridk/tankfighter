@@ -212,7 +212,7 @@ TextureCache *Engine::getTextureCache(void) const {
 	return &texture_cache;
 }
 Vector2d Engine::map_size(void) const {
-	return Vector2d(1920,1080);
+	return msize;
 }
 Vector2d Engine::map2window(const Vector2d &pos) const {
 	Vector2u wsz = window.getSize();
@@ -268,6 +268,7 @@ void Engine::toggleFullscreen(void) {
 	} else {
 		window.create(mode, "Tank window", Style::Fullscreen);
 	}
+	map_boundaries_changed();
 	is_fullscreen = !is_fullscreen;
 }
 void Engine::CheckMenu(void) {
@@ -291,6 +292,8 @@ void Engine::CheckMenu(void) {
 	}
 }
 Engine::Engine():network(this),messages(this) {
+	msize.x = 1920;
+	msize.y = 1080;
 	network_menu = NULL;
 	map_boundaries_entity = NULL;
 	first_step = true;
@@ -298,27 +301,38 @@ Engine::Engine():network(this),messages(this) {
 	is_fullscreen = false;
 	VideoMode mode = VideoMode::getDesktopMode();
 	window.create(mode, "Tank window", Style::Default);
-	Vector2d msz = map_size();
-	view.reset(FloatRect(0,0,mode.width,mode.height));
-	view.setSize(msz.x, msz.y);
-	window.setView(view);
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());
 	window.clear(Color::White);
 	score_font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
-	defineMapBoundaries(msz.x, msz.y);
+	map_boundaries_changed();
 	load_keymap(cdef, "keymap.json");
 }
-void Engine::defineMapBoundaries(unsigned width, unsigned height) {
+void Engine::defineMapSize(double width, double height) {
+	msize.x = width; msize.y = height;
+	map_boundaries_changed();
+}
+void Engine::map_boundaries_changed(void) {
+	Vector2d msz = map_size();
+	double width = msz.x, height = msz.y;
+
 	if (map_boundaries_entity) {
-		delete map_boundaries_entity;
+		destroy(map_boundaries_entity);
 		map_boundaries_entity = NULL;
 	}
 	background.setTextureRect(IntRect(0,0,width, height));
 	map_boundaries_entity = new Wall(0,0,width, height, NULL, this);
 	add(map_boundaries_entity);
+
+	Vector2u wsz = window.getSize();
+	view.reset(FloatRect(0,0,wsz.x,wsz.y));
+	view.setCenter(width/2, height/2);
+	view.setSize(width, height);
+	window.setView(view);
+
+	window_resized(Vector2i(wsz.x, wsz.y));
 }
 void Engine::clear_entities(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
@@ -586,4 +600,7 @@ NetworkClient *Engine::getNetwork(void) {return &network;}
 
 void Engine::display(const std::string &text, const sf::Color *c) {
 	messages.display(text, c);
+}
+void Engine::loadMap(const char *path) {
+	load_map(this, path);
 }

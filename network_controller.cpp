@@ -523,7 +523,7 @@ void NetworkClient::setMissilePosition(MissilePosition &mpos) {
 	ml->setAngle(us2fl(mpos.curAngle, 2*M_PI));
 }
 void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<Block> &blocks) {
-	engine->defineMapBoundaries(width, height);
+	engine->defineMapSize(width, height);
 	for(size_t i=0; i < blocks.size(); i++) {
 		Block &b=blocks[i];
 		fprintf(stderr, "Wall: %i %i %i %i %s\n"

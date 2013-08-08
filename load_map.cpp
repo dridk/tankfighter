@@ -25,7 +25,7 @@ class BlockEnumerator {
 	private:
 	Engine *engine;
 };
-static void enum_map(BlockEnumerator *blockenum, const char *file_path);
+static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *file_path);
 
 static json_value *access_json_hash(const json_value *p, const json_char *key) {
 	if (p->type != json_object) return NULL;
@@ -62,7 +62,7 @@ static char *json_string_to_cstring(const json_value *val) {
 	res[ln]=0;
 	return res;
 }
-static void enum_map(BlockEnumerator *blockenum, const char *json_path) {
+static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *json_path) {
 	unsigned long file_size;
 	char *json = (char*)load_file(json_path, &file_size);
 	json_value *p = json_parse(json, file_size);
@@ -77,6 +77,14 @@ static void enum_map(BlockEnumerator *blockenum, const char *json_path) {
 	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, parameters.map_magic())==0)) {
 		reterror("JSON is not a JSON map (type field is not ktank-map)!");
 	}
+	const json_value *width = access_json_hash(p, "width");
+	const json_value *height = access_json_hash(p, "height");
+	if (!(width && width->type == json_integer)) {
+		reterror("Map width must be specified as an integer");
+	} else map_size.x = width->u.integer;
+	if (!(height && height->type == json_integer)) {
+		reterror("Map width must be specified as an integer");
+	} else map_size.y = height->u.integer;
 	const json_value *blocks = access_json_hash(p, "blocks");
 	if (!blocks) reterror("Map lacks a blocks array!");
 	if (!blocks->type == json_array) reterror("Map blocks field should be an array!");
@@ -208,8 +216,10 @@ BlockEnumerator::BlockEnumerator(Engine *engine0)
 {
 }
 void load_map(Engine *engine, const char *file_path) {
+	Vector2d map_size;
 	BlockEnumerator blockenum(engine);
-	enum_map(&blockenum, file_path);
+	enum_map(&blockenum, map_size, file_path);
+	engine->defineMapSize(map_size.x, map_size.y);
 }
 
 void BlockEnumerator::enumerate(const Block &block) {

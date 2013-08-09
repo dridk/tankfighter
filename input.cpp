@@ -4,7 +4,7 @@
 
 using namespace sf;
 
-static bool is_focused;
+static bool is_focused=true;
 
 void treatLocalKeyEvent(const sf::Event &e) {
 	if (e.type == Event::LostFocus) is_focused = false;

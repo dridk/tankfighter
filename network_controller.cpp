@@ -14,7 +14,9 @@
 #include "misc.h"
 #include "parameters.h"
 #include <math.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #undef LOG_LLPACKET
 #undef LOG_PKTLOSS
@@ -595,6 +597,7 @@ void NetworkClient::setPlayerScore(const PlayerScore &score) {
 	if (pl) pl->setScore(score.score);
 }
 static std::string get_server_name(void) {
+#ifndef _WIN32
 	char hostname[256];
 	char domainname[256];
 	if (gethostname(hostname, 256)==-1) strcpy(hostname, "(unknown)");
@@ -604,6 +607,9 @@ static std::string get_server_name(void) {
 	if (getenv("USER")) {
 		return std::string(getenv("USER")) + "@" + host;
 	} else return host;
+#else
+	return "cool computer";
+#endif
 }
 bool NetworkClient::treatMessage(Message &msg) {
 #ifdef LOG_PACKET

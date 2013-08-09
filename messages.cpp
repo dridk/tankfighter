@@ -3,11 +3,12 @@
 #include "engine.h"
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Color.hpp>
+#include "misc.h"
 
 using namespace sf;
 
 Messages::Messages(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
-	font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
+	font.loadFromFile(getDefaultFontName().c_str());
 }
 Messages::~Messages() {
 }

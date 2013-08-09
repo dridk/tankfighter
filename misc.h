@@ -13,4 +13,6 @@ void *load_file(const char *input_file_name, unsigned long *file_size);
 double get_random(void);
 double get_random(double max);
 std::string LowerCaseString(const std::string &str);
+
+std::string getDefaultFontName(void);
 #endif

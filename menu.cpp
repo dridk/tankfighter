@@ -7,6 +7,8 @@
 #include <SFML/Window/Mouse.hpp>
 #include "engine.h"
 #include "input.h"
+#include <math.h>
+#include "misc.h"
 
 using namespace sf;
 
@@ -14,7 +16,7 @@ Menu::~Menu() {
 }
 size_t Menu::getItemCount(void) const {return items.size();}
 Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
-	font.loadFromFile("/usr/share/fonts/truetype/droid/DroidSans.ttf");
+	font.loadFromFile(getDefaultFontName().c_str());
 	selectedItem = -1;
 	irep = 0;
 	validated = false;

@@ -1,6 +1,7 @@
 #!/bin/sh
 
 out="$1"
+kbh="$2"
 
 if [ -z "$out" ]; then
 	out="keys.cpp"
@@ -21,7 +22,10 @@ find_keyboard_hpp() {
 done|tail -1
 }
 
-kbh=$(find_keyboard_hpp)
+if [ -z "$kbh" ]; then
+        kbh=$(find_keyboard_hpp)
+fi
+
 if [ -n "$kbh" ]; then
 	exec > "$out"
 	cat keys.cpp.head

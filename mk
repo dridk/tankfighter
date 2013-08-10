@@ -1,3 +1,3 @@
 #!/bin/sh
 ./generate_keys.cpp.sh
-g++ -Os -Wall -o tankfighter *.cpp *.c `pkg-config --cflags --libs sfml-all` -DSFML2
+g++ -Os -Wall -o tankfighter *.cpp *.c `pkg-config --cflags --libs sfml-all fontconfig`

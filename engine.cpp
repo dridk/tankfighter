@@ -304,7 +304,7 @@ Engine::Engine():network(this),messages(this) {
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());
 	window.clear(Color::White);
-	score_font.loadFromFile(getDefaultFontName().c_str());
+	score_font.loadFromFile(getDefaultFontPath().c_str());
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
 	map_boundaries_changed();

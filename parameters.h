@@ -51,6 +51,8 @@ class Parameters
 	double joyDefaultCalibration() {return 0.2;}
 	int serverDiscoveryTimeoutMS() {return 2000;}
 	int serverDiscoveryPeriodMS() {return 500;}
+
+	const char *defaultFontName(void) {return "sans-serif:slant=roman:weight=normal:lang=en_US:scalable=true";}
 };
 extern Parameters parameters;
 #endif

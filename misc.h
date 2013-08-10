@@ -14,5 +14,5 @@ double get_random(void);
 double get_random(double max);
 std::string LowerCaseString(const std::string &str);
 
-std::string getDefaultFontName(void);
+std::string getDefaultFontPath(void);
 #endif

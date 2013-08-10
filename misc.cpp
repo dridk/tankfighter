@@ -3,14 +3,6 @@
 
 using namespace sf;
 
-std::string getDefaultFontName(void) {
-#ifdef _WIN32
-	return "c:\\windows\\fonts\\Arial.ttf";
-#else
-	return "/usr/share/fonts/truetype/droid/DroidSans.ttf";
-#endif
-}
-
 std::string LowerCaseString(const std::string &str) {
 	std::string data = str;
 	std::transform(data.begin(), data.end(), data.begin(), tolower);

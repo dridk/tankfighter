@@ -16,7 +16,7 @@ Menu::~Menu() {
 }
 size_t Menu::getItemCount(void) const {return items.size();}
 Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
-	font.loadFromFile(getDefaultFontName().c_str());
+	font.loadFromFile(getDefaultFontPath().c_str());
 	selectedItem = -1;
 	irep = 0;
 	validated = false;

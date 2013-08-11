@@ -1,6 +1,8 @@
 #include "parameters.h"
+#include <vector>
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 
 Parameters parameters;
 
@@ -120,6 +122,25 @@ Parameters::Parameters() {
 	parseFile(config().c_str());
 }
 void Parameters::parseCmdline (int argc, char **argv) {
+	int index = 0;
+	std::vector<struct option> options(variables.size());
+	size_t i=0;
+	for(VarmapIterator it=variables.begin(); it != variables.end(); ++it) {
+		VarmapVal v = *it;
+		struct option o;
+		o.name = v.first.c_str();
+		o.has_arg = (v.second.datatype == PBoolean ? optional_argument  : required_argument);
+		o.flag = NULL;
+		o.val = 0;
+		options[i++] = o;
+	}
+	while (getopt_long(argc, argv, "", &options[0], &index) != -1) {
+		if (optarg) {
+			set(options[index].name, optarg);
+		} else {
+			set(options[index].name, "1");
+		}
+	}
 }
 void Parameters::parseFile (const char *config_file) {
 }

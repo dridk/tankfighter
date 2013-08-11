@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <SFML/Window/VideoMode.hpp>
+#include <ostream>
 
 enum PType {PBoolean, PInteger, PDouble, PString};
 struct PVariable {
@@ -22,6 +23,7 @@ class Parameters
 	bool		set		(const char *name, const std::string &value);
 	void		parseCmdline	(int argc, char **argv);
 	void		parseFile	(const char *config_file);
+	void		outputHelpString(std::ostream &out);
 
 	/* constants for networking */
 	unsigned UDP_MTU(void);

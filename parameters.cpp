@@ -4,6 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 #include "misc.h"
+#include <iostream>
 
 Parameters parameters;
 
@@ -53,6 +54,7 @@ static struct ParameterDef {
 	,{"map", PString, "map2.json", 'm'}
 	,{"keymap", PString, "keymap.json", 'k'}
 	,{"config", PString, "tankfighter.cfg", 'c'}
+	,{"help", PBoolean, "0", 'h'}
 };
 
 long Parameters::getAsLong (const char *name) {
@@ -132,6 +134,21 @@ void Parameters::parseCmdline (int argc, char **argv) {
 		} else {
 			set(options[index].name, "1");
 		}
+	}
+	if (getAsBoolean("help")) {
+		outputHelpString(std::cout);
+	}
+}
+void Parameters::outputHelpString (std::ostream &out) {
+	for(VarmapIterator it=variables.begin(); it != variables.end(); ++it) {
+		VarmapVal v = *it;
+		PType dt = v.second.datatype;
+		std::string type;
+		if (dt == PString) type = "string";
+		if (dt == PBoolean) type = "boolean";
+		if (dt == PInteger) type = "integer";
+		if (dt == PDouble) type = "float";
+		out << "\t--" << v.first << " " << type << " with default = " << v.second.defval << "\n";
 	}
 }
 void Parameters::parseFile (const char *config_file) {

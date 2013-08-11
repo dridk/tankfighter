@@ -11,6 +11,7 @@
 #include "engine.h"
 #include "misc.h"
 #include "parameters.h"
+#include "parse_json.h"
 
 #if 0
 struct Block {
@@ -27,55 +28,14 @@ class BlockEnumerator {
 };
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *file_path);
 
-static json_value *access_json_hash(const json_value *p, const json_char *key) {
-	if (p->type != json_object) return NULL;
-	for (unsigned i=0; i < p->u.object.length; i++) {
-		if (strcmp(p->u.object.values[i].name, key)==0) {
-			return p->u.object.values[i].value;
-		}
-	}
-	return NULL;
-}
-
 #define reterror(err) {fprintf(stderr, "%s\n", err);return;}
-static bool assertinteger(const char *varname, const json_value *val) {
-	if (val->type != json_integer) {
-		fprintf(stderr, "Expected integer for parameter %s\n", varname);
-		return false;
-	}
-	return true;
-}
-static bool try_assign_integer_variable(unsigned short *out, const char *varname, const char *key, const json_value *val) {
-	if (strcmp(key, varname)==0) {
-		if (assertinteger(varname, val)) {*out = val->u.integer;return true;}
-		else return false;
-	}
-	return true;
-}
-static char *json_string_to_cstring(const json_value *val) {
-	if (val->type != json_string) return NULL;
-	const char *p = val->u.string.ptr;
-	size_t     ln = val->u.string.length;
-	char *res = (char*)malloc(ln+1);
-	if (!res) return NULL;
-	memcpy(res, p, ln);
-	res[ln]=0;
-	return res;
-}
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *json_path) {
-	unsigned long file_size;
-	char *json = (char*)load_file(json_path, &file_size);
-	json_value *p = json_parse(json, file_size);
+	json_value *p = json_parse_file(json_path);
 	if (!p) reterror("Failed to parse json");
 	
-	if (p->type != json_object) reterror("JSON must be an associative array!");
-	
-	const json_value *map_type = access_json_hash(p, "type");
-	if (!map_type) {
-		reterror("JSON is not a JSON map (no type field)!");
-	}
-	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, parameters.map_magic().c_str())==0)) {
-		reterror("JSON is not a JSON map (type field is not ktank-map)!");
+	if (!json_check_magic(p, parameters.map_magic().c_str())) {
+		json_value_free(p);
+		return;
 	}
 	const json_value *width = access_json_hash(p, "width");
 	const json_value *height = access_json_hash(p, "height");
@@ -110,35 +70,6 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 		fprintf(stderr, "[new block found (%d,%d)-(%d,%d)]\n", block.x, block.y, block.width, block.height);
 	}
 	json_value_free(p);
-	free(json);
-}
-static json_value *json_load(const char *json_path) {
-	unsigned long file_size;
-	char *json = (char*)load_file(json_path, &file_size);
-	json_value *p = json_parse(json, file_size);
-	free(json);
-	if (!p) {
-		fprintf(stderr, "Failed to parse json\n");
-		return NULL;
-	}
-	return p;
-}
-static bool json_check_type(const json_value *p, const char *type_name) {
-	if (p->type != json_object) {
-		fprintf(stderr, "JSON must be an associative array!");
-		return false;
-	}
-	
-	const json_value *map_type = access_json_hash(p, "type");
-	if (!map_type) {
-		fprintf(stderr, "JSON is not a %s (no type field)!", type_name);
-		return false;
-	}
-	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, type_name)==0)) {
-		fprintf(stderr, "JSON is not a %s (type field is not %s)!", type_name, type_name);
-		return false;
-	}
-	return true;
 }
 class KeymapEnumerator
 {
@@ -148,10 +79,10 @@ class KeymapEnumerator
 };
 static bool enum_keymap(KeymapEnumerator *kmenum, const char *json_path) {
 	json_value *p;
-	if (!(p=json_load(json_path))) {
+	if (!(p=json_parse_file(json_path))) {
 		return false;
 	}
-	if (!json_check_type(p, parameters.keymap_magic().c_str())) {
+	if (!json_check_magic(p, parameters.keymap_magic().c_str())) {
 		json_value_free(p);
 		return false;
 	}

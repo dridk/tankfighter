@@ -25,8 +25,7 @@ using namespace std;
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
-	parameters.parseCmdline(argc, argv);
-	if (parameters.getAsBoolean("help")) return 0;
+	if (!parameters.parseCmdline(argc, argv)) return 0;
 	Engine engine;
 	engine.loadMap(parameters.map().c_str());
 	engine.play();

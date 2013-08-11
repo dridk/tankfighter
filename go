@@ -1,2 +1,2 @@
 #!/bin/sh
-make -j2 && ./tankfighter --fullscreen=0 "$@"
+make -j2 && ./tankfighter "$@"

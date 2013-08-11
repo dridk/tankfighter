@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include "misc.h"
 #include <iostream>
+#include "parse_json.h"
 
 Parameters parameters;
 
@@ -115,7 +116,7 @@ Parameters::Parameters() {
 	}
 	parseFile(config().c_str());
 }
-void Parameters::parseCmdline (int argc, char **argv) {
+bool Parameters::parseCmdline (int argc, char **argv) {
 	int index = 0;
 	std::vector<struct option> options(variables.size());
 	size_t i=0;
@@ -138,6 +139,7 @@ void Parameters::parseCmdline (int argc, char **argv) {
 	if (getAsBoolean("help")) {
 		outputHelpString(std::cout);
 	}
+	return true;
 }
 void Parameters::outputHelpString (std::ostream &out) {
 	for(VarmapIterator it=variables.begin(); it != variables.end(); ++it) {
@@ -151,7 +153,50 @@ void Parameters::outputHelpString (std::ostream &out) {
 		out << "\t--" << v.first << " " << type << " with default = " << v.second.defval << "\n";
 	}
 }
-void Parameters::parseFile (const char *config_file) {
+bool Parameters::parseFile (const char *config_file) {
+	json_value *p = json_parse_file(config_file);
+	if (!p) return false;
+	if (!json_check_magic(p, parameters.config_magic().c_str())) {
+		json_value_free(p);
+		return false;
+	}
+	const json_value *map = access_json_hash(p, "parameters");
+	if ((!map) || map->type != json_object) {
+		json_value_free(p);
+		fprintf(stderr, "parameters hash must be present and must be an associative array\n");
+		return false;
+	}
+	for (unsigned i=0; i < map->u.object.length; i++) {
+		const char *variable=map->u.object.values[i].name;
+		const json_value *val = map->u.object.values[i].value;
+		set(variable, val);
+	}
+
+	json_value_free(p);
+	return true;
+}
+bool Parameters::set(const char *name, const json_value *value) {
+	VarmapIterator it = variables.find(name);
+	std::string sval;
+	if (it == variables.end()) {
+		fprintf(stderr, "Variable %s doesn't exist\n", name);
+		return false;
+	}
+	PVariable &v = (*it).second;
+	int d1 = v.datatype, d2 = value->type;
+	if (!(d1 == d2 || (d1 == PBoolean && d2 == json_integer) || d2 == json_string)) {
+		fprintf(stderr, "Variable assignment type mismatch for %s\n", name);
+		return false;
+	}
+	if (value->type == json_boolean) sval = tostring((int)value->u.boolean);
+	if (value->type == json_integer) sval = tostring(value->u.integer);
+	if (value->type == json_double)  sval = tostring(value->u.dbl);
+	if (value->type == json_string)  {
+		char *sp = json_string_to_cstring(value);
+		if (sp) sval=sp;
+		free(sp);
+	}
+	return set(name, sval);
 }
 
 unsigned Parameters::C2S_Packet_interval_US(void) {return 10000;}
@@ -161,6 +206,7 @@ double Parameters::maxDupPacketTimeSecs(void) {return 10;}
 double Parameters::minWallDistance(void) {return 1e-3;}
 std::string Parameters::keymap_magic(void) {return "ktank-ctrl-map";}
 std::string Parameters::map_magic(void) {return "ktank-map";}
+std::string Parameters::config_magic(void) {return "ktank-config";}
 double Parameters::joyTankSpeedCalibration() {return 0.3;}
 double Parameters::joyCanonDirectionCalibration() {return 0.15;}
 double Parameters::joyDefaultCalibration() {return 0.2;}

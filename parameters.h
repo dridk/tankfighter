@@ -5,8 +5,9 @@
 #include <string>
 #include <SFML/Window/VideoMode.hpp>
 #include <ostream>
+#include "json.h"
 
-enum PType {PBoolean, PInteger, PDouble, PString};
+enum PType {PBoolean = json_boolean, PInteger = json_integer, PDouble = json_double, PString = json_string};
 struct PVariable {
 	PType		datatype;
 	const char     *defval;
@@ -21,8 +22,9 @@ class Parameters
 	std::string	getAsString	(const char *name);
 	bool		getAsBoolean	(const char *name);
 	bool		set		(const char *name, const std::string &value);
-	void		parseCmdline	(int argc, char **argv);
-	void		parseFile	(const char *config_file);
+	bool 		set		(const char *name, const json_value *value);
+	bool		parseCmdline	(int argc, char **argv);
+	bool		parseFile	(const char *config_file);
 	void		outputHelpString(std::ostream &out);
 
 	/* constants for networking */
@@ -62,6 +64,7 @@ class Parameters
 	std::string spritesExtension(void);
 	std::string keymap_magic(void);
 	std::string map_magic(void);
+	std::string config_magic(void);
 
 	/* controller constants */
 	double joyTankSpeedCalibration();

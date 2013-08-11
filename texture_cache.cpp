@@ -3,7 +3,7 @@
 
 using namespace sf;
 unsigned TextureCache::getTextureID(const char *name) {
-	std::string path = std::string(parameters.spritesDirectory()) + name + parameters.spritesExtension();
+	std::string path = parameters.spritesDirectory() + name + parameters.spritesExtension();
 	MapIterator it = idmap.find(path);
 	if (it == idmap.end()) {
 		textures.push_back(Texture());

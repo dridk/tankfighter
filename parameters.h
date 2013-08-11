@@ -1,58 +1,87 @@
 #ifndef __PARAMETERS_H__
 #define __PARAMETERS_H__
 #include <math.h>
+#include <map>
+#include <string>
 
+enum PType {PBoolean, PInteger, PDouble, PString};
+struct PVariable {
+	PType		datatype;
+	const char     *defval;
+};
 class Parameters
 {
 	/* class defining all constants */
 	public:
-	/* constants for networking */
-	unsigned UDP_MTU(void) {return 512;}
-	unsigned C2S_Packet_interval_US(void) {return 10000;}
-	unsigned short serverPort(void) {return 1330;}
-	unsigned short clientPort(void) {return 1329;}
-	int resendPacketAfterMS(void) {return 500;}
-	int connectionTimeoutInSecs(void) {return 10;}
-	int disconnectionTimeoutMS(void) {return 2000;}
-	int clientsCleanupIntervalMS(void) {return 1000;}
-	int udpPortRange(void) {return 100;}
-	int maxDupPacketTimeSecs(void) {return 10;}
-	/* constants for game rules */
-	float missileDelayMS(void) {return 200;} /* how often a missile is launched */
-	float tankDiameter(void) {return 128;}
-	const char *tankSpriteName(void) {return "car";}
-	const char *canonSpriteName(void) {return "canon";}
-	double canon_rotation_speed(void) {
-		return 3e-4/180*M_PI; /* radians per microsecond */
-	}
-	double tank_rotation_speed(void) {return 3e-4/180*M_PI;}
-	double linear_tank_speed(void) {return 3e-4;} /* px per usec */
+	Parameters();
+	long		getAsLong	(const char *name);
+	double		getAsDouble	(const char *name);
+	std::string	getAsString	(const char *name);
+	bool		getAsBoolean	(const char *name);
+	bool		set		(const char *name, const std::string &value);
+	void		parseCmdline	(int argc, char **argv);
+	void		parseFile	(const char *config_file);
 
-	double maxMissileLifeDurationMS(void) {return 2000;}
-	double missileSpeed(void) {return 9e-4;} /* px/usec */
-	double missileDiameter(void) {return 16;}
+	/* constants for networking */
+	unsigned UDP_MTU(void);
+	unsigned C2S_Packet_interval_US(void);
+	unsigned short serverPort(void);
+	unsigned short clientPort(void);
+	double resendPacketAfterMS(void);
+	double connectionTimeoutInSecs(void);
+	double disconnectionTimeoutMS(void);
+	double clientsCleanupIntervalMS(void);
+	int udpPortRange(void);
+	double maxDupPacketTimeSecs(void);
+	/* constants for game rules */
+	double missileDelayMS(void);
+	double tankDiameter(void);
+	std::string tankSpriteName(void);
+	std::string canonSpriteName(void);
+	std::string missileSpriteName(void);
+	double canon_rotation_speed(void);
+	double tank_rotation_speed(void);
+	double linear_tank_speed(void);
+
+	double maxMissileLifeDurationMS(void);
+	double missileSpeed(void);
+	double missileDiameter(void);
 
 	/* constants for game engine */
-	unsigned minFPS(void) {return 15;}
-	unsigned maxFPS(void) {return 60;}
+	unsigned minFPS(void);
+	unsigned maxFPS(void);
 
 	/* geometry */
-	double minWallDistance(void) {return 1e-3;} /* in pixels */
+	double minWallDistance(void);
 
 	/* paths for game data */
-	const char *spritesDirectory(void) {return "sprites/";}
-	const char *spritesExtension(void) {return ".png";}
-	const char *keymap_magic(void) {return "ktank-ctrl-map";}
-	const char *map_magic(void) {return "ktank-map";}
+	std::string spritesDirectory(void);
+	std::string spritesExtension(void);
+	std::string keymap_magic(void);
+	std::string map_magic(void);
 
 	/* controller constants */
-	double joyTankSpeedCalibration() {return 0.3;}
-	double joyCanonDirectionCalibration() {return 0.15;}
-	double joyDefaultCalibration() {return 0.2;}
-	int serverDiscoveryTimeoutMS() {return 2000;}
-	int serverDiscoveryPeriodMS() {return 500;}
+	double joyTankSpeedCalibration();
+	double joyCanonDirectionCalibration();
+	double joyDefaultCalibration();
+	int serverDiscoveryTimeoutMS();
+	int serverDiscoveryPeriodMS();
 
-	const char *defaultFontName(void) {return "sans-serif:slant=roman:weight=normal:lang=en_US:scalable=true";}
+	std::string defaultFontName(void);
+	bool fullscreen();
+	std::string map();
+	std::string keymap();
+	std::string config();
+
+	private:
+	typedef std::map<std::string, std::string> Valmap;
+	typedef std::map<std::string, PVariable> Varmap;
+	typedef Varmap::value_type VarmapVal;
+	typedef Varmap::iterator VarmapIterator;
+	typedef Valmap::value_type ValmapVal;
+	typedef Valmap::iterator ValmapIterator;
+	Valmap values;
+	Varmap variables;
 };
 extern Parameters parameters;
 #endif

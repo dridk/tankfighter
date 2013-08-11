@@ -87,7 +87,7 @@ Vector2d Player::getSize() const {
 	return sz;
 }
 void Player::draw(sf::RenderTarget &target) const {
-	Sprite &body = getSprite(parameters.tankSpriteName());
+	Sprite &body = getSprite(parameters.tankSpriteName().c_str());
 	FloatRect r = body.getLocalBounds();
 	body.setPosition(Vector2f(position.x, position.y));
 	body.setOrigin(Vector2f(r.width/2, r.height/2));
@@ -95,7 +95,7 @@ void Player::draw(sf::RenderTarget &target) const {
 	body.setColor(color);
 	target.draw(body);
 
-	Sprite &canon = getSprite(parameters.canonSpriteName());
+	Sprite &canon = getSprite(parameters.canonSpriteName().c_str());
 	r = canon.getLocalBounds();
 	canon.setPosition(Vector2f(position.x, position.y));
 	canon.setOrigin(Vector2f(r.width/2, r.height/2));

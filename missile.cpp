@@ -30,7 +30,7 @@ Player *Missile::getOwner(void) const {
 	return player;
 }
 void Missile::draw(sf::RenderTarget &target) const {
-	Sprite &sprite = *getEngine()->getTextureCache()->getSprite("bullet");
+	Sprite &sprite = *getEngine()->getTextureCache()->getSprite(parameters.missileSpriteName().c_str());
 	FloatRect r = sprite.getLocalBounds();
 	sprite.setOrigin(Vector2f(r.width/2, r.height/2));
 

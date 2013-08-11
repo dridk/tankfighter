@@ -298,9 +298,9 @@ Engine::Engine():network(this),messages(this) {
 	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
-	is_fullscreen = false;
+	is_fullscreen = parameters.fullscreen();
 	VideoMode mode = VideoMode::getDesktopMode();
-	window.create(mode, "Tank window", Style::Default);
+	window.create(mode, "Tank window", (is_fullscreen ? Style::Fullscreen : Style::Default));
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());
 	window.clear(Color::White);
@@ -308,7 +308,7 @@ Engine::Engine():network(this),messages(this) {
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
 	map_boundaries_changed();
-	load_keymap(cdef, "keymap.json");
+	load_keymap(cdef, parameters.keymap().c_str());
 }
 void Engine::defineMapSize(double width, double height) {
 	msize.x = width; msize.y = height;

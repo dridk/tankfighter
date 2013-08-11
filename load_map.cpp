@@ -74,7 +74,7 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 	if (!map_type) {
 		reterror("JSON is not a JSON map (no type field)!");
 	}
-	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, parameters.map_magic())==0)) {
+	if (!(map_type->type == json_string && strcmp(map_type->u.string.ptr, parameters.map_magic().c_str())==0)) {
 		reterror("JSON is not a JSON map (type field is not ktank-map)!");
 	}
 	const json_value *width = access_json_hash(p, "width");
@@ -151,7 +151,7 @@ static bool enum_keymap(KeymapEnumerator *kmenum, const char *json_path) {
 	if (!(p=json_load(json_path))) {
 		return false;
 	}
-	if (!json_check_type(p, parameters.keymap_magic())) {
+	if (!json_check_type(p, parameters.keymap_magic().c_str())) {
 		json_value_free(p);
 		return false;
 	}

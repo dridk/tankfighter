@@ -15,6 +15,7 @@
 #include "player.h"
 #include "controller.h"
 #include "commands.h"
+#include "parameters.h"
 
 
 using namespace sf;
@@ -22,16 +23,11 @@ using namespace std;
 
 #undef DEBUG_OBJECT_OUTLINES
 
-int repl(void) {
+int main(int argc, char **argv) {
+	srand(time(NULL));
+	parameters.parseCmdline(argc, argv);
 	Engine engine;
-	engine.loadMap("map2.json");
+	engine.loadMap(parameters.map().c_str());
 	engine.play();
 	return 0;
-}
-int main(int argc, char **argv) {
-	/* cmdline example: --joystick-player <joyid> --keyb-player <keyb-map-id> */
-	void test_geometry_cpp();
-	test_geometry_cpp();
-	srand(time(NULL));
-	return repl();
 }

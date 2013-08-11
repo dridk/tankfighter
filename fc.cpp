@@ -44,7 +44,7 @@ static std::string getFontPath(const char *pattern_name) {
 	return file_path;
 }
 std::string getDefaultFontPath(void) {
-	return getFontPath(parameters.defaultFontName());
+	return getFontPath(parameters.defaultFontName().c_str());
 }
 #endif
 

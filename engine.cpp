@@ -270,7 +270,7 @@ void Engine::CloseMenu(void) {
 	network_menu = NULL;
 }
 void Engine::toggleFullscreen(void) {
-	VideoMode mode = VideoMode::getDesktopMode();
+	VideoMode mode = parameters.getVideoMode();
 	if (is_fullscreen) {
 		window.create(mode, "Tank window", Style::Default);
 	} else {
@@ -307,7 +307,7 @@ Engine::Engine():network(this),messages(this) {
 	first_step = true;
 	must_quit = false;
 	is_fullscreen = parameters.fullscreen();
-	VideoMode mode = VideoMode::getDesktopMode();
+	VideoMode mode = parameters.getVideoMode();
 	window.create(mode, "Tank window", (is_fullscreen ? Style::Fullscreen : Style::Default));
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(parameters.maxFPS());

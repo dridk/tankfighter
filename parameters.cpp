@@ -37,8 +37,12 @@ static struct ParameterDef {
 	,{"missileDuration", PDouble, "2000"}
 	,{"missileSpeed", PDouble, "0.9"}
 	,{"missileDiameter", PDouble, "16"}
+
+/* engine */
 	,{"minFPS", PDouble, "15"}
 	,{"maxFPS", PDouble, "60"}
+	,{"width", PInteger, "0"} /* 0 = desktop size */
+	,{"height", PInteger, "0"}
 
 /* file system */
 	,{"spritesDirectory", PString, "sprites/"}
@@ -180,3 +184,15 @@ std::string Parameters::keymap() {return getAsString("keymap");}
 std::string Parameters::config() {return getAsString("config");}
 bool Parameters::startServer() {return getAsBoolean("server");}
 std::string Parameters::joinAddress() {return getAsString("join");}
+long Parameters::screenWidth() {return getAsLong("width");}
+long Parameters::screenHeight() {return getAsLong("height");}
+sf::VideoMode Parameters::getVideoMode() {
+	sf::VideoMode mode;
+	long w = screenWidth(), h = screenHeight();
+	if (w == 0 && h == 0) return sf::VideoMode::getDesktopMode();
+	if (h == 0) {
+		if (w >= 1920) h = w*9/16;
+		else h = w*3/4;
+	}
+	return sf::VideoMode(w, h);
+}

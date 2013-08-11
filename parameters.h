@@ -3,6 +3,7 @@
 #include <math.h>
 #include <map>
 #include <string>
+#include <SFML/Window/VideoMode.hpp>
 
 enum PType {PBoolean, PInteger, PDouble, PString};
 struct PVariable {
@@ -74,6 +75,9 @@ class Parameters
 	std::string config();
 	bool startServer();
 	std::string joinAddress();
+	long screenWidth();
+	long screenHeight();
+	sf::VideoMode getVideoMode();
 
 	private:
 	typedef std::map<std::string, std::string> Valmap;

@@ -154,12 +154,8 @@ void Parameters::outputHelpString (std::ostream &out) {
 	}
 }
 bool Parameters::parseFile (const char *config_file) {
-	json_value *p = json_parse_file(config_file);
+	json_value *p = json_parse_file(config_file, parameters.config_magic().c_str());
 	if (!p) return false;
-	if (!json_check_magic(p, parameters.config_magic().c_str())) {
-		json_value_free(p);
-		return false;
-	}
 	const json_value *map = access_json_hash(p, "parameters");
 	if ((!map) || map->type != json_object) {
 		json_value_free(p);

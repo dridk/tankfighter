@@ -38,7 +38,7 @@ char *json_string_to_cstring(const json_value *val) {
 	res[ln]=0;
 	return res;
 }
-json_value *json_parse_file(const char *path) {
+json_value *json_parse_file(const char *path, const char *type_name) {
 	unsigned long file_size=0;
 	char *json = (char*)load_file(path, &file_size);
 	if (!json) {
@@ -49,6 +49,10 @@ json_value *json_parse_file(const char *path) {
 	free(json);
 	if (!p) {
 		fprintf(stderr, "Failed to parse json file %s\n", path);
+		return NULL;
+	}
+	if (type_name && !json_check_magic(p, type_name)) {
+		json_value_free(p);
 		return NULL;
 	}
 	return p;

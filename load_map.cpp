@@ -30,13 +30,9 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 
 #define reterror(err) {fprintf(stderr, "%s\n", err);return;}
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *json_path) {
-	json_value *p = json_parse_file(json_path);
-	if (!p) reterror("Failed to parse json");
-	
-	if (!json_check_magic(p, parameters.map_magic().c_str())) {
-		json_value_free(p);
-		return;
-	}
+	json_value *p = json_parse_file(json_path, parameters.map_magic().c_str());
+	if (!p) return;
+
 	const json_value *width = access_json_hash(p, "width");
 	const json_value *height = access_json_hash(p, "height");
 	if (!(width && width->type == json_integer)) {
@@ -79,11 +75,7 @@ class KeymapEnumerator
 };
 static bool enum_keymap(KeymapEnumerator *kmenum, const char *json_path) {
 	json_value *p;
-	if (!(p=json_parse_file(json_path))) {
-		return false;
-	}
-	if (!json_check_magic(p, parameters.keymap_magic().c_str())) {
-		json_value_free(p);
+	if (!(p=json_parse_file(json_path, parameters.keymap_magic().c_str()))) {
 		return false;
 	}
 	const json_value *map = access_json_hash(p, "CommandMap");

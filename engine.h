@@ -57,6 +57,7 @@ class Engine
 	Missile *getMissileByUID(sf::Uint32 uid);
 	void display(const std::string &text, const sf::Color *c = NULL);
 	private:
+	void initialActions();
 	void map_boundaries_changed(void);
 	void addJoinItem(const ServerInfo &si);
 	Player *getPlayerByJoystickId(int joyid);

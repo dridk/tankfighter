@@ -72,6 +72,8 @@ class Parameters
 	std::string map();
 	std::string keymap();
 	std::string config();
+	bool startServer();
+	std::string joinAddress();
 
 	private:
 	typedef std::map<std::string, std::string> Valmap;

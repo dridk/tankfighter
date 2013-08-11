@@ -9,6 +9,7 @@
 #include <string>
 #include "controller.h"
 #include <stdio.h>
+#include <ostream>
 
 
 class Engine;
@@ -25,6 +26,8 @@ struct RemoteClient {
 	unsigned short port;
 };
 bool operator ==(const RemoteClient &a, const RemoteClient &b);
+RemoteClient string2remote(const std::string &addr);
+std::ostream &operator <<(std::ostream &out, const RemoteClient &a);
 class UdpConnection {
 	public:
 	UdpConnection(unsigned short localPort);

@@ -72,7 +72,15 @@ void Engine::window_resized(const Vector2i &wsz) {
 	view.setViewport(r);
 	window.setView(view);
 }
+void Engine::initialActions() {
+	if (parameters.startServer()) {
+		network.declareAsServer();
+	} else if (parameters.joinAddress() != "") {
+		network.requestConnection(string2remote(parameters.joinAddress()));
+	}
+}
 void Engine::play(void) {
+	initialActions();
 	while (step()) {
 		Event e;
 		while (window.pollEvent(e)) {

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include "misc.h"
 
 Parameters parameters;
 
@@ -21,6 +22,8 @@ static struct ParameterDef {
 	,{"disconnectionTimeout", PDouble, "2000"}
 	,{"broadcastPeriod", PDouble, "500"}
 	,{"udpPortRange", PInteger, "100"}
+	,{"server", PBoolean, "0"}
+	,{"join", PString, ""}
 
 /* game */
 	,{"missileDelay", PDouble, "200"}
@@ -47,21 +50,6 @@ static struct ParameterDef {
 	,{"keymap", PString, "keymap.json", 'k'}
 	,{"config", PString, "tankfighter.cfg", 'c'}
 };
-
-bool string2long(const char *s, long *v) {
-	int cnt=0;
-	long vtemp;
-	if (!v) v = &vtemp;
-	if (sscanf(s, "%ld%n", v, &cnt)<=0 || cnt != int(strlen(s))) {*v=0;return false;}
-	return true;
-}
-bool string2dbl(const char *s, double *v) {
-	int cnt=0;
-	double vtemp;
-	if (!v) v = &vtemp;
-	if (sscanf(s, "%lf%n", v, &cnt)<=0 || cnt != int(strlen(s))) {*v=0;return false;}
-	return true;
-}
 
 long Parameters::getAsLong (const char *name) {
 	long res;
@@ -190,3 +178,5 @@ bool Parameters::fullscreen() {return getAsBoolean("fullscreen");}
 std::string Parameters::map() {return getAsString("map");}
 std::string Parameters::keymap() {return getAsString("keymap");}
 std::string Parameters::config() {return getAsString("config");}
+bool Parameters::startServer() {return getAsBoolean("server");}
+std::string Parameters::joinAddress() {return getAsString("join");}

@@ -1,5 +1,6 @@
 #include "misc.h"
 #include <stdio.h>
+#include <string.h>
 
 using namespace sf;
 
@@ -49,4 +50,18 @@ void load_texture(Sprite &sprite, Texture &tex, const char *path) {
 	load_sprite(sprite, tex, path);
 	sprite.setOrigin(0,0);
 	tex.setRepeated(true);
+}
+bool string2long(const char *s, long *v) {
+	int cnt=0;
+	long vtemp;
+	if (!v) v = &vtemp;
+	if (sscanf(s, "%ld%n", v, &cnt)<=0 || cnt != int(strlen(s))) {*v=0;return false;}
+	return true;
+}
+bool string2dbl(const char *s, double *v) {
+	int cnt=0;
+	double vtemp;
+	if (!v) v = &vtemp;
+	if (sscanf(s, "%lf%n", v, &cnt)<=0 || cnt != int(strlen(s))) {*v=0;return false;}
+	return true;
 }

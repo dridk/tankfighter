@@ -120,6 +120,10 @@ RemoteClientInfo::RemoteClientInfo(const RemoteClient &rc):client(rc) {
 bool operator ==(const RemoteClient &a, const RemoteClient &b) {
 	return a.addr == b.addr && a.port == b.port;
 }
+std::ostream &operator <<(std::ostream &out, const RemoteClient &a) {
+	out << a.addr.toString() << ':' << a.port;
+	return out;
+}
 static void getPlayerPosition(Player *player, PlayerPosition &pos) {
 	pos.playerUID   = player->getUID();
 	pos.x           = player->position.x;
@@ -749,6 +753,7 @@ bool NetworkClient::treatMessage(Message &msg) {
 		getEngine()->add(pl);
 		return true;
 	} else if (msg.type == NMT_S2C_DefineMap) {
+		if (pairs.size() >= 1) getEngine()->display(std::string("Successfully connected to server ")+tostring(pairs[0].client));
 		DefineMapM mapdef;
 		std::vector<Block> blocks;
 		if (!msg.Input(&mapdef, messages_structures[msg.type].format)) return false;
@@ -1087,6 +1092,7 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 	}
 	engine->clear_entities();
 	Entity::useUpperUID();
+	getEngine()->display(std::string("Connecting to ")+tostring(server));
 	return true;
 }
 void NetworkClient::requestDisconnection(void) {
@@ -1133,6 +1139,7 @@ void NetworkClient::declareAsServer(void) {
 		}
 		pl->setController(new MasterController(this, ctrl));
 	}
+	getEngine()->display(std::string("Server created on port ")+tostring(remote.sock.getLocalPort()));
 }
 void NetworkClient::reportPlayerMovement(const PlayerMovement &plpos) {
 	if (isServer()) return;
@@ -1241,4 +1248,19 @@ NetworkClient::ServerInfoIterator NetworkClient::begin_servers() {
 }
 NetworkClient::ServerInfoIterator NetworkClient::end_servers() {
 	return discoveredServers.end();
+}
+RemoteClient string2remote(const std::string &addr) {
+	RemoteClient rc;
+	size_t i = addr.find(":");
+	rc.port = parameters.serverPort();
+	if (i != std::string::npos) {
+		long port;
+		rc.addr = IpAddress(addr.substr(0, i));
+		if (string2long(addr.substr(i+1).c_str(), &port)) {
+			rc.port = port;
+		}
+	} else {
+		rc.addr = IpAddress(addr);
+	}
+	return rc;
 }

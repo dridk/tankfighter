@@ -4,6 +4,7 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <string>
+#include <sstream>
 
 void load_sprite(sf::Sprite &sprite, sf::Texture &tex, const char *path);
 void load_texture(sf::Sprite &sprite, sf::Texture &tex, const char *path);
@@ -15,4 +16,13 @@ double get_random(double max);
 std::string LowerCaseString(const std::string &str);
 
 std::string getDefaultFontPath(void);
+bool string2long(const char *s, long *v);
+bool string2dbl(const char *s, double *v);
+
+template <class T>
+std::string tostring(const T &x) {
+	std::ostringstream o;
+	o << x;
+	return o.str();
+}
 #endif

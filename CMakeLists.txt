@@ -43,4 +43,11 @@ target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES})
 string (REPLACE ";" " " SFML2_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
 set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER}")
 set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${SFML2_CFLAGS_OTHER}")
-install (TARGETS tankfighter DESTINATION bin)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+	install (TARGETS tankfighter DESTINATION bin)
+else(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+	install (TARGETS tankfighter DESTINATION .)
+	INSTALL_FILES(/sprites FILES sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
+	INSTALL_FILES(/ FILES keymap.json map.json map2.json tankfighter.cfg)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Unix")

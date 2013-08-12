@@ -17,7 +17,7 @@ static struct ParameterDef {
 } pdefs[]={
 /* network */
 	 {"udpMTU", PInteger, "512"}
-	,{"NetworkFPS", PDouble, "60"}
+	,{"networkFPS", PDouble, "60"}
 	,{"serverPort", PInteger, "1330"}
 	,{"clientPort", PInteger, "1320"}
 	,{"connectionTimeout", PDouble, "10000"}
@@ -56,6 +56,7 @@ static struct ParameterDef {
 	,{"keymap", PString, "keymap.json", 'k'}
 	,{"config", PString, "tankfighter.cfg", 'c'}
 	,{"help", PBoolean, "0", 'h'}
+	,{"noGUI", PBoolean, "0"}
 };
 
 long Parameters::getAsLong (const char *name) {
@@ -196,7 +197,11 @@ bool Parameters::set(const char *name, const json_value *value) {
 	return set(name, sval);
 }
 
-unsigned Parameters::C2S_Packet_interval_US(void) {return 10000;}
+sf::Int64 Parameters::C2S_Packet_interval_US(void) {
+	double fps = getAsDouble("networkFPS");
+	if (fps <= 0.1) fps = 0.1;
+	return (1/fps)*1e6;
+}
 double Parameters::resendPacketAfterMS(void) {return 500;}
 double Parameters::clientsCleanupIntervalMS(void) {return 1000;}
 double Parameters::maxDupPacketTimeSecs(void) {return 10;}
@@ -256,3 +261,4 @@ sf::VideoMode Parameters::getVideoMode() {
 	}
 	return sf::VideoMode(w, h);
 }
+bool Parameters::noGUI() {return getAsBoolean("noGUI");}

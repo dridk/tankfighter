@@ -83,6 +83,7 @@ void Engine::play(void) {
 	initialActions();
 	while (step()) {
 		Event e;
+		if (!parameters.noGUI()) {
 		while (window.pollEvent(e)) {
 			treatLocalKeyEvent(e);
 			if (e.type == Event::Closed) {
@@ -121,6 +122,7 @@ void Engine::play(void) {
 				fprintf(stderr, "[pressed joybutton %u %u]\n", e.joystickMove.joystickId, e.joystickButton.button);
 			}
 #endif
+		}
 		}
 	}
 	network.requestDisconnection();
@@ -223,6 +225,7 @@ Vector2d Engine::map_size(void) const {
 	return msize;
 }
 Vector2d Engine::map2window(const Vector2d &pos) const {
+	if (parameters.noGUI()) return pos;
 	Vector2u wsz = window.getSize();
 	Vector2d msz = map_size();
 	FloatRect vr = view.getViewport();
@@ -230,6 +233,7 @@ Vector2d Engine::map2window(const Vector2d &pos) const {
 	              , wsz.y*(pos.y/msz.y * vr.height + vr.top));
 }
 Vector2d Engine::window2map(const Vector2d &pos) const {
+	if (parameters.noGUI()) return pos;
 	Vector2u wsz = window.getSize();
 	Vector2d msz = map_size();
 	FloatRect vr = view.getViewport();
@@ -251,6 +255,7 @@ void Engine::addJoinItem(const ServerInfo &si) {
 	network_menu->addItem(title.c_str(), NULL, network_menu->getItemCount()-1);
 }
 void Engine::PopupMenu(void) {
+	if (parameters.noGUI()) return;
 	if (network_menu) return;
 	Menu *m = new Menu(this);
 	network_menu = m;
@@ -270,6 +275,7 @@ void Engine::CloseMenu(void) {
 	network_menu = NULL;
 }
 void Engine::toggleFullscreen(void) {
+	if (parameters.noGUI()) return;
 	VideoMode mode = parameters.getVideoMode();
 	if (is_fullscreen) {
 		window.create(mode, "Tank window", Style::Default);
@@ -308,10 +314,12 @@ Engine::Engine():network(this),messages(this) {
 	must_quit = false;
 	is_fullscreen = parameters.fullscreen();
 	VideoMode mode = parameters.getVideoMode();
-	window.create(mode, "Tank window", (is_fullscreen ? Style::Fullscreen : Style::Default));
-	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(parameters.maxFPS());
-	window.clear(Color::White);
+	if (!parameters.noGUI()) {
+		window.create(mode, "Tank window", (is_fullscreen ? Style::Fullscreen : Style::Default));
+		window.setVerticalSyncEnabled(false);
+		window.setFramerateLimit(parameters.maxFPS());
+		window.clear(Color::White);
+	}
 	score_font.loadFromFile(getDefaultFontPath().c_str());
 
 	load_texture(background, background_texture, "sprites/dirt.jpg");
@@ -334,13 +342,14 @@ void Engine::map_boundaries_changed(void) {
 	map_boundaries_entity = new Wall(0,0,width, height, NULL, this);
 	add(map_boundaries_entity);
 
-	Vector2u wsz = window.getSize();
-	view.reset(FloatRect(0,0,wsz.x,wsz.y));
-	view.setCenter(width/2, height/2);
-	view.setSize(width, height);
-	window.setView(view);
-
-	window_resized(Vector2i(wsz.x, wsz.y));
+	if (!parameters.noGUI()) {
+		Vector2u wsz = window.getSize();
+		view.reset(FloatRect(0,0,wsz.x,wsz.y));
+		view.setCenter(width/2, height/2);
+		view.setSize(width, height);
+		window.setView(view);
+		window_resized(Vector2i(wsz.x, wsz.y));
+	}
 }
 void Engine::clear_entities(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
@@ -406,7 +415,15 @@ bool insertInArray(const T &obj, std::vector<T> &v) {
 bool Engine::step(void) {
 	if (must_quit) return false;
 	if (first_step) {clock.restart();first_step=false;}
-	draw();
+	if (parameters.noGUI()) {
+		Int64 total   = parameters.C2S_Packet_interval_US();
+		Int64 elapsed = clock.getElapsedTime().asMicroseconds();
+		if (elapsed < total) {
+			sf::sleep(sf::microseconds(total - elapsed));
+		}
+	} else {
+		draw();
+	}
 	compute_physics();
 	CheckMenu();
 	if (!network.isLocal()) {

@@ -29,7 +29,7 @@ class Parameters
 
 	/* constants for networking */
 	unsigned UDP_MTU(void);
-	unsigned C2S_Packet_interval_US(void);
+	sf::Int64 C2S_Packet_interval_US(void);
 	unsigned short serverPort(void);
 	unsigned short clientPort(void);
 	double resendPacketAfterMS(void);
@@ -83,6 +83,7 @@ class Parameters
 	long screenWidth();
 	long screenHeight();
 	sf::VideoMode getVideoMode();
+	bool noGUI();
 
 	private:
 	typedef std::map<std::string, std::string> Valmap;

@@ -14,12 +14,17 @@ extract_enum() {
 	echo "};"
 }
 find_keyboard_hpp() {
-(pkg-config --cflags sfml-all;echo /usr/include)|awk -v RS=' ' 1|sed 's/^-I//'|while read d; do
+if [ -n "$SFML_ROOT" ]; then
+	echo "${SFML_ROOT}/include/SFML/Window"
+else
+for d in $(pkg-config --cflags sfml-all;echo /usr/include); do
+	d=$(echo "$d"|sed 's/^-I//')
 	f="$d/SFML/Window/Keyboard.hpp"
 	if test -e "$f"; then
 		echo "$d/SFML/Window"
 	fi
 done|tail -1
+fi # SFML_ROOT
 }
 
 if [ -z "$kbh" ]; then

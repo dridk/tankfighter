@@ -1,13 +1,30 @@
 #include "misc.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
 #ifndef _WIN32
 #include <fontconfig/fontconfig.h>
-#include <stdlib.h>
 #include "parameters.h"
 #endif
+#include <string>
+#include <vector>
 
 #ifdef _WIN32
+static std::string first_existing(std::vector<std::string> paths) {
+	for(size_t i=0; i < paths.size(); i++) {
+		if (access(paths[i].c_str(), R_OK)!=-1) return paths[i];
+	}
+	return "";
+}
 std::string getDefaultFontPath(void) {
-	return "c:\\windows\\fonts\\Arial.ttf";
+	const char *win = getenv("windir");
+	if (!win) win = "c:\\windows\\";
+	std::string fontdir = std::string(win) + "\\fonts\\";
+	std::vector<std::string> files;
+	files.push_back(fontdir+"arial.ttf");
+	files.push_back(fontdir+"tahoma.ttf");
+	files.push_back(fontdir+"cour.ttf");
+	return first_existing(files);
 }
 #else
 

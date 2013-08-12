@@ -138,6 +138,7 @@ bool Parameters::parseCmdline (int argc, char **argv) {
 	}
 	if (getAsBoolean("help")) {
 		outputHelpString(std::cout);
+		return false;
 	}
 	return true;
 }

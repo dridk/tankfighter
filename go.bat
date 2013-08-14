@@ -1,0 +1,2 @@
+call mkwin
+tankfighter

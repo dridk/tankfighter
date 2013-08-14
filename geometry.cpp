@@ -30,6 +30,7 @@ double vectorModule(const Vector2d &v) {
 }
 void normalizeVector(Vector2d &v, double new_module) {
 	double module = vectorModule(v);
+	if (module <= 1e-10) return;
 	v.x *= new_module/module;
 	v.y *= new_module/module;
 }
@@ -137,7 +138,6 @@ static bool circleIntersectsSegment(Vector2d &res, const Segment &segt, const Ci
 	Vector2d p1, p2;
 	if (segmentModule(segt) < 1e-6) return false;
 	if (!circleIntersectsLine(&p1, &p2, segt.toLine(), ci)) return false;
-	/*fprintf(stderr, "[circle intersects line %g,%g and %g,%g]\n", p1.x, p1.y, p2.x, p2.y);*/
 	if (pointsDistance(p1, segt.pt1) < pointsDistance(p2, segt.pt1)) res = p1; else res = p2;
 	return isLPointOnSegment(res, segt);
 }
@@ -222,69 +222,105 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 	} else if (interaction == IT_GHOST) {
 		return true;
 	}
+	/* interaction == IT_STICK or interaction == IT_SLIDE */
 	Vector2d proj;
 	if (orthoProjectOnLine(proj, wall, I)) {
-		Vector2d v = Vector2d(I.x - proj.x, I.y - proj.y); /* vector orthogonal to wall, that moves the point out of the wall */
-		if (vectorModule(v) >= parameters.minWallDistance()/2) {
-			normalizeVector(v, parameters.minWallDistance());
-			/*translateSegment(vect, v);*/
-			vect.pt2 += v;
+		Vector2d v = I - proj; /* vector orthogonal to wall, that moves the point out of the wall */
+		if (vectorModule(v) >= parameters.minWallDistance()*0.2) {
+			normalizeVector(v, parameters.minWallDistance()*0.2);
 		}
+		vect.pt2 += v;
 	}
 	return true;
 }
+static bool ghostlike(const MoveContext &ctx) {
+	return ctx.interaction == IT_GHOST || ctx.interaction == IT_CANCEL;
+}
 static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
 	Segment &vect = ctx.vect;
+	Segment tvect;
 	Vector2d A;
-	const Circle &circle = arc.circle;
+	const Circle &circle0 = arc.circle;
+	Circle circle = circle0;
+	circle.radius = circle0.radius+parameters.minWallDistance()*0.9;
 
-	if (fabs(arc.start) <= 1e-3 && fabs(arc.end-2*M_PI) <= 1e-3
-	    && circle.filled && inCircle(vect.pt1, circle) && !inCircle(vect.pt2, circle)) {
+	if (circle.filled && inCircle(vect.pt1, circle) && !inCircle(vect.pt2, circle)) {
 		return false; /* assume exiting something is not interacting */
 	}
-	if (fabs(arc.start) <= 1e-3 && fabs(arc.end-2*M_PI) <= 1e-3
-	    && circle.filled && inCircle(vect, circle)) {
+	if (circle.filled && inCircle(vect, circle0)) {
 		/* already inside discus */
-		if (ctx.interaction == IT_GHOST) return true;
-		else if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;}
-		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
-			Vector2d OB = (ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1) - circle.center;
-			double module = segmentModule(vect);
-			normalizeVector(OB, circle.radius+parameters.minWallDistance());
-			vect.pt2 = circle.center + OB;
-			if (ctx.interaction == IT_BOUNCE) {
-				normalizeVector(OB, module);
-				ctx.nmove = OB;
+		Segment OA;
+		OA.pt1 = circle.center;
+		OA.pt2 = vect.pt2;
+		double angle = trigoAngleFromSegment(OA);
+		if (angle >= arc.start && angle <= arc.end) {
+			if (ctx.interaction == IT_GHOST) {
+				return true;
+			} else if (ctx.interaction == IT_CANCEL) {
+				vect.pt2 = vect.pt1;
 			}
+			else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
+				Vector2d OB = (ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1) - circle.center;
+				double module = segmentModule(vect);
+				normalizeVector(OB, circle0.radius+parameters.minWallDistance()*1.1);
+				Vector2d A;
+				translateSegment(vect, circle.center + OB - vect.pt2);
+				if (ctx.interaction == IT_BOUNCE) {
+					normalizeVector(OB, module);
+					ctx.nmove = OB;
+				}
+			}
+			return true;
 		}
-		return true;
 	}
-	if (!circleIntersectsSegment(A, vect, circle)) return false;
-	/*fprintf(stderr, "[pmc (%g,%g)-(%g,%g) (%g,%g)-%g [%g-%g]]\n"
-		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
-		,arc.circle.center.x, arc.circle.center.y, arc.circle.radius, arc.start, arc.end);
-	fprintf(stderr, "[pmc intersects at %g,%g]\n", A.x, A.y);*/
+	tvect = vect;
+	if (!ghostlike(ctx)) {
+		double mradius = circle0.radius+parameters.minWallDistance();
+		if (vectorModule(tvect.pt1 - circle.center) < mradius) {
+			Vector2d OP = tvect.pt1 - circle.center;
+			normalizeVector(OP, mradius);
+			translateSegment(tvect, circle.center + OP - tvect.pt1);
+		}
+	}
+	
+	if (!circleIntersectsSegment(A, tvect, circle)) return false; /* main collision detection */
+	
 	Segment AB, OA;
 	OA.pt2 = A; OA.pt1 = circle.center;
 	double angle = trigoAngleFromSegment(OA);
-	if (!(angle >= arc.start && angle < arc.end)) return false;
+	
+	if (!(angle >= arc.start && angle < arc.end)) return false; /* circle arc check */
+	
+	vect = tvect;
+	
 	return pointMovesAgainstWall(ctx, orthoLine(OA.toLine(), A), A);
 }
 static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
-	Vector2d A, C;
+	Segment tvect;
+	Vector2d A, B, C;
 	Vector2d proj;
 	Segment segt = segt0;
+	double mwd = parameters.minWallDistance();
 	if (segmentModule(vect) < 1e-6) return false;
-	/*fprintf(stderr, "[pos %g,%g]\n", vect.pt1.x, vect.pt1.y);*/
-	if (!intersectSegments(A, vect, segt)) {
+	
+	A = ctx.vect.pt1;
+	orthoProjectOnLine(proj, segt.toLine(), A);
+	
+	Vector2d bounce_vect = A - proj;
+	normalizeVector(bounce_vect, mwd*0.9);
+	tvect = vect;
+	if (vectorModule(vect.pt1 - proj) <= mwd && !ghostlike(ctx)) { /* the point is already too close to segment */
+		Vector2d xbounce_vect = bounce_vect;
+		normalizeVector(xbounce_vect, mwd);
+		translateSegment(tvect, proj + xbounce_vect - tvect.pt1);
+	}
+	
+	translateSegment(segt, bounce_vect); /* makes segt virtually closer to point, in order to implement minWallDistance */
+	if (!intersectSegments(A, tvect, segt)) {
 		return false;
-	} /*else {
-	fprintf(stderr, "[pmt (%g,%g)-(%g,%g) (%g,%g)-(%g,%g)]\n"
-		,vect.pt1.x, vect.pt1.y, vect.pt2.x, vect.pt2.y
-		,segt.pt1.x, segt.pt1.y, segt.pt2.x, segt.pt2.y);
-		fprintf(stderr, "[intersects at %g,%g]\n", A.x, A.y);
-	}*/
+	}
+	vect = tvect;
 	return pointMovesAgainstWall(ctx, segt.toLine(), A);
 }
 static bool pointMovesToComplexShape(MoveContext &ctx, const ComplexShape &shape) {
@@ -317,8 +353,8 @@ static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vec
 		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
 		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
 		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
-		if (!inside) prolongateSegment(s, -augment+parameters.minWallDistance()/2);
-		else prolongateSegment(s, parameters.minWallDistance());
+		if (!inside) prolongateSegment(s, -augment + parameters.minWallDistance()*0.1);
+		else prolongateSegment(s, parameters.minWallDistance()*1.1);
 		shapes[i].type = CSIT_SEGMENT;
 		shapes[i].segment = s;
 
@@ -413,7 +449,7 @@ static void test_segments() {
 	s1.pt2.y = 100;
 	v.pt1.x = 10;
 	v.pt1.y = 10;
-	v.pt2.x = 80;
+	v.pt2.x = 110;
 	v.pt2.y = 10;
 	MoveContext ctx(IT_SLIDE, v);
 	if (pointMovesToSegment(ctx, s1)) {

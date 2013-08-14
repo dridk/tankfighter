@@ -205,7 +205,7 @@ sf::Int64 Parameters::C2S_Packet_interval_US(void) {
 double Parameters::resendPacketAfterMS(void) {return 500;}
 double Parameters::clientsCleanupIntervalMS(void) {return 1000;}
 double Parameters::maxDupPacketTimeSecs(void) {return 10;}
-double Parameters::minWallDistance(void) {return 1e-3;}
+double Parameters::minWallDistance(void) {return 1e-2;}
 std::string Parameters::keymap_magic(void) {return "ktank-ctrl-map";}
 std::string Parameters::map_magic(void) {return "ktank-map";}
 std::string Parameters::config_magic(void) {return "ktank-config";}

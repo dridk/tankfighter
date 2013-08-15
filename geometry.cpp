@@ -256,17 +256,6 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 	/* interaction == IT_STICK or interaction == IT_SLIDE */
 	normalizeVector(outvect, parameters.minWallDistance());
 	vect.pt2 += outvect;
-#if 0
-	Vector2d proj;
-	if (orthoProjectOnLine(proj, wall, I)) {
-		Vector2d v = I - proj; /* vector orthogonal to wall, that moves the point out of the wall */
-		if (vectorModule(v) >= parameters.minWallDistance()) {
-			normalizeVector(v, parameters.minWallDistance());
-		}
-		vect.pt2 += v;
-		vect.pt2 = proj;
-	}
-#endif
 	return true;
 }
 static bool ghostlike(const MoveContext &ctx) {
@@ -322,31 +311,29 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 	
 	return pointMovesAgainstWall(ctx, orthoLine(OA.toLine(), A), A, segment2Vector(OA));
 }
-static Vector2d outVector(const Segment &segt0, bool trigoDirect) {
-	Vector2d outvect = orthoVector(segment2Vector(segt0));
-	if (trigoDirect) outvect = -outvect;
-	return outvect;
+static Vector2d outVector(const Segment &segt0) {
+	return -orthoVector(segment2Vector(segt0));
 }
-static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0, bool trigoDirect) {
+static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment &vect = ctx.vect;
 	Vector2d A, B, C;
 	Vector2d proj;
 	Segment segt = segt0;
 	double mwd = parameters.minWallDistance();
 	if (segmentModule(vect) < 1e-6) return false;
-	if (!(isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt1) != trigoDirect
-		&& isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt2) == trigoDirect)) {
+	if (isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt1)
+		|| !isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt2)) {
 			return false;/* doesn't move inside solid half-plane */
 	}
 	
 	if (!intersectSegments(A, vect, segt)) {
 		return false;
 	}
-	return pointMovesAgainstWall(ctx, segt.toLine(), A, outVector(segt, trigoDirect));
+	return pointMovesAgainstWall(ctx, segt.toLine(), A, outVector(segt));
 }
 static bool pointMovesToComplexShape(MoveContext &ctx, const ComplexShape &shape) {
 	if (shape.type == CSIT_ARC) return pointMovesToCircleArc(ctx, shape.arc);
-	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(ctx, shape.segment, shape.trigoDirect);
+	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(ctx, shape.segment);
 	return false;
 }
 static void prolongateSegment(Segment &s, double distance) {
@@ -463,6 +450,11 @@ static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes
 		}
 	}
 }
+static void orientSegment(Segment &segt, bool trigoDirect) {
+	if (!trigoDirect) {
+		std::swap(segt.pt1, segt.pt2);
+	}
+}
 static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector<ComplexShape> &shapes) {
 	shapes.clear();
 	if (poly.size() <= 2 || vectorModule(poly[0] - poly[1]) <= 1e-6) return;
@@ -487,12 +479,11 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		shape.type = CSIT_SEGMENT;
 		shape.segment = segt1;
 		prolongateSegment(shape.segment, parameters.minWallDistance()*0.1);
-		shape.trigoDirect = trigoDirect;
+		orientSegment(shape.segment, trigoDirect);
 		shapes.push_back(shape);
 		
 		/* now, circular transition */
 		shape.type = CSIT_ARC;
-		shape.trigoDirect = trigoDirect;
 		CircleArc &arc = shape.arc;
 		arc.circle.center = pt2;
 		arc.circle.radius = augment;
@@ -506,33 +497,19 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		shape.type = CSIT_SEGMENT;
 		shape.segment.pt1 = segt1.pt2;
 		shape.segment.pt2 = segt2.pt1;
-		shape.trigoDirect = trigoDirect;
-		shapes.push_back(shape);
-		
-#if 0
-		shape.trigoDirect = trigoDirect;
-		shape.type = CSIT_SEGMENT;
-		shape.segment = segt2;
-		shapes.push_back(shape);
-#endif
+		orientSegment(shape.segment, trigoDirect);
+		shapes.push_back(shape);		
 	}
 	return;
 }
-static bool inLineShadow(const ComplexShape &shape, const Vector2d &pt) {
-	const Segment &segt = shape.segment;
-	return isTrigoDirect(segt.pt1, segt.pt2, pt) == shape.trigoDirect; /* Point must be inside line-delimited half-plane on the correct side */
+static bool inLineShadow(const Segment &segt, const Vector2d &pt) {
+	return isTrigoDirect(segt.pt1, segt.pt2, pt); /* Point must be inside line-delimited half-plane on the correct side */
 }
-#if 0
-static bool inSegmentShadow(const ComplexShape &shape, const Vector2d &pt) {
-	if (!inLineShadow(shape, pt)) return false; /* Point must be inside line-delimited half-plane on the correct side */
-	return orthoProjectOnSegment(proj, shape.segment, pt); /* And must be projected on segment */
-}
-#endif
 static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector2d &pt) {
 	bool inIncludedPolygon = true;
 	for(size_t i=0; i < shapes.size(); i++) {
 		const ComplexShape &shape =shapes[i];
-		if (shape.type == CSIT_SEGMENT && !inLineShadow(shape, pt)) {
+		if (shape.type == CSIT_SEGMENT && !inLineShadow(shape.segment, pt)) {
 			inIncludedPolygon = false;
 		} else if (shape.type == CSIT_ARC && inDiscusArc(shape.arc, pt)) {
 			return true;
@@ -548,9 +525,7 @@ static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
 	poly.resize(4);
 	Vector2f pt0(r.left, r.top);
 	Transform rot;
-	/*rot.translate(-pt0);*/
 	rot.rotate(180/M_PI*r0.angle);
-	/*rot.translate(pt0);*/
 	
 	for(size_t i=0; i < 4; i++) { /* notice: direct trigo order used here */
 		Vector2f p;
@@ -605,11 +580,6 @@ void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double a
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
 	DoubleRect r = r0.r;
 	std::vector<ComplexShape> shapes;
-#if 0
-	bool sign = inRectangle(ctx.vect.pt1, r) && !r0.filled;
-	roundAugmentRectangle(r, (sign?-radius:radius), shapes, inRectangle(ctx.vect.pt1, r));
-	augmentRectangle(r, radius);
-#endif
 	roundAugmentRectangle(r0, (r0.filled?radius:-radius), shapes, !r0.filled);
 	if (shapes.size() == 0) return false; /* zero-sized object */
 	if (r0.filled) {
@@ -673,7 +643,7 @@ static void test_segments() {
 	v.pt2.x = 110;
 	v.pt2.y = 10;
 	MoveContext ctx(IT_SLIDE, v);
-	if (pointMovesToSegment(ctx, s1, true)) {
+	if (pointMovesToSegment(ctx, s1)) {
 		v = ctx.vect;
 		fprintf(stderr, "[point moves to segt %g x %g]\n", v.pt2.x, v.pt2.y);
 	} else {

@@ -1,10 +1,15 @@
 #include "geometry.h"
 #include <SFML/Graphics/Rect.hpp>
+#include <SFML/Graphics/Transform.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 #include <math.h>
 #include <vector>
 #include <stdio.h>
 #include "parameters.h"
+#include <algorithm>
 
+using namespace sf;
 
 #ifdef DEBUG
 static void dispLine(const Line &line) {
@@ -56,17 +61,12 @@ static Line parallelLine(const Line &line, const Vector2d &pt) {
 	res.c = -(res.a * pt.x + res.b * pt.y);
 	return res;
 }
-static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vector2d &pt) {
-	Vector2d res;
-	if (!orthoProjectOnLine(res, segt.toLine(), pt)) return false;
-	if (!isLPointOnSegment(res, segt)) return false;
-	res0 = res;
-	return true;
-}
 static bool inRectangle(const Segment &segt, const DoubleRect &r) {
 	return inRectangle(segt.pt1, r) && inRectangle(segt.pt2, r);
 }
 #endif
+
+
 static Vector2d segment2Vector(const Segment &segt) {
 	return segt.pt2 - segt.pt1;
 }
@@ -166,8 +166,18 @@ double angle_from_dxdy(double dx, double dy) {
 static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment */
 	return angle_from_dxdy(segt.pt2.x - segt.pt1.x, segt.pt2.y - segt.pt1.y);
 }
+static double trigoAngleFromVector(const Vector2d &vect) { /* oriented */
+	return angle_from_dxdy(vect.x, vect.y);
+}
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
 	return intersectLines(res, orthoLine(line, pt), line);
+}
+static bool orthoProjectOnSegment(Vector2d &res0, const Segment &segt, const Vector2d &pt) {
+	Vector2d res;
+	if (!orthoProjectOnLine(res, segt.toLine(), pt)) return false;
+	if (!isLPointOnSegment(res, segt)) return false;
+	res0 = res;
+	return true;
 }
 static void translateSegment(Segment &segt, Vector2d v) {
 	segt.pt1 += v;
@@ -178,6 +188,20 @@ static bool inCircle(const Vector2d &pt, const Circle &circle) {
 }
 static bool inCircle(const Segment &segt, const Circle &circle) {
 	return inCircle(segt.pt1, circle) && inCircle(segt.pt2, circle);
+}
+static bool angleBetween(double a, double start, double end) {
+	normalizeAngle(a);
+	double ln = end - start;
+	if (fabs(ln - 2*M_PI)<2e-6) return true; /* complete circle included */
+	normalizeAngle(ln);
+	double xa = a-start;
+	normalizeAngle(xa);
+	return xa >= 0 && xa <= ln;
+}
+static bool inDiscusArc(const CircleArc &arc, const Vector2d &pt) {
+	if (!inCircle(pt, arc.circle)) return false;
+	double a = trigoAngleFromVector(pt - arc.circle.center);
+	return angleBetween(a, arc.start, arc.end);
 }
 static bool inRectangle(const Vector2d &p, const DoubleRect &r) {
 	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
@@ -236,6 +260,11 @@ static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vect
 static bool ghostlike(const MoveContext &ctx) {
 	return ctx.interaction == IT_GHOST || ctx.interaction == IT_CANCEL;
 }
+static Vector2d repulseFromCircle(const Vector2d &pt, const Circle &circle, Vector2d &outvect, double extra_repulsion) {
+	outvect = pt - circle.center;
+	normalizeVector(outvect, circle.radius+extra_repulsion);
+	return circle.center+outvect;
+}
 static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
 	Segment &vect = ctx.vect;
 	Segment tvect;
@@ -253,13 +282,22 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 		OA.pt1 = circle.center;
 		OA.pt2 = vect.pt2;
 		double angle = trigoAngleFromSegment(OA);
-		if (angle >= arc.start && angle <= arc.end) {
+		if (angleBetween(angle, arc.start, arc.end)) {
 			if (ctx.interaction == IT_GHOST) {
 				return true;
 			} else if (ctx.interaction == IT_CANCEL) {
 				vect.pt2 = vect.pt1;
 			}
 			else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
+				Vector2d outvect;
+				double module = segmentModule(vect);
+				vect.pt2 = repulseFromCircle((ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1)
+								, circle, outvect, 0.2*parameters.minWallDistance());
+				if (ctx.interaction == IT_BOUNCE) {
+					normalizeVector(outvect, module);
+					ctx.nmove = outvect;
+				}
+#if 0
 				Vector2d OB = (ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1) - circle.center;
 				double module = segmentModule(vect);
 				normalizeVector(OB, circle0.radius+parameters.minWallDistance()*1.1);
@@ -269,6 +307,7 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 					normalizeVector(OB, module);
 					ctx.nmove = OB;
 				}
+#endif
 			}
 			return true;
 		}
@@ -289,7 +328,7 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 	OA.pt2 = A; OA.pt1 = circle.center;
 	double angle = trigoAngleFromSegment(OA);
 	
-	if (!(angle >= arc.start && angle < arc.end)) return false; /* circle arc check */
+	if (!angleBetween(angle, arc.start, arc.end)) return false; /* circle arc check */
 	
 	vect = tvect;
 	
@@ -340,7 +379,7 @@ static void augmentRectangle(DoubleRect &r, double augment) {
 	r.height += 2*augment;
 	r.width += 2*augment;
 }
-static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
+static void roundAugmentHorizRectangle(const DoubleRect &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
 	unsigned i;
 	DoubleRect r = r0;
 	shapes.resize(inside?4:8);
@@ -383,36 +422,256 @@ static void roundAugmentRectangle(const DoubleRect &r0, double augment, std::vec
 		shapes[i+4].arc = c;
 	}
 }
+
+typedef std::vector<Vector2d> Polygon;
+/* polygons are convex. Last point is implicitly connected to first */
+/* consequently, a triangle as a size() of 3 */
+Vector2d barycenter(const Polygon &poly) {
+	Vector2d c(0,0);
+	for(size_t i=0; i < poly.size(); i++) {
+		c += poly[i];
+	}
+	return c*(1.0/poly.size());
+}
+static bool repulseSegment(Segment &segt, Vector2d &outvect, const Vector2d from_pt, double repulseDistance) {
+	/* on output, repulse segt and set outvect to the repulsion vector */
+	Vector2d proj;
+	if (!orthoProjectOnLine(proj, segt.toLine(), from_pt)) {
+		fprintf(stderr, "Unexpected error on poly segt %gx%g-%gx%g\n"
+			,segt.pt1.x, segt.pt1.y
+			,segt.pt2.x, segt.pt2.y);
+		return false;
+	}
+	outvect = proj - from_pt;
+	normalizeVector(outvect, repulseDistance);
+	Segment osegt = segt;
+	translateSegment(segt, outvect);
+	return true;
+}
+static bool isTrigoDirect(const Vector2d &pt1, const Vector2d &pt2, const Vector2d &pt3) {
+	double a1 = trigoAngleFromVector(pt2 - pt1), a2 = trigoAngleFromVector(pt3 - pt1);
+	double a = a2 - a1;
+	normalizeAngle(a);
+#if 0
+	if (a >= M_PI) {
+		fprintf(stderr, "[trigoDirect %gx%g %gx%g %gx%g a1=%g a2=%g a=%g]\n", pt1.x, pt1.y, pt2.x,pt2.y, pt3.x, pt3.y, a1, a2, a);
+	}
+#endif
+	return a < M_PI;
+}
+static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes) {
+	for(size_t i=0; i < shapes.size(); i++) {
+		const ComplexShape &shape = shapes[i];
+		if (shape.type == CSIT_SEGMENT) {
+			const Segment &segt = shape.segment;
+			ConvexShape line(4);
+			line.setPoint(0, Vector2f(segt.pt1.x-2, segt.pt1.y-2));
+			line.setPoint(1, Vector2f(segt.pt2.x-2, segt.pt2.y-2));
+			line.setPoint(2, Vector2f(segt.pt2.x+2, segt.pt2.y+2));
+			line.setPoint(3, Vector2f(segt.pt1.x+2, segt.pt1.y+2));
+			
+			line.setFillColor(Color(255,0,0));
+			line.setOutlineColor(Color(0,0,255));
+			line.setOutlineThickness(2);
+			target.draw(line);
+		} else if (shape.type == CSIT_ARC) {
+			size_t cnt = 10;
+			ConvexShape lines(cnt);
+			lines.setFillColor(Color::Transparent);
+			lines.setOutlineColor(Color(0,0,255));
+			lines.setOutlineThickness(2);
+			
+			const CircleArc &arc = shape.arc;
+			Vector2d center = arc.circle.center;
+			double radius = arc.circle.radius;
+			for(size_t i=0; i < cnt; i++) {
+				double a1 = arc.start + (arc.end - arc.start)*i/(cnt-1);
+				lines.setPoint(i, Vector2f(center.x+cos(a1)*radius, center.y+sin(a1)*radius));
+			}
+			target.draw(lines);
+		}
+	}
+}
+static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector<ComplexShape> &shapes) {
+	shapes.clear();
+	if (poly.size() <= 2 || vectorModule(poly[0] - poly[1]) <= 1e-6) return;
+	shapes.reserve(3*poly.size());
+	Vector2d bcenter = barycenter(poly);
+	size_t sz = poly.size();
+	bool trigoDirect = isTrigoDirect(poly[0], poly[1], poly[2]); /* the whole polygon is completely drawn either in direct or in inverse trigo direction */
+	
+	for(size_t i=0; i < poly.size(); i++) {
+		const Vector2d &pt1 = poly[i], &pt2 = poly[(i+1)%sz], &pt3 = poly[(i+2)%sz];
+		Segment segt1, segt2;
+		Vector2d outvect1, outvect2;
+		ComplexShape shape;
+		
+		segt1.pt1 = pt1;
+		segt1.pt2 = pt2;
+		segt2.pt1 = pt2;
+		segt2.pt2 = pt3;
+		
+		if (!repulseSegment(segt1, outvect1, bcenter, augment)) continue;
+		if (!repulseSegment(segt2, outvect2, bcenter, augment)) continue;
+		shape.type = CSIT_SEGMENT;
+		shape.segment = segt1;
+		shape.trigoDirect = trigoDirect;
+		shapes.push_back(shape);
+		
+		/* now, circular transition */
+		shape.type = CSIT_ARC;
+		shape.trigoDirect = trigoDirect;
+		CircleArc &arc = shape.arc;
+		arc.circle.center = pt2;
+		arc.circle.radius = augment;
+		arc.start = trigoAngleFromVector(outvect1);
+		arc.end   = trigoAngleFromVector(outvect2);
+		if (!trigoDirect) std::swap(arc.start, arc.end);
+		if (arc.end < arc.start) arc.end += 2*M_PI;
+		shapes.push_back(shape);
+		
+		/* as well as linear transition (to make figure an included convex polygon) */
+		shape.type = CSIT_SEGMENT;
+		shape.segment.pt1 = segt1.pt2;
+		shape.segment.pt2 = segt2.pt1;
+		shape.trigoDirect = trigoDirect;
+		if (isTrigoDirect(segt1.pt2, segt2.pt1, segt2.pt2) != trigoDirect) {
+			fprintf(stderr, "[trigoDirect (out %gx%g) %d vs %d %gx%g-%gx%g %gx%g-%gx%g]\n"
+				, outvect2.x, outvect2.y
+				, isTrigoDirect(segt1.pt2, segt2.pt1, segt2.pt2), trigoDirect
+				,segt1.pt1.x, segt1.pt1.y
+				,segt1.pt2.x, segt1.pt2.y
+				,segt2.pt1.x, segt2.pt1.y
+				,segt2.pt2.x, segt2.pt2.y
+				);
+		}
+		shapes.push_back(shape);
+		
+#if 0
+		shape.trigoDirect = trigoDirect;
+		shape.type = CSIT_SEGMENT;
+		shape.segment = segt2;
+		shapes.push_back(shape);
+#endif
+	}
+	return;
+}
+static bool inLineShadow(const ComplexShape &shape, const Vector2d &pt) {
+	const Segment &segt = shape.segment;
+	return isTrigoDirect(segt.pt1, segt.pt2, pt) == shape.trigoDirect; /* Point must be inside line-delimited half-plane on the correct side */
+}
+#if 0
+static bool inSegmentShadow(const ComplexShape &shape, const Vector2d &pt) {
+	if (!inLineShadow(shape, pt)) return false; /* Point must be inside line-delimited half-plane on the correct side */
+	return orthoProjectOnSegment(proj, shape.segment, pt); /* And must be projected on segment */
+}
+#endif
+static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector2d &pt) {
+	bool inIncludedPolygon = true;
+	for(size_t i=0; i < shapes.size(); i++) {
+		const ComplexShape &shape =shapes[i];
+		if (shape.type == CSIT_SEGMENT && !inLineShadow(shape, pt)) {
+			inIncludedPolygon = false;
+		} else if (shape.type == CSIT_ARC && inDiscusArc(shape.arc, pt)) {
+			return true;
+		}
+	}
+	return inIncludedPolygon;
+}
+
+static bool inGRectangle(const GeomRectangle &r0) {
+}
+static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
+	const DoubleRect &r=r0.r;
+	poly.resize(4);
+	Vector2f pt0(r.left, r.top);
+	Transform rot;
+	/*rot.translate(-pt0);*/
+	rot.rotate(180/M_PI*r0.angle);
+	/*rot.translate(pt0);*/
+	
+	for(size_t i=0; i < 4; i++) { /* notice: direct trigo order used here */
+		Vector2f p;
+		p.x = (i == 0 || i == 3) ? 0 : r.width;
+		p.y = (i == 0 || i == 1) ? 0 : r.height;
+		p = rot.transformPoint(p);
+		p += pt0;
+		poly[i] = Vector2d(p.x, p.y);
+	}
+}
+static void roundAugmentRectangle(const GeomRectangle &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
+	if (inside) {
+		roundAugmentHorizRectangle(r0.r, augment, shapes, inside);
+	} else {
+		Polygon poly;
+		Rectangle2Polygon(r0, poly);
+		roundAugmentPolygon(poly, augment, shapes);
+	}
+}
+static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexShape> &shapes, Vector2d &outvect, double extra_distance) {
+	/* get pt out of shape with the shortest orthogonal path */
+	Vector2d out = pt;
+	double outd = INFINITY;
+	for(size_t i=0; i < shapes.size(); i++) {
+		const ComplexShape &shape = shapes[i];
+		Vector2d proj;
+		if (shape.type == CSIT_SEGMENT && orthoProjectOnSegment(proj, shape.segment, pt)) {
+			if (vectorModule(proj - pt) < outd) {
+				for(size_t j=0; j < shapes.size(); j++) {
+					const ComplexShape &xshape = shapes[j];
+					if (xshape.type == CSIT_ARC && inDiscusArc(xshape.arc, proj)) {
+						Vector2d ovect;
+						proj = repulseFromCircle(proj, xshape.arc.circle, ovect, extra_distance);
+					}
+				}
+			}
+			if (vectorModule(proj - pt) < outd) {
+				Vector2d outvect = proj - pt;
+				outd = vectorModule(proj - pt);
+				normalizeVector(outvect, outd+extra_distance);
+				out = pt + outvect;
+			}
+		}
+	}
+	return out;
+}
+void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment) {
+	std::vector<ComplexShape> shapes;
+	roundAugmentRectangle(geom, augment, shapes, false);
+	drawCS(target, shapes);
+}
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
 	DoubleRect r = r0.r;
 	std::vector<ComplexShape> shapes;
+#if 0
 	bool sign = inRectangle(ctx.vect.pt1, r) && !r0.filled;
 	roundAugmentRectangle(r, (sign?-radius:radius), shapes, inRectangle(ctx.vect.pt1, r));
 	augmentRectangle(r, radius);
-	if (r0.filled && inRoundRectangle(ctx.vect.pt1, r, radius) && !inRoundRectangle(ctx.vect.pt2, r, radius)) {
+#endif
+	roundAugmentRectangle(r0, radius, shapes, !r0.filled);
+	if (shapes.size() == 0) return false; /* zero-sized object */
+	if (r0.filled) {
+	bool pt1belongs = inComplexShape(shapes, ctx.vect.pt1);
+	bool pt2belongs = inComplexShape(shapes, ctx.vect.pt2);
+	if (pt1belongs && !pt2belongs) {
 		return false; /* assume exiting something is not interacting */
 	}
-	if (r0.filled && inRoundRectangle(ctx.vect.pt1, r, radius) && inRoundRectangle(ctx.vect.pt2, r, radius)) {
+	if (pt1belongs && pt2belongs) {
 		Segment &vect = ctx.vect;
 		/* already inside rectangle */
 		if (ctx.interaction == IT_GHOST) return true;
 		else if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;}
 		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
-			Vector2d B = ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1;
-			Vector2d O = Vector2d(r.left + r.width/2, r.top + r.height/2);
-			Vector2d C;
-			if (B.x <= O.x && r.left > parameters.minWallDistance()) C.x = r.left - parameters.minWallDistance(); else C.x = r.left + r.width + parameters.minWallDistance();
-			if (B.y <= O.y && r.top > parameters.minWallDistance()) C.y = r.top - parameters.minWallDistance();  else C.y = r.top + r.height + parameters.minWallDistance();
-			if (fabs(C.x - B.x) < fabs(C.y - B.y)) C.y = B.y; else C.x = B.x;
+			Vector2d outvect;
 			double module = segmentModule(vect);
-			vect.pt2 = C;
+			vect.pt2 = repulseFromComplexShape(vect.pt2, shapes, outvect, parameters.minWallDistance());
 			if (ctx.interaction == IT_BOUNCE) {
-				Vector2d OB = B - O;
-				normalizeVector(OB, module);
-				ctx.nmove = OB;
+				normalizeVector(outvect, module);
+				ctx.nmove = outvect;
 			}
 		}
 		return true;
+	}
 	}
 	for(unsigned i=0; i < shapes.size(); i++) {
 		if (pointMovesToComplexShape(ctx, shapes[i])) {
@@ -426,7 +685,7 @@ bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli) {
 	arc.circle.center = colli.center;
 	arc.circle.radius = radius + colli.radius;
 	arc.start = 0;
-	arc.end   = M_PI*2+1e-3;
+	arc.end   = 2*M_PI+1e-6;
 	return pointMovesToCircleArc(ctx, arc);
 }
 

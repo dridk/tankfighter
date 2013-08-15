@@ -17,6 +17,7 @@
 #include "messages.h"
 #include "input.h"
 
+#define DEBUG_OUTLINE 1
 
 using namespace sf;
 
@@ -372,13 +373,14 @@ void Engine::seekCollisions(Entity *entity) {
 		vect.pt1 = entity->position;
 		vect.pt2 = entity->position;
 		MoveContext ctx(IT_GHOST, vect);
-		if (interacts(this, ctx, entity, centity)) {
+		if (entity != centity && interacts(this, ctx, entity, centity)) {
 			CollisionEvent e;
 			e.first = entity;
 			e.second = centity;
 			e.interaction = IT_GHOST;
 			broadcast(&e);
 			if (e.retry) retry = true;
+			break;
 		}
 	}
 	} while(retry && --i > 0);
@@ -459,6 +461,17 @@ static void draw_score(RenderTarget &target, Font &ft, int score, Color color, V
 
 	target.draw(text);
 }
+static GeomRectangle wall2geomrect(Wall *w) {
+	GeomRectangle gr;
+	Vector2d pos = w->position;
+	Vector2d siz = w->getSize();
+	gr.r.left = pos.x;
+	gr.r.top  = pos.y;
+	gr.r.width = siz.x;
+	gr.r.height = siz.y;
+	gr.angle = w->getAngle();
+	return gr;
+}
 void Engine::draw(void) {
 	Vector2d scorepos;
 	scorepos.x = 16;
@@ -469,6 +482,10 @@ void Engine::draw(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (wall) wall->draw(window);
+#ifdef DEBUG_OUTLINE
+		extern void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment);
+		if (wall) drawGeomRectangle(window, wall2geomrect(wall), 64);
+#endif
 	}
 	/* then, draw players (before missiles) */
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
@@ -514,6 +531,10 @@ static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b) {
 		GeomRectangle gr;
 		gr.filled = (b != engine->getMapBoundariesEntity());
 		gr.r = getEntityBoundingRectangle(b);
+		gr.angle = 0;
+		if (Wall *p = dynamic_cast<Wall*>(b)) {
+			gr.angle = p->getAngle();
+		}
 		return moveCircleToRectangle(getEntityRadius(a), ctx, gr);
 	} else if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_CIRCLE) {
 		return moveCircleToCircle(getEntityRadius(a), ctx, getEntityCircle(b));

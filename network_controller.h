@@ -202,6 +202,7 @@ struct NewPlayerM {
 struct Block {
 	unsigned short x,y,width,height;
 	char *texture_name;
+	float angle;
 };
 struct DefineMapM {
 	unsigned short width, height;

@@ -35,7 +35,7 @@ static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 static const char *NMF_PlayerPosition = "uusscc";
 static const char *NMF_MissilePosition = "uussspp";
 static const char *NMF_PlayerMovement = "8" "uffff" "ff";
-static const char *NMF_Block = "ssssS";
+static const char *NMF_Block = "ssssSf";
 static const char *NMF_PlayerScore = "uu";
 
 /***************************** MasterController ****************************/
@@ -535,7 +535,7 @@ void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::
 		fprintf(stderr, "Wall: %i %i %i %i %s\n"
 			,b.x,b.y,b.width,b.height
 			,b.texture_name);
-		engine->add(new Wall(b.x, b.y, b.width, b.height, b.texture_name, engine));
+		engine->add(new Wall(b.x, b.y, b.width, b.height, b.angle, b.texture_name, engine));
 	}
 }
 void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
@@ -550,6 +550,7 @@ void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
 		Vector2d sz = wall->getSize();
 		b.width = sz.x;
 		b.height = sz.y;
+		b.angle = wall->getAngle();
 		b.texture_name = strdup(wall->getTextureName().c_str());
 		blocks.push_back(b);
 	}

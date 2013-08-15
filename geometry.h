@@ -19,6 +19,7 @@ struct GeomRectangle {
 	bool filled;
 	GeomRectangle() {filled=true;}
 	DoubleRect r;
+	double angle;
 };
 struct CircleArc {
 	Circle circle;
@@ -33,6 +34,7 @@ struct ComplexShape {
 	ComplexShapeItemType type;
 		Segment segment;
 		CircleArc arc;
+		bool trigoDirect; /* Whether the line-delimited surface is in direct order compared to pt1->pt2 vector */
 };
 enum InteractionType {
 	IT_GHOST, /* Don't interact. Used for testing whether a collision exists. */

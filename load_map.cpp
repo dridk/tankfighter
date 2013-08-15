@@ -12,13 +12,8 @@
 #include "misc.h"
 #include "parameters.h"
 #include "parse_json.h"
+#include <math.h>
 
-#if 0
-struct Block {
-	unsigned short x,y,width,height;
-	char *texture_name;
-};
-#endif
 class BlockEnumerator {
 	public:
 	BlockEnumerator(Engine *engine);
@@ -59,6 +54,11 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 			try_assign_integer_variable(&block.y, "y", key, value);
 			try_assign_integer_variable(&block.width, "w", key, value);
 			try_assign_integer_variable(&block.height, "h", key, value);
+			double degangle = 0;
+			try_assign_double_variable(&degangle, "angle", key, value);
+			if (fabs(degangle) >= 1e-4) {
+				block.angle = degangle/180*M_PI;
+			}
 			if (strcmp(key, "texture")==0 && value->type == json_string) block.texture_name = json_string_to_cstring(value);
 		}
 		blockenum->enumerate(block);
@@ -146,7 +146,7 @@ void load_map(Engine *engine, const char *file_path) {
 }
 
 void BlockEnumerator::enumerate(const Block &block) {
-	engine->add(new Wall(block.x, block.y, block.width, block.height, block.texture_name, engine));
+	engine->add(new Wall(block.x, block.y, block.width, block.height, block.angle, block.texture_name, engine));
 }
 
 ControllerDefinitions::ControllerDefinitions() {}

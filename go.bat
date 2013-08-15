@@ -1,2 +1,2 @@
-call mkwin
+mingw32-make
 tankfighter

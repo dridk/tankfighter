@@ -5,6 +5,11 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <string>
 #include <sstream>
+#include <math.h>
+
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626338
+#endif
 
 void load_sprite(sf::Sprite &sprite, sf::Texture &tex, const char *path);
 void load_texture(sf::Sprite &sprite, sf::Texture &tex, const char *path);

@@ -7,6 +7,7 @@
 #include <vector>
 #include <stdio.h>
 #include "parameters.h"
+#include "misc.h"
 #include <algorithm>
 
 using namespace sf;
@@ -319,7 +320,6 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Vector2d A, B, C;
 	Vector2d proj;
 	Segment segt = segt0;
-	double mwd = parameters.minWallDistance();
 	if (segmentModule(vect) < 1e-6) return false;
 	if (isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt1)
 		|| !isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt2)) {
@@ -364,7 +364,6 @@ static bool repulseSegment(Segment &segt, Vector2d &outvect, const Vector2d from
 	}
 	outvect = proj - from_pt;
 	normalizeVector(outvect, repulseDistance);
-	Segment osegt = segt;
 	translateSegment(segt, outvect);
 	return true;
 }
@@ -472,8 +471,6 @@ static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector
 	return inIncludedPolygon;
 }
 
-static bool inGRectangle(const GeomRectangle &r0) {
-}
 static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
 	const DoubleRect &r=r0.r;
 	poly.resize(4);
@@ -528,7 +525,6 @@ void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double a
 	drawCS(target, shapes);
 }
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
-	DoubleRect r = r0.r;
 	std::vector<ComplexShape> shapes;
 	roundAugmentRectangle(r0, radius, shapes);
 	if (shapes.size() == 0) return false; /* zero-sized object */

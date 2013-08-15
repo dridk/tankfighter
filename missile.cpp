@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "controller.h"
 #include "parameters.h"
+#include "misc.h"
 
 using namespace sf;
 

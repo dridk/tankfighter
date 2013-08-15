@@ -7,6 +7,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <math.h>
 #include "input.h"
+#include "misc.h"
 
 using namespace sf;
 

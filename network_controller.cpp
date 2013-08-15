@@ -38,6 +38,13 @@ static const char *NMF_PlayerMovement = "8" "uffff" "ff";
 static const char *NMF_Block = "ssssSf";
 static const char *NMF_PlayerScore = "uu";
 
+static char *cstrdup(const char *p) {
+	size_t ln = strlen(p);
+	char *out = (char*)malloc(ln+1);
+	if (!out) return NULL;
+	memcpy(out, p, ln+1);
+	return out;
+}
 /***************************** MasterController ****************************/
 MasterController::MasterController(NetworkClient *client, Controller *phy):phy(phy),client(client) {
 }
@@ -257,7 +264,7 @@ bool Input(Packet &pkt, const char *signature, void * const data) {
 			std::string str;
 			while ((pkt >> c) && c != 0) str.push_back((char)c);
 			if (c != 0) return false;
-			*(char**)dat = strdup(str.c_str()); /* FIXME: memory leak if Input fail */
+			*(char**)dat = cstrdup(str.c_str()); /* FIXME: memory leak if Input fail */
 			dat += sizeof(char*);
 		} else if (c == '8') {
 			Uint32 a1, a2;
@@ -551,7 +558,7 @@ void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
 		b.width = sz.x;
 		b.height = sz.y;
 		b.angle = wall->getAngle();
-		b.texture_name = strdup(wall->getTextureName().c_str());
+		b.texture_name = cstrdup(wall->getTextureName().c_str());
 		blocks.push_back(b);
 	}
 }

@@ -4,6 +4,7 @@
 #include "texture_cache.h"
 #include "engine.h"
 #include <math.h>
+#include "misc.h"
 
 using namespace sf;
 

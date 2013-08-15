@@ -648,7 +648,7 @@ bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle 
 	roundAugmentRectangle(r, (sign?-radius:radius), shapes, inRectangle(ctx.vect.pt1, r));
 	augmentRectangle(r, radius);
 #endif
-	roundAugmentRectangle(r0, radius, shapes, !r0.filled);
+	roundAugmentRectangle(r0, (r0.filled?radius:-radius), shapes, !r0.filled);
 	if (shapes.size() == 0) return false; /* zero-sized object */
 	if (r0.filled) {
 	bool pt1belongs = inComplexShape(shapes, ctx.vect.pt1);
@@ -744,5 +744,4 @@ static void test_circles() {
 void test_geometry_cpp() {
 	test_segments();
 	test_circles();
-	/* abort(); */
 }

@@ -169,6 +169,13 @@ static double trigoAngleFromSegment(const Segment &segt) { /* oriented segment *
 static double trigoAngleFromVector(const Vector2d &vect) { /* oriented */
 	return angle_from_dxdy(vect.x, vect.y);
 }
+static bool isTrigoDirect(const Vector2d &pt1, const Vector2d &pt2, const Vector2d &pt3) {
+	double a1 = trigoAngleFromVector(pt2 - pt1), a2 = trigoAngleFromVector(pt3 - pt1);
+	double a = a2 - a1;
+	normalizeAngle(a);
+	return a < M_PI;
+}
+
 static bool orthoProjectOnLine(Vector2d &res, const Line &line, const Vector2d &pt) {
 	return intersectLines(res, orthoLine(line, pt), line);
 }
@@ -334,7 +341,7 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 	
 	return pointMovesAgainstWall(ctx, orthoLine(OA.toLine(), A), A);
 }
-static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
+static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0, bool trigoDirect) {
 	Segment &vect = ctx.vect;
 	Segment tvect;
 	Vector2d A, B, C;
@@ -342,6 +349,10 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 	Segment segt = segt0;
 	double mwd = parameters.minWallDistance();
 	if (segmentModule(vect) < 1e-6) return false;
+	if (!(isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt1) != trigoDirect
+		&& isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt2) == trigoDirect)) {
+			return false;/* doesn't move inside solid half-plane */
+	}
 	
 	A = ctx.vect.pt1;
 	orthoProjectOnLine(proj, segt.toLine(), A);
@@ -364,7 +375,7 @@ static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
 }
 static bool pointMovesToComplexShape(MoveContext &ctx, const ComplexShape &shape) {
 	if (shape.type == CSIT_ARC) return pointMovesToCircleArc(ctx, shape.arc);
-	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(ctx, shape.segment);
+	else if (shape.type == CSIT_SEGMENT) return pointMovesToSegment(ctx, shape.segment, shape.trigoDirect);
 	return false;
 }
 static void prolongateSegment(Segment &s, double distance) {
@@ -448,17 +459,6 @@ static bool repulseSegment(Segment &segt, Vector2d &outvect, const Vector2d from
 	translateSegment(segt, outvect);
 	return true;
 }
-static bool isTrigoDirect(const Vector2d &pt1, const Vector2d &pt2, const Vector2d &pt3) {
-	double a1 = trigoAngleFromVector(pt2 - pt1), a2 = trigoAngleFromVector(pt3 - pt1);
-	double a = a2 - a1;
-	normalizeAngle(a);
-#if 0
-	if (a >= M_PI) {
-		fprintf(stderr, "[trigoDirect %gx%g %gx%g %gx%g a1=%g a2=%g a=%g]\n", pt1.x, pt1.y, pt2.x,pt2.y, pt3.x, pt3.y, a1, a2, a);
-	}
-#endif
-	return a < M_PI;
-}
 static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes) {
 	for(size_t i=0; i < shapes.size(); i++) {
 		const ComplexShape &shape = shapes[i];
@@ -515,6 +515,7 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		if (!repulseSegment(segt2, outvect2, bcenter, augment)) continue;
 		shape.type = CSIT_SEGMENT;
 		shape.segment = segt1;
+		prolongateSegment(shape.segment, parameters.minWallDistance()*0.1);
 		shape.trigoDirect = trigoDirect;
 		shapes.push_back(shape);
 		
@@ -535,16 +536,6 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		shape.segment.pt1 = segt1.pt2;
 		shape.segment.pt2 = segt2.pt1;
 		shape.trigoDirect = trigoDirect;
-		if (isTrigoDirect(segt1.pt2, segt2.pt1, segt2.pt2) != trigoDirect) {
-			fprintf(stderr, "[trigoDirect (out %gx%g) %d vs %d %gx%g-%gx%g %gx%g-%gx%g]\n"
-				, outvect2.x, outvect2.y
-				, isTrigoDirect(segt1.pt2, segt2.pt1, segt2.pt2), trigoDirect
-				,segt1.pt1.x, segt1.pt1.y
-				,segt1.pt2.x, segt1.pt2.y
-				,segt2.pt1.x, segt2.pt1.y
-				,segt2.pt2.x, segt2.pt2.y
-				);
-		}
 		shapes.push_back(shape);
 		
 #if 0
@@ -711,7 +702,7 @@ static void test_segments() {
 	v.pt2.x = 110;
 	v.pt2.y = 10;
 	MoveContext ctx(IT_SLIDE, v);
-	if (pointMovesToSegment(ctx, s1)) {
+	if (pointMovesToSegment(ctx, s1, true)) {
 		v = ctx.vect;
 		fprintf(stderr, "[point moves to segt %g x %g]\n", v.pt2.x, v.pt2.y);
 	} else {

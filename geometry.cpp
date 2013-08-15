@@ -342,55 +342,6 @@ static void prolongateSegment(Segment &s, double distance) {
 	s.pt1 += pro1;
 	s.pt2 -= pro1;
 }
-static void augmentRectangle(DoubleRect &r, double augment) {
-	r.left -= augment;
-	r.top -= augment;
-	r.height += 2*augment;
-	r.width += 2*augment;
-}
-static void roundAugmentHorizRectangle(const DoubleRect &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
-	unsigned i;
-	DoubleRect r = r0;
-	shapes.resize(inside?4:8);
-	double radius = fabs(augment);
-	augmentRectangle(r, augment);
-	for(i=0; i < 4;i++) {
-		Segment s;
-		CircleArc c;
-		s.pt1.x = ((i==0 || i==3) ? r.left : r.left+r.width);
-		s.pt1.y = ((i==0 || i==1) ? r.top  : r.top+r.height);
-		s.pt2.x = ((i==2 || i==3) ? r.left : r.left+r.width);
-		s.pt2.y = ((i==0 || i==3) ? r.top  : r.top+r.height);
-		if (!inside) prolongateSegment(s, -augment + parameters.minWallDistance()*0.1);
-		else prolongateSegment(s, parameters.minWallDistance()*1.1);
-		shapes[i].type = CSIT_SEGMENT;
-		shapes[i].segment = s;
-
-		if (inside) continue;
-		c.circle.radius = radius;
-		s.pt1.x = ((i==0 || i==3) ? r0.left : r0.left+r0.width);
-		s.pt1.y = ((i==0 || i==1) ? r0.top  : r0.top+r0.height);
-		c.circle.center = s.pt1;
-		double start, end;
-		start = M_PI/2 - i*M_PI/2;
-		normalizeAngle(start);
-		end = start + M_PI/2;
-		normalizeAngle(end);
-		c.start = -end;
-		c.end   = -start;
-		if (fabs(c.end) <= 1e-3) c.end = M_PI*2;
-		normalizeAngle(c.start);
-		normalizeAngle(c.end);
-
-#if 0
-		c.start = -1000;
-		c.end = +1000;
-#endif
-
-		shapes[i+4].type = CSIT_ARC;
-		shapes[i+4].arc = c;
-	}
-}
 
 typedef std::vector<Vector2d> Polygon;
 /* polygons are convex. Last point is implicitly connected to first */
@@ -455,7 +406,7 @@ static void orientSegment(Segment &segt, bool trigoDirect) {
 		std::swap(segt.pt1, segt.pt2);
 	}
 }
-static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector<ComplexShape> &shapes) {
+static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector<ComplexShape> &shapes, bool filled) {
 	shapes.clear();
 	if (poly.size() <= 2 || vectorModule(poly[0] - poly[1]) <= 1e-6) return;
 	shapes.reserve(3*poly.size());
@@ -463,6 +414,7 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 	size_t sz = poly.size();
 	bool trigoDirect = isTrigoDirect(poly[0], poly[1], poly[2]); /* the whole polygon is completely drawn either in direct or in inverse trigo direction */
 	
+	if (!filled) {augment = -augment;trigoDirect = !trigoDirect;}
 	for(size_t i=0; i < poly.size(); i++) {
 		const Vector2d &pt1 = poly[i], &pt2 = poly[(i+1)%sz], &pt3 = poly[(i+2)%sz];
 		Segment segt1, segt2;
@@ -482,6 +434,7 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		orientSegment(shape.segment, trigoDirect);
 		shapes.push_back(shape);
 		
+		if (filled) {
 		/* now, circular transition */
 		shape.type = CSIT_ARC;
 		CircleArc &arc = shape.arc;
@@ -498,7 +451,8 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 		shape.segment.pt1 = segt1.pt2;
 		shape.segment.pt2 = segt2.pt1;
 		orientSegment(shape.segment, trigoDirect);
-		shapes.push_back(shape);		
+		shapes.push_back(shape);
+		}
 	}
 	return;
 }
@@ -536,14 +490,10 @@ static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
 		poly[i] = Vector2d(p.x, p.y);
 	}
 }
-static void roundAugmentRectangle(const GeomRectangle &r0, double augment, std::vector<ComplexShape> &shapes, bool inside) {
-	if (inside) {
-		roundAugmentHorizRectangle(r0.r, augment, shapes, inside);
-	} else {
-		Polygon poly;
-		Rectangle2Polygon(r0, poly);
-		roundAugmentPolygon(poly, augment, shapes);
-	}
+static void roundAugmentRectangle(const GeomRectangle &r0, double augment, std::vector<ComplexShape> &shapes) {
+	Polygon poly;
+	Rectangle2Polygon(r0, poly);
+	roundAugmentPolygon(poly, augment, shapes, r0.filled);
 }
 static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexShape> &shapes, Vector2d &outvect, double extra_distance) {
 	/* get pt out of shape with the shortest orthogonal path */
@@ -574,13 +524,13 @@ static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexSh
 }
 void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment) {
 	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(geom, augment, shapes, false);
+	roundAugmentRectangle(geom, augment, shapes);
 	drawCS(target, shapes);
 }
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
 	DoubleRect r = r0.r;
 	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(r0, (r0.filled?radius:-radius), shapes, !r0.filled);
+	roundAugmentRectangle(r0, radius, shapes);
 	if (shapes.size() == 0) return false; /* zero-sized object */
 	if (r0.filled) {
 	bool pt1belongs = inComplexShape(shapes, ctx.vect.pt1);

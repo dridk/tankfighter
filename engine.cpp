@@ -17,8 +17,6 @@
 #include "messages.h"
 #include "input.h"
 
-#define DEBUG_OUTLINE 1
-
 using namespace sf;
 
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);

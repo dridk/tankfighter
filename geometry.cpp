@@ -268,42 +268,17 @@ static Vector2d repulseFromCircle(const Vector2d &pt, const Circle &circle, Vect
 	return circle.center+outvect;
 }
 static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* oriented segment */
+	/* assume ctx.vect.pt1 outside and ctx.vect.pt2 inside or both outside*/
 	Segment &vect = ctx.vect;
 	Vector2d A;
 	const Circle &circle = arc.circle;
 
-	if (circle.filled && inCircle(vect.pt1, circle) && !inCircle(vect.pt2, circle)) {
-		return false; /* assume exiting something is not interacting */
+	if (!inCircle(ctx.vect.pt2, circle)) {
+		return false; /* assume being outside or exiting something is not interacting */
 	}
-	if (circle.filled && inCircle(vect, circle)) {
-		/* already inside discus */
-		Segment OA;
-		OA.pt1 = circle.center;
-		OA.pt2 = vect.pt2;
-		double angle = trigoAngleFromSegment(OA);
-		if (angleBetween(angle, arc.start, arc.end)) {
-			if (ctx.interaction == IT_GHOST) {
-				return true;
-			} else if (ctx.interaction == IT_CANCEL) {
-				vect.pt2 = vect.pt1;
-			}
-			else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
-				Vector2d outvect;
-				double module = segmentModule(vect);
-				vect.pt2 = repulseFromCircle((ctx.interaction != IT_STICK ? vect.pt2 : vect.pt1)
-								, circle, outvect, 0);
-				if (ctx.interaction == IT_BOUNCE) {
-					normalizeVector(outvect, module);
-					ctx.nmove = outvect;
-				}
-			}
-			return true;
-		}
-	}
-	
 	if (!circleIntersectsSegment(A, vect, circle)) return false; /* main collision detection */
 	
-	Segment AB, OA;
+	Segment OA;
 	OA.pt1 = circle.center;
 	OA.pt2 = A;
 	double angle = trigoAngleFromSegment(OA);
@@ -315,15 +290,16 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 static Vector2d outVector(const Segment &segt0) {
 	return -orthoVector(segment2Vector(segt0));
 }
-static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt0) {
+static bool inSolidHalfPlane(Vector2d pt, const Segment &segt) {
+	return isTrigoDirect(segt.pt1, segt.pt2, pt);
+}
+static bool pointMovesToSegment(MoveContext &ctx, const Segment &segt) {
+	/* assume ctx.vect.pt1 outside and ctx.vect.pt2 inside or both outside*/
 	Segment &vect = ctx.vect;
-	Vector2d A, B, C;
-	Vector2d proj;
-	Segment segt = segt0;
+	Vector2d A;
 	if (segmentModule(vect) < 1e-6) return false;
-	if (isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt1)
-		|| !isTrigoDirect(segt0.pt1, segt0.pt2, ctx.vect.pt2)) {
-			return false;/* doesn't move inside solid half-plane */
+	if (!inSolidHalfPlane(vect.pt2, segt)) {
+		return false;/* exiting or being outside solid half-plane */
 	}
 	
 	if (!intersectSegments(A, vect, segt)) {

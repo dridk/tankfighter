@@ -526,30 +526,23 @@ void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double a
 }
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
 	std::vector<ComplexShape> shapes;
+	Segment &vect = ctx.vect;
 	roundAugmentRectangle(r0, radius, shapes);
 	if (shapes.size() == 0) return false; /* zero-sized object */
 	if (r0.filled) {
-	bool pt1belongs = inComplexShape(shapes, ctx.vect.pt1);
-	bool pt2belongs = inComplexShape(shapes, ctx.vect.pt2);
-	if (pt1belongs && !pt2belongs) {
-		return false; /* assume exiting something is not interacting */
-	}
-	if (pt1belongs && pt2belongs) {
-		Segment &vect = ctx.vect;
-		/* already inside rectangle */
-		if (ctx.interaction == IT_GHOST) return true;
-		else if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;}
-		else if (ctx.interaction == IT_SLIDE || ctx.interaction == IT_STICK || ctx.interaction == IT_BOUNCE) {
-			Vector2d outvect;
-			double module = segmentModule(vect);
-			vect.pt2 = repulseFromComplexShape(vect.pt2, shapes, outvect, parameters.minWallDistance());
-			if (ctx.interaction == IT_BOUNCE) {
-				normalizeVector(outvect, module);
-				ctx.nmove = outvect;
-			}
+		bool pt2belongs = inComplexShape(shapes, ctx.vect.pt2);
+		if (!pt2belongs) return false; /* being out, or exiting something is not interacting */
+		if (ghostlike(ctx)) {
+			if (ctx.interaction == IT_CANCEL) vect.pt2 = vect.pt1;
+			return true;
 		}
-		return true;
-	}
+		
+		bool pt1belongs = inComplexShape(shapes, ctx.vect.pt1);
+		if (pt1belongs) {
+			Vector2d outvect;
+			vect.pt1 = repulseFromComplexShape(vect.pt1, shapes, outvect, parameters.minWallDistance());
+		}
+		/* at this point, pt1 is outside and pt2 is inside */
 	}
 	for(unsigned i=0; i < shapes.size(); i++) {
 		if (pointMovesToComplexShape(ctx, shapes[i])) {

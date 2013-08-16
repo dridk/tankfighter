@@ -17,6 +17,7 @@ Wall::Wall(double x, double y, double w, double h, double angle, const char *tex
 	r.left = x; r.top = y;
 	r.width = w; r.height = h;
 	Rectangle2Polygon(r, angle, polygon);
+	Rectangle2Polygon(r, 0, straight_polygon);
 	ComputePosition();
 	texture_name = (texture_name0?texture_name0:"");
 }
@@ -26,6 +27,7 @@ Wall::Wall(double x, double y, double w, double h, const char *texture_name0, En
 	r.left = x; r.top = y;
 	r.width = w; r.height = h;
 	Rectangle2Polygon(r, angle, polygon);
+	Rectangle2Polygon(r, 0, straight_polygon);
 	ComputePosition();
 	texture_name = (texture_name0?texture_name0:"");
 }
@@ -39,7 +41,7 @@ void Wall::ComputePosition() {
 	position.x = r.left;
 	position.y = r.top;
 }
-static DoubleRect getPolyBounds(const Polygon &polygon) {
+DoubleRect getPolyBounds(const Polygon &polygon) {
 	Vector2d minp, maxp;
 	if (polygon.size() > 0) minp = maxp = polygon[0];
 	for(size_t i=0; i < polygon.size(); i++) {
@@ -54,6 +56,8 @@ DoubleRect Wall::getBoundingRectangle() const {
 	return getPolyBounds(polygon);
 }
 Polygon Wall::getStraightPolygon(void) const {
+	return straight_polygon;
+#if 0
 	Transform tr;
 	tr.rotate(-180/M_PI*angle);
 	
@@ -64,6 +68,7 @@ Polygon Wall::getStraightPolygon(void) const {
 		out[i] = Vector2d(pt.x+position.x, pt.y+position.y);
 	}
 	return out;
+#endif
 }
 void Wall::draw(sf::RenderTarget &target) const {
 	if (texture_name == "") return;

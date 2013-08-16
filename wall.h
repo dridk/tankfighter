@@ -15,6 +15,7 @@ class Wall: public Entity
 	virtual ~Wall();
 	virtual Vector2d getSize() const;
 	virtual void getPolygon(Polygon &poly);
+	Polygon getStraightPolygon(void) const;
 	virtual double getTextureAngle() const;
 
 	virtual void draw(sf::RenderTarget &target) const;
@@ -23,11 +24,12 @@ class Wall: public Entity
 	std::string getTextureName(void) const;
 
 	private:
-	Polygon getStraightPolygon(void) const;
 	DoubleRect getBoundingRectangle() const;
 	void ComputePosition();
-	Polygon polygon;
+	Polygon polygon, straight_polygon;
 	std::string texture_name;
 	float angle;
 };
+
+DoubleRect getPolyBounds(const Polygon &polygon);
 #endif

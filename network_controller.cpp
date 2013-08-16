@@ -539,10 +539,10 @@ void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::
 	engine->defineMapSize(width, height);
 	for(size_t i=0; i < blocks.size(); i++) {
 		Block &b=blocks[i];
-		fprintf(stderr, "Wall: %i %i %i %i %s\n"
-			,b.x,b.y,b.width,b.height
+		fprintf(stderr, "Wall: %i %i %i %i %g %s\n"
+			,b.x,b.y,b.width,b.height,b.angle
 			,b.texture_name);
-		engine->add(new Wall(b.x, b.y, b.width, b.height, b.angle, b.texture_name, engine));
+		engine->add(new Wall((short)b.x, (short)b.y, (short)b.width, (short)b.height, b.angle, b.texture_name, engine));
 	}
 }
 void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
@@ -552,13 +552,16 @@ void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
 		if (!wall) continue;
 		if (wall == iwall) continue;
 		Block b;
-		b.x = wall->position.x;
-		b.y = wall->position.y;
-		Vector2d sz = wall->getSize();
-		b.width = sz.x;
-		b.height = sz.y;
+		DoubleRect r = getPolyBounds(wall->getStraightPolygon());
+		b.x = r.left;
+		b.y = r.top;
+		b.width = r.width;
+		b.height = r.height;
 		b.angle = wall->getTextureAngle();
 		b.texture_name = cstrdup(wall->getTextureName().c_str());
+		fprintf(stderr, "[sending wall %dx%d-%dx%d angle %g with texture %s]\n"
+			,b.x, b.y, b.width, b.height, b.angle
+			, b.texture_name);
 		blocks.push_back(b);
 	}
 }

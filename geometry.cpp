@@ -62,9 +62,6 @@ static Line parallelLine(const Line &line, const Vector2d &pt) {
 	res.c = -(res.a * pt.x + res.b * pt.y);
 	return res;
 }
-static bool inRectangle(const Segment &segt, const DoubleRect &r) {
-	return inRectangle(segt.pt1, r) && inRectangle(segt.pt2, r);
-}
 #endif
 
 
@@ -194,9 +191,6 @@ static void translateSegment(Segment &segt, Vector2d v) {
 static bool inCircle(const Vector2d &pt, const Circle &circle) {
 	return pointsDistance(pt, circle.center) < circle.radius;
 }
-static bool inCircle(const Segment &segt, const Circle &circle) {
-	return inCircle(segt.pt1, circle) && inCircle(segt.pt2, circle);
-}
 static bool angleBetween(double a, double start, double end) {
 	normalizeAngle(a);
 	double ln = end - start;
@@ -210,18 +204,6 @@ static bool inDiscusArc(const CircleArc &arc, const Vector2d &pt) {
 	if (!inCircle(pt, arc.circle)) return false;
 	double a = trigoAngleFromVector(pt - arc.circle.center);
 	return angleBetween(a, arc.start, arc.end);
-}
-static bool inRectangle(const Vector2d &p, const DoubleRect &r) {
-	return p.x >= r.left && p.x < r.left+r.width && p.y >= r.top && p.y < r.top+r.height;
-}
-static bool inRoundRectangle(const Vector2d &p, const DoubleRect &r, double radius) {
-	Vector2d corner;
-	if (!inRectangle(p,r)) return false;
-	if (p.x > r.left+radius && p.x < r.left+r.width-radius) return p.y > r.top && p.y  < r.top+r.height;
-	if (p.y > r.top+radius &&  p.y < r.top+r.height-radius) return p.x > r.left && p.x < r.left+r.width;
-	if (p.x <= r.left+radius) corner.x = r.left+radius; else corner.x = r.left+r.width+radius;
-	if (p.y <= r.top+radius)  corner.y = r.top +radius; else corner.y = r.top+r.height+radius;
-	return pointsDistance(p, corner) < radius;
 }
 static bool pointMovesAgainstWall(MoveContext &ctx, const Line &wall, const Vector2d &A, Vector2d outvect) {
 	Segment &vect = ctx.vect;
@@ -343,39 +325,7 @@ static bool repulseSegment(Segment &segt, Vector2d &outvect, const Vector2d from
 	translateSegment(segt, outvect);
 	return true;
 }
-static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes) {
-	for(size_t i=0; i < shapes.size(); i++) {
-		const ComplexShape &shape = shapes[i];
-		if (shape.type == CSIT_SEGMENT) {
-			const Segment &segt = shape.segment;
-			ConvexShape line(4);
-			line.setPoint(0, Vector2f(segt.pt1.x-2, segt.pt1.y-2));
-			line.setPoint(1, Vector2f(segt.pt2.x-2, segt.pt2.y-2));
-			line.setPoint(2, Vector2f(segt.pt2.x+2, segt.pt2.y+2));
-			line.setPoint(3, Vector2f(segt.pt1.x+2, segt.pt1.y+2));
-			
-			line.setFillColor(Color(255,0,0));
-			line.setOutlineColor(Color(0,0,255));
-			line.setOutlineThickness(2);
-			target.draw(line);
-		} else if (shape.type == CSIT_ARC) {
-			size_t cnt = 10;
-			ConvexShape lines(cnt);
-			lines.setFillColor(Color::Transparent);
-			lines.setOutlineColor(Color(0,0,255));
-			lines.setOutlineThickness(2);
-			
-			const CircleArc &arc = shape.arc;
-			Vector2d center = arc.circle.center;
-			double radius = arc.circle.radius;
-			for(size_t i=0; i < cnt; i++) {
-				double a1 = arc.start + (arc.end - arc.start)*i/(cnt-1);
-				lines.setPoint(i, Vector2f(center.x+cos(a1)*radius, center.y+sin(a1)*radius));
-			}
-			target.draw(lines);
-		}
-	}
-}
+
 static void orientSegment(Segment &segt, bool trigoDirect) {
 	if (!trigoDirect) {
 		std::swap(segt.pt1, segt.pt2);
@@ -431,14 +381,11 @@ static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector
 	}
 	return;
 }
-static bool inLineShadow(const Segment &segt, const Vector2d &pt) {
-	return isTrigoDirect(segt.pt1, segt.pt2, pt); /* Point must be inside line-delimited half-plane on the correct side */
-}
 static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector2d &pt) {
 	bool inIncludedPolygon = true;
 	for(size_t i=0; i < shapes.size(); i++) {
 		const ComplexShape &shape =shapes[i];
-		if (shape.type == CSIT_SEGMENT && !inLineShadow(shape.segment, pt)) {
+		if (shape.type == CSIT_SEGMENT && !inSolidHalfPlane(pt, shape.segment)) {
 			inIncludedPolygon = false;
 		} else if (shape.type == CSIT_ARC && inDiscusArc(shape.arc, pt)) {
 			return true;
@@ -495,11 +442,7 @@ static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexSh
 	}
 	return out;
 }
-void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment) {
-	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(geom, augment, shapes);
-	drawCS(target, shapes);
-}
+
 bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
 	std::vector<ComplexShape> shapes;
 	Segment &vect = ctx.vect;
@@ -546,49 +489,44 @@ MoveContext::MoveContext() {
 	vect.pt2 = vect.pt1;
 	nmove = Vector2d(0,0);
 }
-static void test_segments() {
-	Segment s1;
-	Segment v;
-	s1.pt1.x = 100;
-	s1.pt1.y = 0;
-	s1.pt2.x = 200;
-	s1.pt2.y = 100;
-	v.pt1.x = 10;
-	v.pt1.y = 10;
-	v.pt2.x = 110;
-	v.pt2.y = 10;
-	MoveContext ctx(IT_SLIDE, v);
-	if (pointMovesToSegment(ctx, s1)) {
-		v = ctx.vect;
-		fprintf(stderr, "[point moves to segt %g x %g]\n", v.pt2.x, v.pt2.y);
-	} else {
-		fprintf(stderr, "[point doesn't move to segt]\n");
-	}
-}
-static void test_circles() {
-	Segment vect;
-	Circle circle;
-	Vector2d repere;
-	Vector2d A;
-	circle.center.x = 100;
-	circle.center.y = 0;
-	circle.radius = 10;
-	vect.pt1.x = 0;
-	vect.pt1.y = 0;
-	vect.pt2.x = 101;
-	vect.pt2.y = 5;
 
-	repere.x = 0; repere.y = 10;
-	translateSegment(vect, repere);
-	circle.center += repere;
-	if (circleIntersectsSegment(A, vect, circle)) {
-		fprintf(stderr, "[intersection %g,%g]\n", A.x, A.y);
-	} else {
-		fprintf(stderr, "[no intersection between segment and circle]\n");
+#ifdef DEBUG_OUTLINE
+static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes) {
+	for(size_t i=0; i < shapes.size(); i++) {
+		const ComplexShape &shape = shapes[i];
+		if (shape.type == CSIT_SEGMENT) {
+			const Segment &segt = shape.segment;
+			ConvexShape line(4);
+			line.setPoint(0, Vector2f(segt.pt1.x-2, segt.pt1.y-2));
+			line.setPoint(1, Vector2f(segt.pt2.x-2, segt.pt2.y-2));
+			line.setPoint(2, Vector2f(segt.pt2.x+2, segt.pt2.y+2));
+			line.setPoint(3, Vector2f(segt.pt1.x+2, segt.pt1.y+2));
+			
+			line.setFillColor(Color(255,0,0));
+			line.setOutlineColor(Color(0,0,255));
+			line.setOutlineThickness(2);
+			target.draw(line);
+		} else if (shape.type == CSIT_ARC) {
+			size_t cnt = 10;
+			ConvexShape lines(cnt);
+			lines.setFillColor(Color::Transparent);
+			lines.setOutlineColor(Color(0,0,255));
+			lines.setOutlineThickness(2);
+			
+			const CircleArc &arc = shape.arc;
+			Vector2d center = arc.circle.center;
+			double radius = arc.circle.radius;
+			for(size_t i=0; i < cnt; i++) {
+				double a1 = arc.start + (arc.end - arc.start)*i/(cnt-1);
+				lines.setPoint(i, Vector2f(center.x+cos(a1)*radius, center.y+sin(a1)*radius));
+			}
+			target.draw(lines);
+		}
 	}
-	fprintf(stderr, "[radius = %g]\n", pointsDistance(circle.center, A));
 }
-void test_geometry_cpp() {
-	test_segments();
-	test_circles();
+void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment) {
+	std::vector<ComplexShape> shapes;
+	roundAugmentRectangle(geom, augment, shapes);
+	drawCS(target, shapes);
 }
+#endif

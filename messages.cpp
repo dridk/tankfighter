@@ -7,7 +7,7 @@
 
 using namespace sf;
 
-Messages::Messages(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
+Messages::Messages(Engine *engine):Entity(SHAPE_EMPTY, engine) {
 	font.loadFromFile(getDefaultFontPath().c_str());
 }
 Messages::~Messages() {

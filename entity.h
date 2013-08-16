@@ -1,12 +1,13 @@
 #ifndef __ENTITY__H
 #define __ENTITY__H
 #include "coretypes.h"
+#include "polygon.h"
 #include <SFML/Graphics/RenderTarget.hpp>
 
 class EngineEvent;
 class Engine;
 
-enum EntityShape {SHAPE_CIRCLE, SHAPE_RECTANGLE};
+enum EntityShape {SHAPE_EMPTY, SHAPE_CIRCLE, SHAPE_POLYGON};
 class Entity
 {
 	public:
@@ -16,6 +17,7 @@ class Entity
 	Entity(EntityShape shape, Engine *engine);
 	virtual ~Entity();
 	virtual Vector2d getSize() const = 0;
+	virtual void getPolygon(Polygon &poly); /* need only to be defined if shape == SHAPE_POLYGON */
 
 	/* called by graphics engine */
 	virtual void draw(sf::RenderTarget &target) const = 0;

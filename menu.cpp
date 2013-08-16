@@ -15,7 +15,7 @@ using namespace sf;
 Menu::~Menu() {
 }
 size_t Menu::getItemCount(void) const {return items.size();}
-Menu::Menu(Engine *engine):Entity(SHAPE_RECTANGLE, engine) {
+Menu::Menu(Engine *engine):Entity(SHAPE_EMPTY, engine) {
 	font.loadFromFile(getDefaultFontPath().c_str());
 	selectedItem = -1;
 	irep = 0;

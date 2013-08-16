@@ -301,7 +301,6 @@ static void prolongateSegment(Segment &s, double distance) {
 	s.pt2 -= pro1;
 }
 
-typedef std::vector<Vector2d> Polygon;
 /* polygons are convex. Last point is implicitly connected to first */
 /* consequently, a triangle as a size() of 3 */
 Vector2d barycenter(const Polygon &poly) {
@@ -394,12 +393,11 @@ static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector
 	return inIncludedPolygon;
 }
 
-static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
-	const DoubleRect &r=r0.r;
+void Rectangle2Polygon(const DoubleRect &r, double angle, Polygon &poly) {
 	poly.resize(4);
 	Vector2f pt0(r.left, r.top);
 	Transform rot;
-	rot.rotate(180/M_PI*r0.angle);
+	rot.rotate(180/M_PI*angle);
 	
 	for(size_t i=0; i < 4; i++) { /* notice: direct trigo order used here */
 		Vector2f p;
@@ -410,11 +408,7 @@ static void Rectangle2Polygon(const GeomRectangle &r0, Polygon &poly) {
 		poly[i] = Vector2d(p.x, p.y);
 	}
 }
-static void roundAugmentRectangle(const GeomRectangle &r0, double augment, std::vector<ComplexShape> &shapes) {
-	Polygon poly;
-	Rectangle2Polygon(r0, poly);
-	roundAugmentPolygon(poly, augment, shapes, r0.filled);
-}
+
 static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexShape> &shapes, Vector2d &outvect, double extra_distance) {
 	/* get pt out of shape with the shortest orthogonal path */
 	Vector2d out = pt;
@@ -443,10 +437,10 @@ static Vector2d repulseFromComplexShape(const Vector2d pt, std::vector<ComplexSh
 	return out;
 }
 
-bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r0) {
+bool moveCircleToPolygon(double radius, MoveContext &ctx, const GeomPolygon &r0) {
 	std::vector<ComplexShape> shapes;
 	Segment &vect = ctx.vect;
-	roundAugmentRectangle(r0, radius, shapes);
+	roundAugmentPolygon(r0.polygon, radius, shapes, r0.filled);
 	if (shapes.size() == 0) return false; /* zero-sized object */
 	if (r0.filled) {
 		bool pt2belongs = inComplexShape(shapes, ctx.vect.pt2);
@@ -524,9 +518,9 @@ static void drawCS(RenderTarget &target, const std::vector<ComplexShape> &shapes
 		}
 	}
 }
-void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment) {
+void drawGeomPolygon(RenderTarget &target, const GeomPolygon &geom, double augment) {
 	std::vector<ComplexShape> shapes;
-	roundAugmentRectangle(geom, augment, shapes);
+	roundAugmentPolygon(geom.polygon, augment, shapes, geom.filled);
 	drawCS(target, shapes);
 }
 #endif

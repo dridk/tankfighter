@@ -1,6 +1,7 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
 #include "coretypes.h"
+#include "polygon.h"
 
 struct Line {
 	double a,b,c; /* Line equation a*x+b*y+c = 0 */
@@ -15,11 +16,10 @@ struct Circle {
 	Vector2d center;
 	double radius;
 };
-struct GeomRectangle {
+struct GeomPolygon {
 	bool filled;
-	GeomRectangle() {filled=true;}
-	DoubleRect r;
-	double angle;
+	GeomPolygon() {filled=true;}
+	Polygon polygon;
 };
 struct CircleArc {
 	Circle circle;
@@ -49,7 +49,7 @@ struct MoveContext {
 	Segment vect;
 	Vector2d nmove;
 };
-bool moveCircleToRectangle(double radius, MoveContext &ctx, const GeomRectangle &r);
+bool moveCircleToPolygon(double radius, MoveContext &ctx, const GeomPolygon &poly);
 bool moveCircleToCircle(double radius, MoveContext &ctx, const Circle &colli);
 double pointsDistance(Vector2d p1, Vector2d p2);
 double segmentModule(const Segment &segt);
@@ -58,4 +58,5 @@ void normalizeVector(Vector2d &v, double new_module);
 double angle_from_dxdy(double dx, double dy);
 void normalizeAngle(double &angle);
 void normalizeAngle(float &angle);
+void Rectangle2Polygon(const DoubleRect &r, double angle, Polygon &poly);
 #endif

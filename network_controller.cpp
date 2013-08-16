@@ -557,7 +557,7 @@ void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
 		Vector2d sz = wall->getSize();
 		b.width = sz.x;
 		b.height = sz.y;
-		b.angle = wall->getAngle();
+		b.angle = wall->getTextureAngle();
 		b.texture_name = cstrdup(wall->getTextureName().c_str());
 		blocks.push_back(b);
 	}

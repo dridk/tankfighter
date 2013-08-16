@@ -459,17 +459,14 @@ static void draw_score(RenderTarget &target, Font &ft, int score, Color color, V
 
 	target.draw(text);
 }
-static GeomRectangle wall2geomrect(Wall *w) {
-	GeomRectangle gr;
-	Vector2d pos = w->position;
-	Vector2d siz = w->getSize();
-	gr.r.left = pos.x;
-	gr.r.top  = pos.y;
-	gr.r.width = siz.x;
-	gr.r.height = siz.y;
-	gr.angle = w->getAngle();
+#ifdef DEBUG_OUTLINE
+static GeomPolygon wall2geompoly(Wall *w) {
+	GeomPolygon gr;
+	gr.filled = true;
+	w->getPolygon(gr.polygon);
 	return gr;
 }
+#endif
 void Engine::draw(void) {
 	Vector2d scorepos;
 	scorepos.x = 16;
@@ -481,8 +478,8 @@ void Engine::draw(void) {
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (wall) wall->draw(window);
 #ifdef DEBUG_OUTLINE
-		extern void drawGeomRectangle(RenderTarget &target, const GeomRectangle &geom, double augment);
-		if (wall) drawGeomRectangle(window, wall2geomrect(wall), 64);
+		extern void drawGeomPolygon(RenderTarget &target, const GeomPolygon &geom, double augment);
+		if (wall) drawGeomPolygon(window, wall2geompoly(wall), 64);
 #endif
 	}
 	/* then, draw players (before missiles) */
@@ -525,15 +522,12 @@ static Circle getEntityCircle(Entity *a) {
 }
 /* Note: Dynamic entities must be circle-shaped */
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b) {
-	if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_RECTANGLE) {
-		GeomRectangle gr;
+	if (a->shape == SHAPE_EMPTY || b->shape == SHAPE_EMPTY) return false;
+	if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_POLYGON) {
+		GeomPolygon gr;
 		gr.filled = (b != engine->getMapBoundariesEntity());
-		gr.r = getEntityBoundingRectangle(b);
-		gr.angle = 0;
-		if (Wall *p = dynamic_cast<Wall*>(b)) {
-			gr.angle = p->getAngle();
-		}
-		return moveCircleToRectangle(getEntityRadius(a), ctx, gr);
+		b->getPolygon(gr.polygon);
+		return moveCircleToPolygon(getEntityRadius(a), ctx, gr);
 	} else if (a->shape == SHAPE_CIRCLE && b->shape == SHAPE_CIRCLE) {
 		return moveCircleToCircle(getEntityRadius(a), ctx, getEntityCircle(b));
 	} else {

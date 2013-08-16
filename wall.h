@@ -2,6 +2,8 @@
 #define __WALL_H__
 #include "entity.h"
 #include <string>
+#include "polygon.h"
+#include "coretypes.h"
 
 class Engine;
 
@@ -12,7 +14,8 @@ class Wall: public Entity
 	Wall(double x, double y, double w, double h, const char *texture_name, Engine *engine);
 	virtual ~Wall();
 	virtual Vector2d getSize() const;
-	double getAngle() const;
+	virtual void getPolygon(Polygon &poly);
+	virtual double getTextureAngle() const;
 
 	virtual void draw(sf::RenderTarget &target) const;
 	virtual Vector2d movement(sf::Int64 tm);
@@ -20,7 +23,10 @@ class Wall: public Entity
 	std::string getTextureName(void) const;
 
 	private:
-	sf::Vector2f size;
+	Polygon getStraightPolygon(void) const;
+	DoubleRect getBoundingRectangle() const;
+	void ComputePosition();
+	Polygon polygon;
 	std::string texture_name;
 	float angle;
 };

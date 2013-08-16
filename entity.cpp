@@ -24,3 +24,4 @@ void Entity::setUID(Uint32 uid) {UID = uid;}
 void Entity::useUpperUID(void) {
 	globalUID |= 0x80000000;
 }
+void Entity::getPolygon(Polygon &poly) {poly.clear();}

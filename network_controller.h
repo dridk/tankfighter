@@ -200,11 +200,6 @@ struct NewPlayerM {
 	Uint32 seqid; /* in response to this RequestNewPlayer packet */
 	bool is_yours;
 };
-struct Block {
-	unsigned short x,y,width,height;
-	char *texture_name;
-	float angle;
-};
 struct BlockPoint {
 	unsigned short x, y;
 };

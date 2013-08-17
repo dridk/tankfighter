@@ -28,11 +28,14 @@ bool try_assign_integer_variable(unsigned short *out, const char *varname, const
 	}
 	return true;
 }
+bool json_assign_double(double *out, const json_value *val) {
+		if (val->type == json_double) {*out = val->u.dbl;return true;}
+		if (val->type == json_integer) {*out = val->u.integer;return true;}
+		return false;
+}
 bool try_assign_double_variable(double *out, const char *varname, const char *key, const json_value *val) {
 	if (strcmp(key, varname)==0) {
-		if (val->type == json_double) {*out = val->u.dbl;return true;}
-		else if (val->type == json_integer) {*out = val->u.integer;return true;}
-		else {
+		if (!json_assign_double(out,val)) {
 			fprintf(stderr, "Expected numeric parameter %s\n", varname);
 			return false;
 		}

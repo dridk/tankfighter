@@ -12,7 +12,14 @@
 #include "misc.h"
 #include "parameters.h"
 #include "parse_json.h"
+#include "geometry.h"
 #include <math.h>
+
+struct Block {
+	char *texture_name;
+	Polygon polygon;
+	double angle;
+};
 
 class BlockEnumerator {
 	public:
@@ -24,6 +31,23 @@ class BlockEnumerator {
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *file_path);
 
 #define reterror(err) {fprintf(stderr, "%s\n", err);return;}
+
+static bool read_json_polygon(Polygon &poly, const json_value *arr) {
+	poly.clear();
+	if (arr->type != json_array) return false;
+	poly.reserve(arr->u.array.length);
+	for(size_t i=0; i < arr->u.array.length; i++) {
+		const json_value *point = arr->u.array.values[i];
+		if (point->type != json_array) continue;
+		if (point->u.array.length < 2) continue;
+		json_value **values = point->u.array.values;
+		Vector2d pt;
+		if (!(json_assign_double(&pt.x,values[0]) && json_assign_double(&pt.y,values[1])))
+			continue;
+		poly.push_back(pt);
+	}
+	return true;
+}
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *json_path) {
 	json_value *p = json_parse_file(json_path, parameters.map_magic().c_str());
 	if (!p) return;
@@ -45,25 +69,37 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 			fprintf(stderr, "Map block is not hash! Block ignored!");
 			continue;
 		}
-		Block block={0};
+		Block block;
 		block.texture_name = NULL;
+		block.angle = 0;
+		bool is_polygon=false;
+		DoubleRect rect(0,0,0,0);
 		for(size_t j=0; j < entity->u.object.length; j++) {
 			const char *key = entity->u.object.values[j].name;
 			const json_value *value = entity->u.object.values[j].value;
-			try_assign_integer_variable(&block.x, "x", key, value);
-			try_assign_integer_variable(&block.y, "y", key, value);
-			try_assign_integer_variable(&block.width, "w", key, value);
-			try_assign_integer_variable(&block.height, "h", key, value);
+			try_assign_double_variable(&rect.left, "x", key, value);
+			try_assign_double_variable(&rect.top, "y", key, value);
+			try_assign_double_variable(&rect.width, "w", key, value);
+			try_assign_double_variable(&rect.height, "h", key, value);
 			double degangle = 0;
 			try_assign_double_variable(&degangle, "angle", key, value);
 			if (fabs(degangle) >= 1e-4) {
 				block.angle = degangle/180*M_PI;
 			}
 			if (strcmp(key, "texture")==0 && value->type == json_string) block.texture_name = json_string_to_cstring(value);
+			if (strcmp(key, "points")==0) {
+				read_json_polygon(block.polygon, value);
+			}
+			if (strcmp(key, "shape")==0 && value->type == json_string
+				&& value->u.string.length == 7 && strncmp(value->u.string.ptr, "polygon", 7)==0) {
+				is_polygon = true;
+			}
+		}
+		if (!is_polygon) {
+			Rectangle2Polygon(rect, block.polygon);
 		}
 		blockenum->enumerate(block);
 		if (block.texture_name) {free(block.texture_name);block.texture_name=NULL;}
-		fprintf(stderr, "[new block found (%d,%d)-(%d,%d)]\n", block.x, block.y, block.width, block.height);
 	}
 	json_value_free(p);
 }
@@ -146,7 +182,7 @@ void load_map(Engine *engine, const char *file_path) {
 }
 
 void BlockEnumerator::enumerate(const Block &block) {
-	engine->add(new Wall(block.x, block.y, block.width, block.height, block.angle, block.texture_name, engine));
+	engine->add(new Wall(block.polygon, block.angle, block.texture_name, engine));
 }
 
 ControllerDefinitions::ControllerDefinitions() {}

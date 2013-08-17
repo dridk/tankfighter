@@ -10,4 +10,5 @@ char *json_string_to_cstring(const json_value *val);
 bool json_check_magic(const json_value *p, const char *type_name);
 
 json_value *json_parse_file(const char *path, const char *type_name = 0);
+bool json_assign_double(double *out, const json_value *val);
 #endif

@@ -11,23 +11,24 @@
 
 using namespace sf;
 
-Wall::Wall(double x, double y, double w, double h, double angle, const char *texture_name0, Engine *engine)
-		:Entity(SHAPE_POLYGON, engine),angle(angle) {
+Wall::Wall(double x, double y, double w, double h, double angle0, const char *texture_name0, Engine *engine)
+		:Entity(SHAPE_POLYGON, engine) {
 	DoubleRect r;
+	Polygon poly;
 	r.left = x; r.top = y;
 	r.width = w; r.height = h;
-	Rectangle2Polygon(r, angle, polygon);
-	Rectangle2Polygon(r, 0, straight_polygon);
-	ComputePosition();
-	texture_name = (texture_name0?texture_name0:"");
+	Rectangle2Polygon(r, poly);
+	ConstructWall(poly, angle0, texture_name0);
 }
-Wall::Wall(double x, double y, double w, double h, const char *texture_name0, Engine *engine)
-		:Entity(SHAPE_POLYGON, engine),angle(0) {
-	DoubleRect r;
-	r.left = x; r.top = y;
-	r.width = w; r.height = h;
-	Rectangle2Polygon(r, angle, polygon);
-	Rectangle2Polygon(r, 0, straight_polygon);
+Wall::Wall(const Polygon &polygon0, double angle0, const char *texture_name0, Engine *engine)
+		:Entity(SHAPE_POLYGON, engine) {
+	ConstructWall(polygon0, angle0, texture_name0);
+}
+void Wall::ConstructWall(const Polygon &polygon0, double angle0, const char *texture_name0) {
+	angle = angle0;
+	straight_polygon = polygon0;
+	polygon = polygon0;
+	RotatePolygon(polygon, angle0);
 	ComputePosition();
 	texture_name = (texture_name0?texture_name0:"");
 }
@@ -57,18 +58,6 @@ DoubleRect Wall::getBoundingRectangle() const {
 }
 Polygon Wall::getStraightPolygon(void) const {
 	return straight_polygon;
-#if 0
-	Transform tr;
-	tr.rotate(-180/M_PI*angle);
-	
-	Polygon out(polygon.size());
-	for(size_t i=0; i < polygon.size(); i++) {
-		Vector2f pt(polygon[i].x-position.x, polygon[i].y-position.y);
-		pt = tr.transformPoint(pt);
-		out[i] = Vector2d(pt.x+position.x, pt.y+position.y);
-	}
-	return out;
-#endif
 }
 void Wall::draw(sf::RenderTarget &target) const {
 	if (texture_name == "") return;

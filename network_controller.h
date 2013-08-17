@@ -10,6 +10,7 @@
 #include "controller.h"
 #include <stdio.h>
 #include <ostream>
+#include <vector>
 
 
 class Engine;
@@ -68,7 +69,7 @@ const MessageStructure messages_structures[]={
 	{NMT_C2S_PlayerDisconnects,"Player disconnects", true,"u",true,false},
 	{NMT_C2S_RequestNewMissile,"Request new missile", true,"8ufff",true,false},
 
-	{NMT_S2C_DefineMap,"Define map", true,"ss",false,true},
+	{NMT_S2C_DefineMap,"Define map", true,"ssu",false,true},
 	{NMT_S2C_Refusal,"Refusal",true,"u",false,true},
 	{NMT_S2C_PlayerDeath,"Player death",true,"uu",false,true},
 	{NMT_S2C_NewPlayer,"Report player creation",true,"uffffuuub",false,true},
@@ -204,8 +205,22 @@ struct Block {
 	char *texture_name;
 	float angle;
 };
+struct BlockPoint {
+	unsigned short x, y;
+};
+typedef std::vector<BlockPoint> ApproxPolygon;
+struct BlockM {
+	char *texture_name;
+	float angle;
+	ApproxPolygon apolygon;
+};
+struct BlockMpod {
+	char *texture_name;
+	float angle;
+};
 struct DefineMapM {
 	unsigned short width, height;
+	unsigned block_count;
 };/* followed by std::vector<Block> blocks; */
 struct PlayerCreation {
 	Uint32 seqid; /* seqid of the creation request */

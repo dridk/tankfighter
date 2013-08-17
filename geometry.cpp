@@ -393,19 +393,28 @@ static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector
 	return inIncludedPolygon;
 }
 
-void Rectangle2Polygon(const DoubleRect &r, double angle, Polygon &poly) {
+void Rectangle2Polygon(const DoubleRect &r, Polygon &poly) {
 	poly.resize(4);
-	Vector2f pt0(r.left, r.top);
-	Transform rot;
-	rot.rotate(180/M_PI*angle);
 	
 	for(size_t i=0; i < 4; i++) { /* notice: direct trigo order used here */
-		Vector2f p;
-		p.x = (i == 0 || i == 3) ? 0 : r.width;
-		p.y = (i == 0 || i == 1) ? 0 : r.height;
-		p = rot.transformPoint(p);
-		p += pt0;
-		poly[i] = Vector2d(p.x, p.y);
+		Vector2d pt;
+		pt.x = (i == 0 || i == 3) ? r.left : r.left+r.width;
+		pt.y = (i == 0 || i == 1) ? r.top : r.top+r.height;
+		poly[i] = pt;
+	}
+}
+
+void RotatePolygon(Polygon &polygon, double angle) {
+	if (polygon.size() <= 1) return;
+	Vector2f pt0(polygon[0].x, polygon[0].y);
+	Transform rot;
+	rot.rotate(180/M_PI*angle);
+
+	for(size_t i=0; i < polygon.size(); i++) {
+		Vector2f pt(polygon[i].x - pt0.x, polygon[i].y - pt0.y);
+		pt = rot.transformPoint(pt);
+		pt += pt0;
+		polygon[i] = Vector2d(pt.x, pt.y);
 	}
 }
 

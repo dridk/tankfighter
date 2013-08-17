@@ -35,7 +35,8 @@ static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 static const char *NMF_PlayerPosition = "uusscc";
 static const char *NMF_MissilePosition = "uussspp";
 static const char *NMF_PlayerMovement = "8" "uffff" "ff";
-static const char *NMF_Block = "ssssSf";
+static const char *NMF_Block = "Sf";
+static const char *NMF_BlockPoint = "ss";
 static const char *NMF_PlayerScore = "uu";
 
 static char *cstrdup(const char *p) {
@@ -44,6 +45,19 @@ static char *cstrdup(const char *p) {
 	if (!out) return NULL;
 	memcpy(out, p, ln+1);
 	return out;
+}
+/********************** conversion helpers *********************/
+static unsigned short fl2us(double fl, double maxval) {
+	return static_cast<unsigned short>(fl/maxval*65536.0);
+}
+static Uint8 fl2b(double fl, double maxval) {
+	return static_cast<Uint8>(fl/maxval*256.0);
+}
+static double us2fl(unsigned short us, double maxval) {
+	return us*maxval/65536.0;
+}
+static double b2fl(Uint8 b, double maxval) {
+	return b*maxval/256.0;
 }
 /***************************** MasterController ****************************/
 MasterController::MasterController(NetworkClient *client, Controller *phy):phy(phy),client(client) {
@@ -137,18 +151,6 @@ static void getPlayerPosition(Player *player, PlayerPosition &pos) {
 	pos.y           = player->position.y;
 	pos.tank_angle  = player->getTankAngle();
 	pos.canon_angle = player->getCanonAngle();
-}
-static unsigned short fl2us(double fl, double maxval) {
-	return static_cast<unsigned short>(fl/maxval*65536.0);
-}
-static Uint8 fl2b(double fl, double maxval) {
-	return static_cast<Uint8>(fl/maxval*256.0);
-}
-static double us2fl(unsigned short us, double maxval) {
-	return us*maxval/65536.0;
-}
-static double b2fl(Uint8 b, double maxval) {
-	return b*maxval/256.0;
 }
 static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos) {
 	Vector2d map_size = player->getEngine()->map_size();
@@ -535,33 +537,40 @@ void NetworkClient::setMissilePosition(MissilePosition &mpos) {
 	ml->setPosition(Vector2d(us2fl(mpos.cur_x, map_size.x), us2fl(mpos.cur_y, map_size.y)));
 	ml->setAngle(us2fl(mpos.curAngle, 2*M_PI));
 }
-void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<Block> &blocks) {
-	engine->defineMapSize(width, height);
-	for(size_t i=0; i < blocks.size(); i++) {
-		Block &b=blocks[i];
-		fprintf(stderr, "Wall: %i %i %i %i %g %s\n"
-			,b.x,b.y,b.width,b.height,b.angle
-			,b.texture_name);
-		engine->add(new Wall((short)b.x, (short)b.y, (short)b.width, (short)b.height, b.angle, b.texture_name, engine));
+void Polygon2AP(const Polygon &poly, ApproxPolygon &apoly, unsigned width, unsigned height) {
+	apoly.resize(poly.size());
+	for(size_t i=0; i < poly.size(); i++) {
+		apoly[i].x = fl2us(poly[i].x, width);
+		apoly[i].y = fl2us(poly[i].y, height);
 	}
 }
-void CollectMapBlocks(Engine *engine, std::vector<Block> &blocks) {
+void AP2Polygon(const ApproxPolygon &apoly, Polygon &poly, unsigned width, unsigned height) {
+	poly.resize(apoly.size());
+	for(size_t i=0; i < apoly.size(); i++) {
+		poly[i].x = us2fl(apoly[i].x, width);
+		poly[i].y = us2fl(apoly[i].y, height);
+	}
+}
+void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<BlockM> &blocks) {
+	engine->defineMapSize(width, height);
+	for(size_t i=0; i < blocks.size(); i++) {
+		BlockM &b=blocks[i];
+		Polygon poly;
+		AP2Polygon(b.apolygon, poly, width, height);
+		engine->add(new Wall(poly, b.angle, b.texture_name, engine));
+	}
+}
+void CollectMapBlocks(Engine *engine, std::vector<BlockM> &blocks) {
 	Wall *iwall = dynamic_cast<Wall*>(engine->getMapBoundariesEntity());
+	Vector2d size = engine->map_size();
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (!wall) continue;
 		if (wall == iwall) continue;
-		Block b;
-		DoubleRect r = getPolyBounds(wall->getStraightPolygon());
-		b.x = r.left;
-		b.y = r.top;
-		b.width = r.width;
-		b.height = r.height;
+		BlockM b;
+		Polygon2AP(wall->getStraightPolygon(), b.apolygon, size.x, size.y);
 		b.angle = wall->getTextureAngle();
 		b.texture_name = cstrdup(wall->getTextureName().c_str());
-		fprintf(stderr, "[sending wall %dx%d-%dx%d angle %g with texture %s]\n"
-			,b.x, b.y, b.width, b.height, b.angle
-			, b.texture_name);
 		blocks.push_back(b);
 	}
 }
@@ -653,13 +662,19 @@ bool NetworkClient::treatMessage(Message &msg) {
 #endif
 		pairs.push_back(RemoteClientInfo(msg.client)); /* accept new client */
 		Vector2d sz = getEngine()->map_size();
-		DefineMapM mh = {(unsigned short)sz.x, (unsigned short)sz.y};
+		
+		std::vector<BlockM> blocks;
+		CollectMapBlocks(getEngine(), blocks);
+		
+		DefineMapM mh = {(unsigned short)sz.x, (unsigned short)sz.y,(unsigned)blocks.size()};
+		fprintf(stderr, "Transmitting %d blocks to client\n", mh.block_count);
 		Message *nmsg = new Message(&mh, NMT_S2C_DefineMap);
 		nmsg->client = msg.client; /* send back DefineMap to client */
-		std::vector<Block> blocks;
-		CollectMapBlocks(getEngine(), blocks);
-		nmsg->AppendV(blocks, NMF_Block);
+		
 		for(size_t i = 0; i < blocks.size(); ++i) {
+			BlockMpod bm={blocks[i].texture_name, blocks[i].angle};
+			nmsg->Append(&bm, NMF_Block);
+			nmsg->AppendV(blocks[i].apolygon, NMF_BlockPoint);
 			free(blocks[i].texture_name);
 		}
 		willSendMessage(nmsg);
@@ -766,9 +781,19 @@ bool NetworkClient::treatMessage(Message &msg) {
 	} else if (msg.type == NMT_S2C_DefineMap) {
 		if (pairs.size() >= 1) getEngine()->display(std::string("Successfully connected to server ")+tostring(pairs[0].client));
 		DefineMapM mapdef;
-		std::vector<Block> blocks;
+		std::vector<BlockM> blocks;
 		if (!msg.Input(&mapdef, messages_structures[msg.type].format)) return false;
-		if (!msg.InputV(blocks, NMF_Block)) return false;
+		blocks.reserve(mapdef.block_count);
+		fprintf(stderr, "Receiving %d blocks from server\n", mapdef.block_count);
+		for(size_t i=0; i < mapdef.block_count; i++) {
+			BlockM bl;
+			BlockMpod bm;
+			if (!msg.Input(&bm, NMF_Block)) return false;
+			bl.texture_name = bm.texture_name;
+			bl.angle = bm.angle;
+			if (!msg.InputV(bl.apolygon, NMF_BlockPoint)) return false;
+			blocks.push_back(bl);
+		}
 		load_map_from_blocks(getEngine(), mapdef.width, mapdef.height, blocks);
 		for(size_t i=0; i < blocks.size(); i++) free(blocks[i].texture_name);
 		return true;

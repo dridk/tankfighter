@@ -11,7 +11,7 @@ class Wall: public Entity
 {
 	public:
 	Wall(double x, double y, double w, double h, double angle, const char *texture_name, Engine *engine);
-	Wall(double x, double y, double w, double h, const char *texture_name, Engine *engine);
+	Wall(const Polygon &polygon, double angle, const char *texture_name, Engine *engine);
 	virtual ~Wall();
 	virtual Vector2d getSize() const;
 	virtual void getPolygon(Polygon &poly);
@@ -24,6 +24,7 @@ class Wall: public Entity
 	std::string getTextureName(void) const;
 
 	private:
+	void ConstructWall(const Polygon &polygon, double angle, const char *texture_name);
 	DoubleRect getBoundingRectangle() const;
 	void ComputePosition();
 	Polygon polygon, straight_polygon;

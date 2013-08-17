@@ -338,7 +338,7 @@ void Engine::map_boundaries_changed(void) {
 		map_boundaries_entity = NULL;
 	}
 	background.setTextureRect(IntRect(0,0,width, height));
-	map_boundaries_entity = new Wall(0,0,width, height, NULL, this);
+	map_boundaries_entity = new Wall(0,0,width, height, 0, NULL, this);
 	add(map_boundaries_entity);
 
 	if (!parameters.noGUI()) {

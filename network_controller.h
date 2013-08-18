@@ -249,7 +249,7 @@ class NetworkClient {
 	bool requestConnection(const RemoteClient &server);
 	void requestDisconnection(void);
 	void requestPlayerCreation(Controller *controller, const sf::Color *color = NULL);
-	void requestMissileCreation(Player *player);
+	void requestMissileCreation(Missile *missile_template);
 	void reportPlayerMovement(const PlayerMovement &plpos);
 	void reportNewPlayer(Player *player, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target);
 	void reportNewPlayer(Player *player, const RemoteClient *target = NULL);

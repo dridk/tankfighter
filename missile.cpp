@@ -15,8 +15,13 @@ using namespace sf;
 
 Missile::Missile(Player *player0)
 	:Entity(SHAPE_CIRCLE, player0->getEngine()),player(player0) {
+	Vector2d cvect;
 	position = player->position;
 	angle = player->getCanonAngle();
+	double canon_length = parameters.getCanonLength();
+	cvect.x = cos(angle)*canon_length;
+	cvect.y = sin(angle)*canon_length;
+	position += cvect;
 }
 Missile::~Missile() {
 	player = NULL;

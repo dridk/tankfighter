@@ -92,7 +92,7 @@ void MasterController::reportPlayerMovement(Player *player, PlayerControllingDat
 }
 bool MasterController::missileCreation(Missile *ml) {
 	if (!client->isClient()) return phy->missileCreation(ml);
-	client->requestMissileCreation(ml->getOwner());
+	client->requestMissileCreation(ml);
 	return false;
 }
 bool MasterController::missileCollision(Missile *ml, Player *other) {
@@ -1053,12 +1053,13 @@ void NetworkClient::requestPlayerCreation(Controller *controller, const Color *c
 	willSendMessage(nmsg);
 }
 
-void NetworkClient::requestMissileCreation(Player *pl) {
+void NetworkClient::requestMissileCreation(Missile *ml) {
+	Player *pl = ml->getOwner();
 	RequestNewMissileM newm={0};
 	newm.origPlayer = pl->getUID();
-	newm.x = pl->position.x;
-	newm.y = pl->position.y;
-	newm.origAngle = pl->getCanonAngle();
+	newm.x = ml->position.x;
+	newm.y = ml->position.y;
+	newm.origAngle = ml->getAngle();
 	Message *nmsg = new Message(&newm, NMT_C2S_RequestNewMissile);
 	willSendMessage(nmsg);
 }

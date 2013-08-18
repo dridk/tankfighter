@@ -39,6 +39,7 @@ static struct ParameterDef {
 	,{"missileDuration", PDouble, "2000"}
 	,{"missileSpeed", PDouble, "0.9"}
 	,{"missileDiameter", PDouble, "16"}
+	,{"canonLength", PDouble, "64"}
 
 /* engine */
 	,{"minFPS", PDouble, "15"}
@@ -262,3 +263,4 @@ sf::VideoMode Parameters::getVideoMode() {
 	return sf::VideoMode(w, h);
 }
 bool Parameters::noGUI() {return getAsBoolean("noGUI");}
+double Parameters::getCanonLength(void) {return getAsDouble("canonLength");}

@@ -38,6 +38,7 @@ class Parameters
 	double clientsCleanupIntervalMS(void);
 	int udpPortRange(void);
 	double maxDupPacketTimeSecs(void);
+	
 	/* constants for game rules */
 	double missileDelayMS(void);
 	double tankDiameter(void);
@@ -51,6 +52,7 @@ class Parameters
 	double maxMissileLifeDurationMS(void);
 	double missileSpeed(void);
 	double missileDiameter(void);
+	double getCanonLength(void);
 
 	/* constants for game engine */
 	unsigned minFPS(void);

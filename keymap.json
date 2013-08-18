@@ -7,10 +7,10 @@
 		"F": "tank turn right2",
 		"Space": "shoot2",
 
-		"Left": "left1",
-		"Right": "right1",
-		"Up": "up1",
-		"Down": "down1",
+		"Left": "tank turn left1",
+		"Right": "tank turn right1",
+		"Up": "tank move forward1",
+		"Down": "tank move backward1",
 		"Mouse Left": "shoot1",
 		"Mouse Position": "canon lookat1",
 

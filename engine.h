@@ -77,8 +77,6 @@ class Engine
 	ControllerDefinitions cdef;
 	sf::Font score_font;
 	Entity *map_boundaries_entity;
-	sf::Texture background_texture;
-	sf::Sprite background;
 	sf::View view;
 	sf::RenderWindow window;
 	Entities entities;

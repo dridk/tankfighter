@@ -51,6 +51,7 @@ static struct ParameterDef {
 	,{"spritesDirectory", PString, "sprites/"}
 	,{"spritesExtension", PString, ".png"}
 	,{"defaultFontName", PString, "sans-serif:slant=roman:weight=normal:lang=en_US:scalable=true"}
+	,{"defaultBackgroundTexture", PString, "dirt"}
 
 	,{"fullscreen", PBoolean, "1", 'f'}
 	,{"map", PString, "map2.json", 'm'}
@@ -264,3 +265,4 @@ sf::VideoMode Parameters::getVideoMode() {
 }
 bool Parameters::noGUI() {return getAsBoolean("noGUI");}
 double Parameters::getCanonLength(void) {return getAsDouble("canonLength");}
+std::string Parameters::defaultBackgroundTexture() {return getAsString("defaultBackgroundTexture");}

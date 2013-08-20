@@ -76,6 +76,7 @@ class Parameters
 	int serverDiscoveryPeriodMS();
 
 	std::string defaultFontName(void);
+	std::string defaultBackgroundTexture();
 	bool fullscreen();
 	std::string map();
 	std::string keymap();

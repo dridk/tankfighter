@@ -2,6 +2,7 @@
 #include "parameters.h"
 #include "image_helper.h"
 #include "misc.h"
+#include <unistd.h>
 #include <algorithm>
 #include <gl/gl.h>
 #include <string.h>
@@ -74,8 +75,16 @@ bool load_gl_image(Image &img, const char *path, Vector2u &disp_size) {
 	return ok;
 }
 
+static std::string texturePath(const std::string dir, const std::string name, const std::string ext) {
+	std::string p1 = dir + name + ext;
+	if (access(p1.c_str(), R_OK) != -1) return p1;
+	p1 = dir + name + ".jpg";
+	if (access(p1.c_str(), R_OK) != -1) return p1;
+	return dir + name + ".jpeg";
+}
+
 unsigned TextureCache::getTextureID(const char *name) {
-	std::string path = parameters.spritesDirectory() + name + parameters.spritesExtension();
+	std::string path = texturePath(parameters.spritesDirectory(), name, parameters.spritesExtension());
 	MapIterator it = idmap.find(path);
 	if (it == idmap.end()) {
 		textures.push_back(Texture());

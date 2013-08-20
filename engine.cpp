@@ -323,7 +323,6 @@ Engine::Engine():network(this),messages(this) {
 	}
 	score_font.loadFromFile(getDefaultFontPath().c_str());
 
-	load_texture(background, background_texture, "sprites/dirt.jpg");
 	map_boundaries_changed();
 	load_keymap(cdef, parameters.keymap().c_str());
 }
@@ -339,8 +338,7 @@ void Engine::map_boundaries_changed(void) {
 		destroy(map_boundaries_entity);
 		map_boundaries_entity = NULL;
 	}
-	background.setTextureRect(IntRect(0,0,width, height));
-	map_boundaries_entity = new Wall(0,0,width, height, 0, NULL, this);
+	map_boundaries_entity = new Wall(0,0,width, height, 0, parameters.defaultBackgroundTexture().c_str(), this);
 	add(map_boundaries_entity);
 
 	if (!parameters.noGUI()) {
@@ -474,9 +472,10 @@ void Engine::draw(void) {
 	scorepos.x = 16;
 	scorepos.y = 16;
 	window.clear();
-	window.draw(background);
 	/* draw walls before other entities */
+	map_boundaries_entity->draw(window);
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
+		if ((*it) == map_boundaries_entity) continue;
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (wall) wall->draw(window);
 #ifdef DEBUG_OUTLINE

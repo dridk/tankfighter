@@ -48,7 +48,6 @@ bool load_gl_image(Image &img, const char *path, Vector2u &disp_size) {
 	Vector2u osize;
 	Vector2u size = img.getSize();
 	size_t msz = Texture::getMaximumSize();
-	msz = 256;
 	disp_size = size;
 	
 	if (supports_rectangle_textures()) {

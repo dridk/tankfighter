@@ -40,6 +40,7 @@ static struct ParameterDef {
 	,{"missileSpeed", PDouble, "0.9"}
 	,{"missileDiameter", PDouble, "16"}
 	,{"canonLength", PDouble, "64"}
+	,{"mouseCursorHotSpotIsMiddle", PBoolean, "1"}
 
 /* engine */
 	,{"minFPS", PDouble, "15"}
@@ -52,6 +53,7 @@ static struct ParameterDef {
 	,{"spritesExtension", PString, ".png"}
 	,{"defaultFontName", PString, "sans-serif:slant=roman:weight=normal:lang=en_US:scalable=true"}
 	,{"defaultBackgroundTexture", PString, "dirt"}
+	,{"mouseCursor", PString, "crosshair"}
 
 	,{"fullscreen", PBoolean, "1", 'f'}
 	,{"map", PString, "map2.json", 'm'}
@@ -266,3 +268,13 @@ sf::VideoMode Parameters::getVideoMode() {
 bool Parameters::noGUI() {return getAsBoolean("noGUI");}
 double Parameters::getCanonLength(void) {return getAsDouble("canonLength");}
 std::string Parameters::defaultBackgroundTexture() {return getAsString("defaultBackgroundTexture");}
+std::string Parameters::mouseCursor() {return getAsString("mouseCursor");}
+Vector2d Parameters::mouseCursorHotSpot(const Vector2d &cursor_size) {
+	Vector2d out(0,0);
+	if (getAsBoolean("mouseCursorHotSpotIsMiddle")) {
+		out.x = cursor_size.x / 2;
+		out.y = cursor_size.y / 2;
+		return out;
+	}
+	return out;
+}

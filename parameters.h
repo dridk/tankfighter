@@ -5,6 +5,7 @@
 #include <string>
 #include <SFML/Window/VideoMode.hpp>
 #include <ostream>
+#include "coretypes.h"
 #include "json.h"
 
 enum PType {PBoolean = json_boolean, PInteger = json_integer, PDouble = json_double, PString = json_string};
@@ -57,6 +58,7 @@ class Parameters
 	/* constants for game engine */
 	unsigned minFPS(void);
 	unsigned maxFPS(void);
+	Vector2d mouseCursorHotSpot(const Vector2d &cursor_size);
 
 	/* geometry */
 	double minWallDistance(void);
@@ -67,6 +69,7 @@ class Parameters
 	std::string keymap_magic(void);
 	std::string map_magic(void);
 	std::string config_magic(void);
+	std::string mouseCursor(void);
 
 	/* controller constants */
 	double joyTankSpeedCalibration();

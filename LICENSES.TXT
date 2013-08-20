@@ -12,3 +12,8 @@ You don't have to keep the SFML license text in source or binary distributions, 
 Passed this small constraints, you are free to do anything you want with the software.
 
 Text of these licenses are in files LICENSE-JONATHAN-MIT.TXT, LICENSE-REALLYFREE.TXT and LICENSE-SFML.TXT
+
+Crosshairs_Red.svg and Visor.svg come from wikimedia commons and have been released in CC0 1.0 Universal Public Domain Dedication.
+Authorship:
+	Aris Katsaris:	Crosshairs_Red.svg
+	Heflox: Visor.svg

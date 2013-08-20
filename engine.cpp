@@ -9,6 +9,7 @@
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/Window.hpp>
 #include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/Sprite.hpp>
 #include <stdio.h>
 #include "commands.h"
 #include "missile.h"
@@ -316,6 +317,7 @@ Engine::Engine():network(this),messages(this) {
 		window.create(mode, "Tank window", (is_fullscreen ? Style::Fullscreen : Style::Default));
 		window.setVerticalSyncEnabled(false);
 		window.setFramerateLimit(parameters.maxFPS());
+		window.setMouseCursorVisible(false);
 		window.clear(Color::White);
 	}
 	score_font.loadFromFile(getDefaultFontPath().c_str());
@@ -464,6 +466,17 @@ static GeomPolygon wall2geompoly(Wall *w) {
 	return gr;
 }
 #endif
+void Engine::drawMouseCursor(void) {
+	Sprite *spr = getTextureCache()->getSprite(parameters.mouseCursor().c_str());
+	FloatRect sprr = spr->getLocalBounds();
+	Vector2i wposi = Mouse::getPosition(window);
+	Vector2d mpos  = window2map(Vector2d(wposi.x, wposi.y));
+	Vector2d hotspot = parameters.mouseCursorHotSpot(Vector2d(sprr.width, sprr.height));
+	spr->setOrigin(hotspot.x, hotspot.y);
+	spr->setPosition(mpos.x,mpos.y);
+	spr->setRotation(0);
+	window.draw(*spr);
+}
 void Engine::draw(void) {
 	Vector2d scorepos;
 	scorepos.x = 16;
@@ -496,6 +509,7 @@ void Engine::draw(void) {
 	}
 	messages.movement(0);
 	messages.draw(window);
+	drawMouseCursor();
 	window.display();
 }
 static double getEntityRadius(Entity *a) {

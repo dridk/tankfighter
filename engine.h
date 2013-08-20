@@ -64,6 +64,7 @@ class Engine
 	void controller_activity(sf::Event &e);
 	bool step(void);
 	void draw(void);
+	void drawMouseCursor(void);
 	void compute_physics(void);
 	void destroy_flagged(void);
 	void PopupMenu(void);

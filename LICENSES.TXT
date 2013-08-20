@@ -1,0 +1,14 @@
+tankfighter (c) André Gillibert 2013
+
+tankfighter is released in REALLYFREE license.
+Every file that is not marked with another license is implicitly in WTFPL license.
+It uses the SFML library in zlib/png license, but does not include any of its code.
+It includes a MIT code taken from the SOIL (Simple OpenGL Image Library) library in the src/image_helper.c file.
+Since the SOIL library is globally released in "Public Domain" by Jonathan Dummer, I assume this file is also released in public domain. In that case, the MIT license clauses are not binding.
+
+Consequently, you should keep the MIT license text in source and binary distributions, if that the code is not really in public domain.
+You don't have to keep the SFML license text in source or binary distributions, but I did it for politeness purposes.
+
+Passed this small constraints, you are free to do anything you want with the software.
+
+Text of these licenses are in files LICENSE-JONATHAN-MIT.TXT, LICENSE-REALLYFREE.TXT and LICENSE-SFML.TXT

@@ -44,33 +44,35 @@ bool load_from_pixels(Image &img, const void *pixels, size_t width, size_t heigh
 	return true;
 }
 bool load_gl_image(Image &img, const char *path, Vector2u &disp_size) {
-	Image simg;
-	if (supports_rectangle_textures()) {
-		if (!img.loadFromFile(path)) return false;
-		disp_size = img.getSize();
-	}
-	if (!simg.loadFromFile(path)) return false;
-	Vector2u size = simg.getSize();
-	disp_size = size;
+	if (!img.loadFromFile(path)) return false;
+	Vector2u osize;
+	Vector2u size = img.getSize();
 	size_t msz = Texture::getMaximumSize();
+	msz = 256;
+	disp_size = size;
 	
-	size_t sqsize = std::max(size.x, size.y);
-	size_t optsize = 1;
-	while (optsize < sqsize) optsize *= 2;
-	if (optsize > msz) optsize = msz;
+	if (supports_rectangle_textures()) {
+		osize = size;
+	} else {
+		size_t sqsize = std::max(size.x, size.y);
+		size_t optsize = 1;
+		while (optsize < sqsize) optsize *= 2;
+		osize.x = osize.y = optsize;
+	}
+	if (osize.x > msz) osize.x = msz;
+	if (osize.y > msz) osize.y = msz;
 	
-	if (optsize == size.x && optsize == size.y) {
-		img = simg;
+	if (osize.x == size.x && osize.y == size.y) {
 		return true;
 	}
 	const size_t channels = 4;
-	unsigned char *pixels = (unsigned char*)malloc(optsize*optsize*channels);
+	unsigned char *pixels = (unsigned char*)malloc(osize.x*osize.y*channels);
 	if (!pixels) return false;
-	if (!scale_image(simg.getPixelsPtr(), size.x, size.y, channels, pixels, optsize, optsize)) {
+	if (!scale_image(img.getPixelsPtr(), size.x, size.y, channels, pixels, osize.x, osize.y)) {
 		free(pixels);
 		return false;
 	}
-	bool ok = load_from_pixels(img, pixels, optsize, optsize, channels);
+	bool ok = load_from_pixels(img, pixels, osize.x, osize.y, channels);
 	free(pixels);
 	return ok;
 }

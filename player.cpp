@@ -26,7 +26,6 @@ double Player::getTankAngle() {
 	return tank_direction;
 }
 Player::~Player() {
-	fprintf(stderr, "[player %d deleted]\n", getUID());
 	delete controller;
 }
 Color Player::getColor() {

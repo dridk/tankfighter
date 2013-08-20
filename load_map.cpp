@@ -159,7 +159,9 @@ void KeymapEnumerator::enumerate(const char *control, const char *command) {
 	if (fp.size() <= idPlayer) fp.resize(idPlayer+1);
 	if (!fp[idPlayer]) fp[idPlayer] = new KeymapController;
 
+#ifdef DEBUG_KEYMAP
 	fprintf(stderr, "map %s to %s for player %d\n", control, cmd.c_str(), idPlayer);
+#endif
 	fp[idPlayer]->mapControl(control, cmd.c_str());
 }
 

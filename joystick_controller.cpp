@@ -26,7 +26,8 @@ JoystickController::JoystickController(int joyid0):joyid(joyid0) {
 	if (!hasZR && !hasUV) joytype = JT_XY;
 	if (hasZR && !hasUV) joytype = JT_XYZR;
 	if (hasUV && !hasZR) joytype = JT_XYUV;
-	if (hasU && hasZR) joytype = JT_XYUZR;
+	if (hasUV && hasZR) joytype = JT_XYUV;
+	if (hasU && hasZR && !hasV) joytype = JT_XYUZR;
 	if (hasZ && hasU && !hasV && !hasR) joytype = JT_XYUZ;
 	if (hasR && hasU && !hasV && !hasZ) joytype = JT_XYUR;
 	if (fabs(fabs(getJoyAxis(Joystick::Z))-1)<1e-3 && hasUV) {

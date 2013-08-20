@@ -17,7 +17,7 @@
 
 struct Block {
 	char *texture_name;
-	Polygon polygon;
+	TFPolygon polygon;
 	double angle;
 };
 
@@ -32,7 +32,7 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 
 #define reterror(err) {fprintf(stderr, "%s\n", err);return;}
 
-static bool read_json_polygon(Polygon &poly, const json_value *arr) {
+static bool read_json_polygon(TFPolygon &poly, const json_value *arr) {
 	poly.clear();
 	if (arr->type != json_array) return false;
 	poly.reserve(arr->u.array.length);

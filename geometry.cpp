@@ -303,7 +303,7 @@ static void prolongateSegment(Segment &s, double distance) {
 
 /* polygons are convex. Last point is implicitly connected to first */
 /* consequently, a triangle as a size() of 3 */
-Vector2d barycenter(const Polygon &poly) {
+Vector2d barycenter(const TFPolygon &poly) {
 	Vector2d c(0,0);
 	for(size_t i=0; i < poly.size(); i++) {
 		c += poly[i];
@@ -330,7 +330,7 @@ static void orientSegment(Segment &segt, bool trigoDirect) {
 		std::swap(segt.pt1, segt.pt2);
 	}
 }
-static void roundAugmentPolygon(const Polygon &poly, double augment, std::vector<ComplexShape> &shapes, bool filled) {
+static void roundAugmentPolygon(const TFPolygon &poly, double augment, std::vector<ComplexShape> &shapes, bool filled) {
 	shapes.clear();
 	if (poly.size() <= 2 || vectorModule(poly[0] - poly[1]) <= 1e-6) return;
 	shapes.reserve(3*poly.size());
@@ -393,7 +393,7 @@ static bool inComplexShape(const std::vector<ComplexShape> &shapes, const Vector
 	return inIncludedPolygon;
 }
 
-void Rectangle2Polygon(const DoubleRect &r, Polygon &poly) {
+void Rectangle2Polygon(const DoubleRect &r, TFPolygon &poly) {
 	poly.resize(4);
 	
 	for(size_t i=0; i < 4; i++) { /* notice: direct trigo order used here */
@@ -404,7 +404,7 @@ void Rectangle2Polygon(const DoubleRect &r, Polygon &poly) {
 	}
 }
 
-void RotatePolygon(Polygon &polygon, double angle) {
+void RotatePolygon(TFPolygon &polygon, double angle) {
 	if (polygon.size() <= 1) return;
 	Vector2f pt0(polygon[0].x, polygon[0].y);
 	Transform rot;

@@ -3,5 +3,5 @@
 #include "coretypes.h"
 #include <vector>
 
-typedef std::vector<Vector2d> Polygon;
+typedef std::vector<Vector2d> TFPolygon;
 #endif

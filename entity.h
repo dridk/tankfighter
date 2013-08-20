@@ -17,7 +17,7 @@ class Entity
 	Entity(EntityShape shape, Engine *engine);
 	virtual ~Entity();
 	virtual Vector2d getSize() const = 0;
-	virtual void getPolygon(Polygon &poly); /* need only to be defined if shape == SHAPE_POLYGON */
+	virtual void getPolygon(TFPolygon &poly); /* need only to be defined if shape == SHAPE_POLYGON */
 
 	/* called by graphics engine */
 	virtual void draw(sf::RenderTarget &target) const = 0;

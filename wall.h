@@ -11,11 +11,11 @@ class Wall: public Entity
 {
 	public:
 	Wall(double x, double y, double w, double h, double angle, const char *texture_name, Engine *engine);
-	Wall(const Polygon &polygon, double angle, const char *texture_name, Engine *engine);
+	Wall(const TFPolygon &polygon, double angle, const char *texture_name, Engine *engine);
 	virtual ~Wall();
 	virtual Vector2d getSize() const;
-	virtual void getPolygon(Polygon &poly);
-	Polygon getStraightPolygon(void) const;
+	virtual void getPolygon(TFPolygon &poly);
+	TFPolygon getStraightPolygon(void) const;
 	virtual double getTextureAngle() const;
 
 	virtual void draw(sf::RenderTarget &target) const;
@@ -24,13 +24,13 @@ class Wall: public Entity
 	std::string getTextureName(void) const;
 
 	private:
-	void ConstructWall(const Polygon &polygon, double angle, const char *texture_name);
+	void ConstructWall(const TFPolygon &polygon, double angle, const char *texture_name);
 	DoubleRect getBoundingRectangle() const;
 	void ComputePosition();
-	Polygon polygon, straight_polygon;
+	TFPolygon polygon, straight_polygon;
 	std::string texture_name;
 	float angle;
 };
 
-DoubleRect getPolyBounds(const Polygon &polygon);
+DoubleRect getPolyBounds(const TFPolygon &polygon);
 #endif

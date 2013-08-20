@@ -14,17 +14,17 @@ using namespace sf;
 Wall::Wall(double x, double y, double w, double h, double angle0, const char *texture_name0, Engine *engine)
 		:Entity(SHAPE_POLYGON, engine) {
 	DoubleRect r;
-	Polygon poly;
+	TFPolygon poly;
 	r.left = x; r.top = y;
 	r.width = w; r.height = h;
 	Rectangle2Polygon(r, poly);
 	ConstructWall(poly, angle0, texture_name0);
 }
-Wall::Wall(const Polygon &polygon0, double angle0, const char *texture_name0, Engine *engine)
+Wall::Wall(const TFPolygon &polygon0, double angle0, const char *texture_name0, Engine *engine)
 		:Entity(SHAPE_POLYGON, engine) {
 	ConstructWall(polygon0, angle0, texture_name0);
 }
-void Wall::ConstructWall(const Polygon &polygon0, double angle0, const char *texture_name0) {
+void Wall::ConstructWall(const TFPolygon &polygon0, double angle0, const char *texture_name0) {
 	angle = angle0;
 	straight_polygon = polygon0;
 	polygon = polygon0;
@@ -42,7 +42,7 @@ void Wall::ComputePosition() {
 	position.x = r.left;
 	position.y = r.top;
 }
-DoubleRect getPolyBounds(const Polygon &polygon) {
+DoubleRect getPolyBounds(const TFPolygon &polygon) {
 	Vector2d minp, maxp;
 	if (polygon.size() > 0) minp = maxp = polygon[0];
 	for(size_t i=0; i < polygon.size(); i++) {
@@ -56,7 +56,7 @@ DoubleRect getPolyBounds(const Polygon &polygon) {
 DoubleRect Wall::getBoundingRectangle() const {
 	return getPolyBounds(polygon);
 }
-Polygon Wall::getStraightPolygon(void) const {
+TFPolygon Wall::getStraightPolygon(void) const {
 	return straight_polygon;
 }
 void Wall::draw(sf::RenderTarget &target) const {
@@ -84,7 +84,7 @@ void Wall::event_received(EngineEvent *event) {
 std::string Wall::getTextureName(void) const {
 	return texture_name;
 }
-void Wall::getPolygon(Polygon &opoly) {
+void Wall::getPolygon(TFPolygon &opoly) {
 	opoly = polygon;
 }
 double Wall::getTextureAngle() const {return angle;}

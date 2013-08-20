@@ -22,6 +22,8 @@ using namespace sf;
 static bool interacts(Engine *engine, MoveContext &ctx, Entity *a, Entity *b);
 
 
+#define DEBUG_JOYSTICK
+
 struct MissileCounter
 {
 	size_t i;

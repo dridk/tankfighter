@@ -19,7 +19,7 @@ struct Circle {
 struct GeomPolygon {
 	bool filled;
 	GeomPolygon() {filled=true;}
-	Polygon polygon;
+	TFPolygon polygon;
 };
 struct CircleArc {
 	Circle circle;
@@ -58,6 +58,6 @@ void normalizeVector(Vector2d &v, double new_module);
 double angle_from_dxdy(double dx, double dy);
 void normalizeAngle(double &angle);
 void normalizeAngle(float &angle);
-void Rectangle2Polygon(const DoubleRect &r, Polygon &poly);
-void RotatePolygon(Polygon &polygon, double angle);
+void Rectangle2Polygon(const DoubleRect &r, TFPolygon &poly);
+void RotatePolygon(TFPolygon &polygon, double angle);
 #endif

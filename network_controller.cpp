@@ -537,14 +537,14 @@ void NetworkClient::setMissilePosition(MissilePosition &mpos) {
 	ml->setPosition(Vector2d(us2fl(mpos.cur_x, map_size.x), us2fl(mpos.cur_y, map_size.y)));
 	ml->setAngle(us2fl(mpos.curAngle, 2*M_PI));
 }
-void Polygon2AP(const Polygon &poly, ApproxPolygon &apoly, unsigned width, unsigned height) {
+void Polygon2AP(const TFPolygon &poly, ApproxPolygon &apoly, unsigned width, unsigned height) {
 	apoly.resize(poly.size());
 	for(size_t i=0; i < poly.size(); i++) {
 		apoly[i].x = fl2us(poly[i].x, width);
 		apoly[i].y = fl2us(poly[i].y, height);
 	}
 }
-void AP2Polygon(const ApproxPolygon &apoly, Polygon &poly, unsigned width, unsigned height) {
+void AP2Polygon(const ApproxPolygon &apoly, TFPolygon &poly, unsigned width, unsigned height) {
 	poly.resize(apoly.size());
 	for(size_t i=0; i < apoly.size(); i++) {
 		poly[i].x = us2fl(apoly[i].x, width);
@@ -555,7 +555,7 @@ void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::
 	engine->defineMapSize(width, height);
 	for(size_t i=0; i < blocks.size(); i++) {
 		BlockM &b=blocks[i];
-		Polygon poly;
+		TFPolygon poly;
 		AP2Polygon(b.apolygon, poly, width, height);
 		engine->add(new Wall(poly, b.angle, b.texture_name, engine));
 	}

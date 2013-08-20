@@ -13,7 +13,10 @@ class TextureCache {
 	sf::Texture *getTexture(unsigned ID);
 	sf::Sprite  *getSprite(unsigned ID);
 	sf::Sprite  *getSprite(const char *name);
+	
+	
 	private:
+	unsigned loadTexture(const char *name);
 	typedef std::map<std::string, unsigned> MapType;
 	typedef MapType::iterator MapIterator;
 

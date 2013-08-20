@@ -80,42 +80,72 @@ static std::string texturePath(const std::string dir, const std::string name, co
 	if (access(p1.c_str(), R_OK) != -1) return p1;
 	p1 = dir + name + ".jpg";
 	if (access(p1.c_str(), R_OK) != -1) return p1;
-	return dir + name + ".jpeg";
+	p1 = dir + name + ".jpeg";
+	if (access(p1.c_str(), R_OK) != -1) return p1;
+	return "";
 }
 
-unsigned TextureCache::getTextureID(const char *name) {
+unsigned TextureCache::loadTexture(const char *name) {
 	std::string path = texturePath(parameters.spritesDirectory(), name, parameters.spritesExtension());
-	MapIterator it = idmap.find(path);
-	if (it == idmap.end()) {
-		textures.push_back(Texture());
-		sprites.push_back(Sprite());
-		Image image;
-		Vector2u disp_size;
-		Vector2u img_size;
-		load_gl_image(image, path.c_str(), disp_size);
-		img_size = image.getSize();
-		Texture &tex = textures[textures.size()-1];
-		Sprite &spr = sprites[sprites.size()-1];
-		tex.loadFromImage(image);
-		Vector2f scal(double(disp_size.x) / img_size.x, double(disp_size.y) / img_size.y);
-		spr.setScale(scal);
-		spr.setTexture(tex);
-		tex.setRepeated(false);
-		tex.setSmooth(true);
-		idmap.insert(MapType::value_type(path, textures.size()-1));
-		return textures.size()-1;
+	
+	if (path == "") return (unsigned)-1;
+	Image image;
+	Vector2u disp_size;
+	Vector2u img_size;
+	if (!load_gl_image(image, path.c_str(), disp_size)) {
+		return (unsigned)-1;
 	}
-	return (*it).second;
+	img_size = image.getSize();
+	textures.push_back(Texture());
+	Texture &tex = textures[textures.size()-1];
+	if (!tex.loadFromImage(image)) {textures.pop_back();return (unsigned)-1;}
+	tex.setRepeated(false);
+	tex.setSmooth(true);
+	
+	sprites.push_back(Sprite());
+	Sprite &spr = sprites[sprites.size()-1];
+	Vector2f scal(double(disp_size.x) / img_size.x, double(disp_size.y) / img_size.y);
+	spr.setScale(scal);
+	spr.setTexture(tex);
+	idmap.insert(MapType::value_type(path, textures.size()-1));
+	return textures.size()-1;
+}
+unsigned TextureCache::getTextureID(const char *name) {
+	MapIterator it = idmap.find(name);
+	if (it != idmap.end()) return (*it).second;
+	
+	unsigned index = loadTexture(name);
+	idmap.insert(MapType::value_type(name, index));
+	return index;
 }
 sf::Texture *TextureCache::getTexture(unsigned ID) {
+	if (ID == (unsigned)-1) return &textures[0];
 	return &textures[ID];
 }
 sf::Sprite *TextureCache::getSprite(unsigned ID) {
+	if (ID == (unsigned)-1) return &sprites[0];
 	return &sprites[ID];
 }
 sf::Sprite *TextureCache::getSprite(const char *name) {
 	unsigned ID=getTextureID(name);
 	return getSprite(ID);
 }
-TextureCache::TextureCache() {}
+TextureCache::TextureCache() {
+	/* create fallback texture */
+	textures.push_back(Texture());
+	sprites.push_back(Sprite());
+	Texture &tex=textures[0];
+	Sprite  &spr=sprites[0];
+	Image img;
+
+	img.create(2,2);
+	img.setPixel(0,0,Color::Black);
+	img.setPixel(1,1,Color::Black);
+	img.setPixel(0,1,Color::White);
+	img.setPixel(1,0,Color::White);
+	tex.loadFromImage(img);
+	
+	spr.setTexture(tex);
+	spr.setScale(32,32);
+}
 TextureCache::~TextureCache() {}

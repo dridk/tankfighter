@@ -63,18 +63,25 @@ void Wall::draw(sf::RenderTarget &target) const {
 	if (texture_name == "") return;
 	TextureCache *cache = getEngine()->getTextureCache();
 	unsigned ID = cache->getTextureID(texture_name.c_str());
+	Vector2f texscale = cache->getSprite(ID)->getScale();
+	Texture *texture = cache->getTexture(ID);
+	
 	DoubleRect r = getPolyBounds(getStraightPolygon());
 	ConvexShape shape(polygon.size());
 	shape.setPosition(position.x, position.y);
 	shape.setRotation(180/M_PI*angle);
+	shape.setTexture(texture);
+	texture->setRepeated(true);
+	shape.setTextureRect(IntRect(0,0,r.width/texscale.x,r.height/texscale.y));
+	shape.setScale(texscale);
 	const Transform &itr = shape.getInverseTransform();
+	
 	for(size_t i=0; i < polygon.size(); i++) {
 		Vector2f pt(polygon[i].x, polygon[i].y);
 		shape.setPoint(i, itr.transformPoint(pt));
 	}
-	shape.setTexture(cache->getTexture(ID));
-	shape.setTextureRect(IntRect(0,0,r.width,r.height));
 	target.draw(shape);
+	texture->setRepeated(false);
 }
 Vector2d Wall::movement(sf::Int64 tm) {
 	return Vector2d(0,0);

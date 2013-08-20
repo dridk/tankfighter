@@ -31,15 +31,19 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 	pkg_search_module(FC2 REQUIRED fontconfig >= 2.00)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 
-include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS})
+########## SEARCH OpenGL #####################
+find_package(OpenGL REQUIRED)
+
+
+include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS})
 link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS})
 message(STATUS "link_directories ${LINK_DIRECTORIES}")
 # define main executable target
-add_executable (tankfighter parse_json.cpp fc.cpp input.cpp messages.cpp menu.cpp parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
+add_executable (tankfighter image_helper.c parse_json.cpp fc.cpp input.cpp messages.cpp menu.cpp parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
 
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh)
 
-target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES})
+target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES})
 string (REPLACE ";" " " SFML2_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
 set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER}")
 set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${SFML2_CFLAGS_OTHER}")

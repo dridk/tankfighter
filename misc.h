@@ -30,4 +30,6 @@ std::string tostring(const T &x) {
 	o << x;
 	return o.str();
 }
+char *cstrdup(const char *p);
+
 #endif

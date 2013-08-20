@@ -65,3 +65,10 @@ bool string2dbl(const char *s, double *v) {
 	if (sscanf(s, "%lf%n", v, &cnt)<=0 || cnt != int(strlen(s))) {*v=0;return false;}
 	return true;
 }
+char *cstrdup(const char *p) {
+	size_t ln = strlen(p);
+	char *out = (char*)malloc(ln+1);
+	if (!out) return NULL;
+	memcpy(out, p, ln+1);
+	return out;
+}

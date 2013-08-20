@@ -39,13 +39,6 @@ static const char *NMF_Block = "Sf";
 static const char *NMF_BlockPoint = "ss";
 static const char *NMF_PlayerScore = "uu";
 
-static char *cstrdup(const char *p) {
-	size_t ln = strlen(p);
-	char *out = (char*)malloc(ln+1);
-	if (!out) return NULL;
-	memcpy(out, p, ln+1);
-	return out;
-}
 /********************** conversion helpers *********************/
 static unsigned short fl2us(double fl, double maxval) {
 	return static_cast<unsigned short>(fl/maxval*65536.0);

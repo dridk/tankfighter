@@ -255,8 +255,14 @@ static bool pointMovesToCircleArc(MoveContext &ctx, const CircleArc &arc) { /* o
 	Vector2d A;
 	const Circle &circle = arc.circle;
 
-	if (!inCircle(ctx.vect.pt2, circle)) {
+	if (!inDiscusArc(arc, ctx.vect.pt2)) {
 		return false; /* assume being outside or exiting something is not interacting */
+	}
+	if (inDiscusArc(arc, ctx.vect.pt1)) {
+		if (ctx.interaction == IT_GHOST) return true;
+		if (ctx.interaction == IT_CANCEL) {vect.pt2 = vect.pt1;return true;}
+		Vector2d outvect;
+		vect.pt1 = repulseFromCircle(vect.pt1, circle, outvect, parameters.minWallDistance()); 
 	}
 	if (!circleIntersectsSegment(A, vect, circle)) return false; /* main collision detection */
 	

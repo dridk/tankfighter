@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.4)
 project (tankfighter)
 
 
@@ -32,11 +32,21 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 
 ########## SEARCH OpenGL #####################
-find_package(OpenGL REQUIRED)
+if(PKG_CONFIG_FOUND)
+	pkg_search_module(OPENGL gl)
+endif(PKG_CONFIG_FOUND)
+
+if (OPENGL_FOUND)
+else(OPENGL_FOUND)
+	find_package(OpenGL REQUIRED)
+	set(OPENGL_LDFLAGS_OTHER "")
+	set(OPENGL_CFLAGS_OTHER "")
+	set(OPENGL_LIBRARY_DIRS "")
+endif(OPENGL_FOUND)
 
 
 include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS})
-link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS})
+link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS} ${OPENGL_LIBRARY_DIRS})
 message(STATUS "link_directories ${LINK_DIRECTORIES}")
 # define main executable target
 add_executable (tankfighter image_helper.c parse_json.cpp fc.cpp input.cpp messages.cpp menu.cpp parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
@@ -44,9 +54,10 @@ add_executable (tankfighter image_helper.c parse_json.cpp fc.cpp input.cpp messa
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh)
 
 target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES})
-string (REPLACE ";" " " SFML2_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
-set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER}")
-set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${SFML2_CFLAGS_OTHER}")
+string (REPLACE ";" " " X_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER} ${OPENGL_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
+set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${X_LDFLAGS_OTHER}")
+string (REPLACE ";" " " X_CFLAGS_OTHER "${SFML2_CFLAGS_OTHER} ${FC2_CFLAGS_OTHER} ${OPENGL_CFLAGS_OTHER}")
+set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${X_CFLAGS_OTHER}")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 	install (TARGETS tankfighter DESTINATION bin)

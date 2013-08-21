@@ -4,7 +4,7 @@
 #include "misc.h"
 #include <unistd.h>
 #include <algorithm>
-#include <gl/gl.h>
+#include <GL/gl.h>
 #include <string.h>
 
 using namespace sf;

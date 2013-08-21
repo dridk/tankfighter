@@ -515,16 +515,6 @@ void Engine::draw(void) {
 static double getEntityRadius(Entity *a) {
 	return a->getSize().x/2;
 }
-static DoubleRect getEntityBoundingRectangle(Entity *a) {
-	Vector2d pos = a->position;
-	Vector2d size = a->getSize();
-	DoubleRect r;
-	r.left = pos.x;
-	r.top  = pos.y;
-	r.width  = size.x;
-	r.height = size.y;
-	return r;
-}
 static Circle getEntityCircle(Entity *a) {
 	Circle circle;
 	circle.filled = true;

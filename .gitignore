@@ -1,8 +1,10 @@
 tankfighter.exe
+tankfighter
 keys.cpp
 install_manifest.txt
 cmake_install.cmake
 Makefile
 CMakeCache.txt
 CMakeFiles
-
+TODO
+TODO.TXT

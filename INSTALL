@@ -1,0 +1,47 @@
+tankfighter
+===========
+
+tank game made with SFML
+
+========== COMPILING on Win32 ==========
+You need
+	* CMake >= 2.4
+	* UnxUtils (Native Win32 ports of some GNU utilities)
+	* TDM-GCC/MinGW compiler & environment.
+	* SFML-2.x static libraries and headers (with compatible exception system: either SJLJ or DW2)
+	* OpenGL headers (comes in standard with TDM-GCC)
+******** defining environment variables ********
+Put TDM-GCC and CMake bin directories in the PATH as well as UnxUtils bin directory.
+Set the SFML_ROOT environment variable to the SFML directory so that %SFML_ROOT%/lib and %SFML_ROOT%/include directories contain libraries and headers.
+Copy the FindSFML.cmake file you got with SFML-2.x archive into the CMake Modules directory. This directory should be in the share/cmake-2.x/Modules subdirectory of the CMake install directory.
+
+************* Building *******************
+Now, run this command:
+$ mkwin.bat
+
+It should automatically invoke cmake in debug mode to generate MinGW makefiles.
+Then, it should auto-generate keys.cpp (this requires the SFML_ROOT environment variable to be defined).
+Then, it should invoke the MinGW make command.
+
+************** Explanation **************
+FindSFML.cmake allows CMake to find the SFML library & headers, but requires the SFML_ROOT environment variable to be set.
+Moreover, SFML_ROOT is used by the generate_keys.cpp.sh script to find the Keyboard.hpp, Joystick.hpp and Mouse.hpp SFML headers in order to auto-generate keys.cpp.
+*********** Alternative way *************
+Rather than setting SFML_ROOT, you may  get the pkg-config.exe program, set the PKG_CONFIG_PATH environment variable to a pkgconfig directory, and store a sfml-all.pc file containing the SFML paths.
+Of course, you should be familiar with pkg-config and pc files.
+
+============== COMPILING on GNU/Linux ==============
+You need
+	* CMake >= 2.4
+	* GCC
+	* SFML 2.x with libraries and headers. Just compile it from source!
+	* OpenGL headers (mesa-common-dev package on Ubuntu)
+	* fontconfig2 headers (libfontconfig1-dev on Ubuntu)
+
+Now, run these commands:
+$ cmake .
+$ make
+$ ./tankfighter
+
+You are done!
+

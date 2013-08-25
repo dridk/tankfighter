@@ -7,6 +7,12 @@
 #include <GL/gl.h>
 #include <string.h>
 
+#ifdef WITH_FOG
+#include <Fog/Core.h>
+#include <Fog/G2d.h>
+using Fog::StringW;
+#endif
+
 using namespace sf;
 
 bool supports_rectangle_textures() {
@@ -31,20 +37,64 @@ bool supports_rectangle_textures() {
 	return supports;
 }
 
-bool load_from_pixels(Image &img, const void *pixels, size_t width, size_t height, size_t channels) {
+static bool load_from_pixels(Image &img, const void *pixels, size_t width, size_t height, size_t channels, bool rendian=false) {
 	img.create(width, height);
 	const unsigned char *p0 = (const unsigned char*)pixels;
 	for(size_t y=0; y < height; y++) {
 		const unsigned char *p = p0+y*width*channels;
 		for(size_t x=0; x < width; x++) {
-			img.setPixel(x,y,Color(p[0],p[1],p[2],p[3]));
+			img.setPixel(x,y,(rendian?Color(p[2],p[1],p[0],p[3]):Color(p[0],p[1],p[2],p[3])));
 			p += channels;
 		}
 	}
 	return true;
 }
+#ifdef WITH_FOG
+bool loadSvgFile(Image &img, const char *path) {
+	Fog::Application app(StringW::fromAscii8("UI"));
+	Fog::Logger::getGlobal()->setSeverity(100);
+	Fog::Logger::getLocal()->setSeverity(100);
+	
+	size_t width = 400, height = 400;
+	Fog::SvgDocument svg;
+	unsigned err;
+	if ((err=svg.readFromFile(StringW::fromAscii8(path)))) {
+		fprintf(stderr, "Failed to load SVG %s error %05X\n", path, err);
+		return false;
+	}
+	Fog::SizeF size = svg.getDocumentSize();
+	if (size.w >= 2 && size.w <= 2048) width = size.w;
+	if (size.h >= 2 && size.h <= 2048) height = size.h;
+	svg.getResourceManager()->loadQueuedResources();
+	Fog::SizeI si;
+	void *imgdata=malloc(width*height*4);
+	if (!imgdata) return false;
+	si.w = width; si.h = height;
+	Fog::ImageBits imgbits(si, Fog::IMAGE_FORMAT_PRGB32, width*4, (unsigned char*)imgdata);
+	Fog::Painter painter;
+	if ((err=painter.begin(imgbits))) {
+		fprintf(stderr, "Failed to select surface to SVG rendering %s error %05X\n", path, err);
+	}
+	
+	painter.setSource(Fog::Argb32(0xFFFFFFFF));
+	painter.fillAll();
+	if ((err=svg.render(&painter))) {
+		fprintf(stderr, "Failed to render SVG %s error %05X\n", path, err);
+	}
+	painter.flush(Fog::PAINTER_FLUSH_SYNC);
+	painter.end();
+	load_from_pixels(img, imgdata, width, height, 4, true);
+	free(imgdata);
+	return true;
+}
+#endif
 bool load_gl_image(Image &img, const char *path, Vector2u &disp_size) {
-	if (!img.loadFromFile(path)) return false;
+#ifdef WITH_FOG
+	if (strlen(path) >= 4 && strcmp(path+strlen(path)-4, ".svg")==0) {
+		if (!loadSvgFile(img, path)) return false;
+	} else
+#endif
+	       if (!img.loadFromFile(path)) return false;
 	Vector2u osize;
 	Vector2u size = img.getSize();
 	size_t msz = Texture::getMaximumSize();
@@ -83,6 +133,10 @@ static std::string texturePath(const std::string dir, const std::string name, co
 	if (access(p1.c_str(), R_OK) != -1) return p1;
 	p1 = dir + name + ".jpeg";
 	if (access(p1.c_str(), R_OK) != -1) return p1;
+#ifdef WITH_FOG
+	p1 = dir + name + ".svg";
+	if (access(p1.c_str(), R_OK) != -1) return p1;
+#endif
 	return "";
 }
 

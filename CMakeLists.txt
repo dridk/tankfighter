@@ -5,7 +5,7 @@ project (tankfighter)
 # define SFML requirement
 include(FindPkgConfig)
 
-set (CMAKE_CXX_FLAGS_DEBUG "-Wall -g -O1 -pedantic -std=c++0x")
+set (CMAKE_CXX_FLAGS_DEBUG "-Wall -g -O1 -std=c++0x")
 set (CMAKE_C_FLAGS_DEBUG "-Wall -g -O1 -pedantic -std=c99")
 set (CMAKE_CXX_FLAGS_RELEASE "-O2")
 set (CMAKE_C_FLAGS_RELEASE "-O2")
@@ -25,7 +25,19 @@ else(SFML2_FOUND)
 	set(SFML2_CFLAGS_OTHER "")
 	set(SFML2_LIBRARY_DIRS "")
 endif(SFML2_FOUND)
-
+########### SEARCH Fog SVG library #########
+if(PKG_CONFIG_FOUND)
+	pkg_search_module(FOG fog)
+endif(PKG_CONFIG_FOUND)
+if(FOG_FOUND)
+	set(FOG_CFLAGS_OTHER "${FOG_CFLAGS_OTHER} -DWITH_FOG")
+else(FOG_FOUND)
+	set(FOG_INCLUDE_DIRS "")
+	set(FOG_LIBRARY_DIRS "")
+	set(FOG_LIBRARIES "")
+	set(FOG_CFLAGS_OTHER "")
+	set(FOG_LDFLAGS_OTHER "")
+endif(FOG_FOUND)
 ########### SEARCH fontconfig2 #############
 if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
 	pkg_search_module(FC2 REQUIRED fontconfig >= 2.00)
@@ -45,18 +57,18 @@ else(OPENGL_FOUND)
 endif(OPENGL_FOUND)
 
 
-include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS})
-link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS} ${OPENGL_LIBRARY_DIRS})
+include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${FOG_INCLUDE_DIRS})
+link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS} ${OPENGL_LIBRARY_DIRS} ${FOG_LIBRARY_DIRS})
 message(STATUS "link_directories ${LINK_DIRECTORIES}")
 # define main executable target
 add_executable (tankfighter image_helper.c parse_json.cpp fc.cpp input.cpp messages.cpp menu.cpp parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
 
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh)
 
-target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES})
-string (REPLACE ";" " " X_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER} ${OPENGL_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
+target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES} ${FOG_LIBRARIES})
+string (REPLACE ";" " " X_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER} ${OPENGL_LDFLAGS_OTHER} ${FOG_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
 set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${X_LDFLAGS_OTHER}")
-string (REPLACE ";" " " X_CFLAGS_OTHER "${SFML2_CFLAGS_OTHER} ${FC2_CFLAGS_OTHER} ${OPENGL_CFLAGS_OTHER}")
+string (REPLACE ";" " " X_CFLAGS_OTHER "${SFML2_CFLAGS_OTHER} ${FC2_CFLAGS_OTHER} ${OPENGL_CFLAGS_OTHER} ${FOG_CFLAGS_OTHER}")
 set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${X_CFLAGS_OTHER}")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")

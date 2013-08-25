@@ -51,7 +51,6 @@ static bool load_from_pixels(Image &img, const void *pixels, size_t width, size_
 }
 #ifdef WITH_FOG
 bool loadSvgFile(Image &img, const char *path) {
-	Fog::Application app(StringW::fromAscii8("UI"));
 	Fog::Logger::getGlobal()->setSeverity(100);
 	Fog::Logger::getLocal()->setSeverity(100);
 	

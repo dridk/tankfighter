@@ -103,11 +103,6 @@ void Missile::event_received(EngineEvent *event) {
 		}
 	} else if (CollisionEvent *ce = dynamic_cast<CollisionEvent*>(event)) {
 		if (ce->first == static_cast<Entity*>(this)) {
-#if 0
-			if (ce->second == getEngine()->getMapBoundariesEntity()) {
-				getEngine()->destroy(this);
-			}
-#endif
 			if (dynamic_cast<Wall*>(ce->second)) {
 				ce->interaction = IT_BOUNCE;
 			} else if (static_cast<Entity*>(player) != ce->second && (dying = dynamic_cast<Player*>(ce->second))) {

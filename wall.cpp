@@ -11,26 +11,27 @@
 
 using namespace sf;
 
-Wall::Wall(double x, double y, double w, double h, double angle0, const char *texture_name0, Engine *engine)
+Wall::Wall(double x, double y, double w, double h, double angle0, const TextureDesc &texture0, Engine *engine)
 		:Entity(SHAPE_POLYGON, engine) {
 	DoubleRect r;
 	TFPolygon poly;
 	r.left = x; r.top = y;
 	r.width = w; r.height = h;
 	Rectangle2Polygon(r, poly);
-	ConstructWall(poly, angle0, texture_name0);
+	ConstructWall(poly, angle0, texture0);
 }
-Wall::Wall(const TFPolygon &polygon0, double angle0, const char *texture_name0, Engine *engine)
+Wall::Wall(const TFPolygon &polygon0, double angle0, const TextureDesc &texture0, Engine *engine)
 		:Entity(SHAPE_POLYGON, engine) {
-	ConstructWall(polygon0, angle0, texture_name0);
+	ConstructWall(polygon0, angle0, texture0);
 }
-void Wall::ConstructWall(const TFPolygon &polygon0, double angle0, const char *texture_name0) {
+void Wall::ConstructWall(const TFPolygon &polygon0, double angle0, const TextureDesc &texture0) {
+	is_map_boundaries = false;
 	angle = angle0;
 	straight_polygon = polygon0;
 	polygon = polygon0;
 	RotatePolygon(polygon, angle0);
 	ComputePosition();
-	texture_name = (texture_name0?texture_name0:"");
+	texture = texture0;
 }
 Wall::~Wall() {}
 Vector2d Wall::getSize() const {
@@ -59,29 +60,68 @@ DoubleRect Wall::getBoundingRectangle() const {
 TFPolygon Wall::getStraightPolygon(void) const {
 	return straight_polygon;
 }
+TFPolygon Wall::getPolygon(void) const {
+	return polygon;
+}
 void Wall::draw(sf::RenderTarget &target) const {
-	if (texture_name == "") return;
 	TextureCache *cache = getEngine()->getTextureCache();
-	unsigned ID = cache->getTextureID(texture_name.c_str());
-	Vector2f texscale = cache->getSprite(ID)->getScale();
-	Texture *texture = cache->getTexture(ID);
+	unsigned ID = cache->getTextureID(texture.name.c_str());
+	Vector2f corescale = cache->getSprite(ID)->getScale();
+	Vector2f texscale = corescale;
+	Texture *sftexture = cache->getTexture(ID);
+	Vector2u texsz = sftexture->getSize();
 	
-	DoubleRect r = getPolyBounds(getStraightPolygon());
+	TFPolygon rpoly = /*texture.mapping == MAPPING_TILE_ABSOLUTE ? polygon :*/ getStraightPolygon();
+	DoubleRect r0 = getPolyBounds(rpoly);
+	if (texture.mapping == MAPPING_TILE_ABSOLUTE) RotatePolygon(rpoly, angle-texture.angle);
+	if (texture.mapping != MAPPING_TILE_ABSOLUTE) RotatePolygon(rpoly, -texture.angle);
+	DoubleRect r = getPolyBounds(rpoly);
 	ConvexShape shape(polygon.size());
-	shape.setPosition(position.x, position.y);
-	shape.setRotation(180/M_PI*angle);
-	shape.setTexture(texture);
-	texture->setRepeated(true);
-	shape.setTextureRect(IntRect(0,0,r.width/texscale.x,r.height/texscale.y));
-	shape.setScale(texscale);
+	if (texture.mapping != MAPPING_TILE_ABSOLUTE) {
+		shape.setRotation(180/M_PI*(angle + texture.angle));
+		shape.setOrigin(polygon[0].x, polygon[0].y);
+		shape.setPosition(polygon[0].x, polygon[0].y);
+	} else {
+		shape.setRotation(180/M_PI*texture.angle);
+		shape.setOrigin(polygon[0].x, polygon[0].y);
+		shape.setPosition(polygon[0].x, polygon[0].y);
+	}
+	shape.setTexture(sftexture);
+	sftexture->setRepeated(true);
+	
+	if (texture.mapping == MAPPING_STRETCH) {
+		texscale = Vector2f(r0.width/texsz.x * texture.xscale, r0.height/texsz.y  * texture.yscale);
+	} else {
+		texscale = Vector2f(corescale.x * texture.xscale, corescale.y * texture.yscale);
+	}
+	double xoff = 0, yoff = 0;
+	if (texture.mapping != MAPPING_TILE_ABSOLUTE) {
+		xoff += r.left - r0.left;
+		yoff += r.top - r0.top;
+	}
+	if (texture.mapping == MAPPING_TILE_ABSOLUTE) {
+		/* my requirement is about polygon[0] point alignment... */
+		/* I can compute where it should be on the texture */
+		/* And then, compute where the r.top/r.left should be on the texture...*/
+		Vector2f p0t(polygon[0].x, polygon[0].y);
+		Transform rottex;
+		rottex.rotate(-180/M_PI*texture.angle);
+		p0t = rottex.transformPoint(p0t);
+		
+		xoff += p0t.x + (r.left - polygon[0].x);
+		yoff += p0t.y + (r.top - polygon[0].y);
+	}
+	
+	shape.setTextureRect(IntRect(xoff/texscale.x + texture.xoff*corescale.x, yoff/texscale.y + texture.yoff*corescale.y, r.width/texscale.x, r.height/texscale.y));
+	shape.setFillColor(texture.color);
 	const Transform &itr = shape.getInverseTransform();
 	
-	for(size_t i=0; i < polygon.size(); i++) {
-		Vector2f pt(polygon[i].x, polygon[i].y);
-		shape.setPoint(i, itr.transformPoint(pt));
+	for(size_t i=0; i < rpoly.size(); i++) {
+		Vector2f pt(rpoly[i].x, rpoly[i].y);
+		shape.setPoint(i, pt);
 	}
 	target.draw(shape);
-	texture->setRepeated(false);
+	sftexture->setRepeated(false);
 }
 Vector2d Wall::movement(sf::Int64 tm) {
 	return Vector2d(0,0);
@@ -89,9 +129,31 @@ Vector2d Wall::movement(sf::Int64 tm) {
 void Wall::event_received(EngineEvent *event) {
 }
 std::string Wall::getTextureName(void) const {
-	return texture_name;
+	return texture.name;
 }
 void Wall::getPolygon(TFPolygon &opoly) {
 	opoly = polygon;
 }
 double Wall::getTextureAngle() const {return angle;}
+
+void TextureDesc::clear() {
+	name = "";
+	mapping = MAPPING_TILE;
+	color   = Color(255,255,255,255);
+	xscale = yscale = 1;
+	xoff = yoff = 0;
+	angle = 0;
+}
+TextureDesc::TextureDesc() {
+	clear();
+}
+TextureDesc::TextureDesc(const char *texture_name0) {
+	clear();
+	name=(texture_name0?texture_name0:"");
+}
+bool Wall::isMapBoundaries() const {
+	return is_map_boundaries;
+}
+void Wall::isMapBoundaries(bool v) {
+	is_map_boundaries = v;
+}

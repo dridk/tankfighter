@@ -215,7 +215,11 @@ void Engine::addPlayer(unsigned cid, int joyid) {
 	}
 }
 Entity *Engine::getMapBoundariesEntity() {
-	return map_boundaries_entity;
+	for (EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
+		Wall *wall = dynamic_cast<Wall*>(*it);
+		if (wall && wall->isMapBoundaries()) return wall;
+	}
+	return NULL;
 }
 TextureCache *Engine::getTextureCache(void) const {
 	return &texture_cache;
@@ -308,7 +312,6 @@ Engine::Engine():network(this),messages(this) {
 	msize.x = 1920;
 	msize.y = 1080;
 	network_menu = NULL;
-	map_boundaries_entity = NULL;
 	first_step = true;
 	must_quit = false;
 	is_fullscreen = parameters.fullscreen();
@@ -333,13 +336,6 @@ void Engine::map_boundaries_changed(void) {
 	Vector2d msz = map_size();
 	double width = msz.x, height = msz.y;
 
-	if (map_boundaries_entity) {
-		destroy(map_boundaries_entity);
-		map_boundaries_entity = NULL;
-	}
-	map_boundaries_entity = new Wall(0,0,width, height, 0, parameters.defaultBackgroundTexture().c_str(), this);
-	add(map_boundaries_entity);
-
 	if (!parameters.noGUI()) {
 		Vector2u wsz = window.getSize();
 		view.reset(FloatRect(0,0,wsz.x,wsz.y));
@@ -353,7 +349,6 @@ void Engine::clear_entities(void) {
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		delete (*it);
 	}
-	map_boundaries_entity = NULL;
 	entities.resize(0);
 }
 Engine::~Engine() {
@@ -483,10 +478,10 @@ void Engine::draw(void) {
 	scorepos.y = 16;
 	window.clear();
 	/* draw walls before other entities */
-	map_boundaries_entity->draw(window);
+	getMapBoundariesEntity()->draw(window);
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
-		if ((*it) == map_boundaries_entity) continue;
 		Wall *wall = dynamic_cast<Wall*>(*it);
+		if (wall && wall->isMapBoundaries()) continue;
 		if (wall) wall->draw(window);
 #ifdef DEBUG_OUTLINE
 		extern void drawGeomPolygon(RenderTarget &target, const GeomPolygon &geom, double augment);

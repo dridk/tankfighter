@@ -77,7 +77,6 @@ class Engine
 	Vector2d msize;
 	ControllerDefinitions cdef;
 	sf::Font score_font;
-	Entity *map_boundaries_entity;
 	sf::View view;
 	sf::RenderWindow window;
 	Entities entities;

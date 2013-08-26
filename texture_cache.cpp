@@ -58,7 +58,7 @@ bool loadSvgFile(Image &img, const char *path) {
 	Fog::SvgDocument svg;
 	unsigned err;
 	if ((err=svg.readFromFile(StringW::fromAscii8(path)))) {
-		fprintf(stderr, "Failed to load SVG %s error %05X\n", path, err);
+		fprintf(stderr, "Failed to load SVG %s error %05X ERR_XML_SAX_NO_DOCUMENT=%05X\n", path, err, Fog::ERR_XML_SAX_NO_DOCUMENT);
 		return false;
 	}
 	Fog::SizeF size = svg.getDocumentSize();

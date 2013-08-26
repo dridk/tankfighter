@@ -14,12 +14,65 @@
 #include "parse_json.h"
 #include "geometry.h"
 #include <math.h>
+#include <stdint.h>
 
 struct Block {
-	char *texture_name;
 	TFPolygon polygon;
 	double angle;
+	TextureDesc texture;
+	bool isMapBoundaries;
 };
+
+std::string json_string_to_stdstring(const json_value *v) {
+	std::string r;
+	char *p = json_string_to_cstring(v);
+	if (!p) return "";
+	r = p;
+	free(p);
+	return r;
+}
+bool json2texturedesc(const json_value *entity, TextureDesc &desc) {
+	desc.clear();
+	if (entity->type == json_string) {
+		desc.name = json_string_to_stdstring(entity);
+		return true;
+	}
+	if (entity->type != json_object) return false;
+	for(size_t j=0; j < entity->u.object.length; j++) {
+		const char *key = entity->u.object.values[j].name;
+		const json_value *value = entity->u.object.values[j].value;
+		try_assign_float_variable(&desc.xscale, "xscale", key, value);
+		try_assign_float_variable(&desc.yscale, "yscale", key, value);
+		double scale=0;
+		if (try_assign_double_variable(&scale, "scale", key, value)) {
+			desc.xscale = desc.yscale = scale;
+		}
+		try_assign_float_variable(&desc.xoff, "xoff", key, value);
+		try_assign_float_variable(&desc.yoff, "yoff", key, value);
+		double angle=0;
+		try_assign_double_variable(&angle, "angle", key, value);
+		if (fabs(angle) > 1e-6) {
+			desc.angle = M_PI/180*angle;
+		}
+		if (strcmp(key, "mapping")==0) {
+		if (char *mapping = json_string_to_cstring(value)) {
+			if (strcmp(mapping, "tile")==0) desc.mapping = MAPPING_TILE;
+			else if (strcmp(mapping, "stretch")==0) desc.mapping = MAPPING_STRETCH;
+			else if (strcmp(mapping, "absolute tile")==0) desc.mapping = MAPPING_TILE_ABSOLUTE;
+			else {
+				fprintf(stderr, "Unknown mapping type %s\n", mapping);
+			}
+			free(mapping);
+		} else {
+			fprintf(stderr, "Expected mapping type as JSON string\n");
+		}
+		}
+		if (strcmp(key, "image")==0) {
+			desc.name = json_string_to_stdstring(value);
+		}
+	}
+	return true;
+}
 
 class BlockEnumerator {
 	public:
@@ -51,6 +104,7 @@ static bool read_json_polygon(TFPolygon &poly, const json_value *arr) {
 static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char *json_path) {
 	json_value *p = json_parse_file(json_path, parameters.map_magic().c_str());
 	if (!p) return;
+	Block bgblock;
 
 	const json_value *width = access_json_hash(p, "width");
 	const json_value *height = access_json_hash(p, "height");
@@ -60,6 +114,21 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 	if (!(height && height->type == json_integer)) {
 		reterror("Map width must be specified as an integer");
 	} else map_size.y = height->u.integer;
+	
+	bgblock.angle = 0;
+	bgblock.isMapBoundaries = true;
+	DoubleRect bgrect(0,0,0,0);
+	bgrect.width = map_size.x;
+	bgrect.height = map_size.y;
+	Rectangle2Polygon(bgrect, bgblock.polygon);
+	const json_value *bgtexture = access_json_hash(p, "background");
+	if (bgtexture) {
+		json2texturedesc(bgtexture, bgblock.texture);
+	} else {
+		bgblock.texture.name = parameters.defaultBackgroundTexture();
+	}
+	blockenum->enumerate(bgblock);
+	
 	const json_value *blocks = access_json_hash(p, "blocks");
 	if (!blocks) reterror("Map lacks a blocks array!");
 	if (!blocks->type == json_array) reterror("Map blocks field should be an array!");
@@ -70,7 +139,7 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 			continue;
 		}
 		Block block;
-		block.texture_name = NULL;
+		block.isMapBoundaries = false;
 		block.angle = 0;
 		bool is_polygon=false;
 		DoubleRect rect(0,0,0,0);
@@ -86,7 +155,9 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 			if (fabs(degangle) >= 1e-4) {
 				block.angle = degangle/180*M_PI;
 			}
-			if (strcmp(key, "texture")==0 && value->type == json_string) block.texture_name = json_string_to_cstring(value);
+			if (strcmp(key, "texture")==0) {
+				json2texturedesc(value, block.texture);
+			}
 			if (strcmp(key, "points")==0) {
 				read_json_polygon(block.polygon, value);
 			}
@@ -94,12 +165,13 @@ static void enum_map(BlockEnumerator *blockenum, Vector2d &map_size, const char 
 				&& value->u.string.length == 7 && strncmp(value->u.string.ptr, "polygon", 7)==0) {
 				is_polygon = true;
 			}
+			if (strcmp(key, "background")==0) {
+			}
 		}
 		if (!is_polygon) {
 			Rectangle2Polygon(rect, block.polygon);
 		}
 		blockenum->enumerate(block);
-		if (block.texture_name) {free(block.texture_name);block.texture_name=NULL;}
 	}
 	json_value_free(p);
 }
@@ -184,7 +256,9 @@ void load_map(Engine *engine, const char *file_path) {
 }
 
 void BlockEnumerator::enumerate(const Block &block) {
-	engine->add(new Wall(block.polygon, block.angle, block.texture_name, engine));
+	Wall *wall = new Wall(block.polygon, block.angle, block.texture, engine);
+	wall->isMapBoundaries(block.isMapBoundaries);
+	engine->add(wall);
 }
 
 ControllerDefinitions::ControllerDefinitions() {}

@@ -71,10 +71,12 @@ void Wall::draw(sf::RenderTarget &target) const {
 	Texture *sftexture = cache->getTexture(ID);
 	Vector2u texsz = sftexture->getSize();
 	
-	TFPolygon rpoly = /*texture.mapping == MAPPING_TILE_ABSOLUTE ? polygon :*/ getStraightPolygon();
+	TFPolygon rpoly = getStraightPolygon();
 	DoubleRect r0 = getPolyBounds(rpoly);
+	
 	if (texture.mapping == MAPPING_TILE_ABSOLUTE) RotatePolygon(rpoly, angle-texture.angle);
-	if (texture.mapping != MAPPING_TILE_ABSOLUTE) RotatePolygon(rpoly, -texture.angle);
+	else RotatePolygon(rpoly, -texture.angle);
+	
 	DoubleRect r = getPolyBounds(rpoly);
 	ConvexShape shape(polygon.size());
 	if (texture.mapping != MAPPING_TILE_ABSOLUTE) {
@@ -114,7 +116,6 @@ void Wall::draw(sf::RenderTarget &target) const {
 	
 	shape.setTextureRect(IntRect(xoff/texscale.x + texture.xoff*corescale.x, yoff/texscale.y + texture.yoff*corescale.y, r.width/texscale.x, r.height/texscale.y));
 	shape.setFillColor(texture.color);
-	const Transform &itr = shape.getInverseTransform();
 	
 	for(size_t i=0; i < rpoly.size(); i++) {
 		Vector2f pt(rpoly[i].x, rpoly[i].y);

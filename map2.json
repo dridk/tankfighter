@@ -1,5 +1,5 @@
 {"type": "ktank-map", "version": "1.0", "width": 1920, "height": 1080
-, "background": {"image": "../../tiger", "mapping": "stretch"}
+, "background": {"image": "dirt", "mapping": "tile"}
 , "blocks": [
 	{"x": 100, "y":100, "w": 512, "h": 128, "texture": "bloc2", "angle": 15},
 	{"x": 400, "y":300, "w": 256, "h": 256, "texture": {"image":"bloc2", "mapping":"stretch", "xoff":0}, "angle": 30},

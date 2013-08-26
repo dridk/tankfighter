@@ -35,7 +35,7 @@ static void getPlayerPosition(Player *player, ApproxPlayerPosition &pos);
 static const char *NMF_PlayerPosition = "uusscc";
 static const char *NMF_MissilePosition = "uussspp";
 static const char *NMF_PlayerMovement = "8" "uffff" "ff";
-static const char *NMF_Block = "Sf";
+static const char *NMF_BlockHeader = "Sfu" "ffff" "fu";
 static const char *NMF_BlockPoint = "ss";
 static const char *NMF_PlayerScore = "uu";
 
@@ -55,6 +55,17 @@ static double us2fl(unsigned short us, double maxval) {
 }
 static double b2fl(Uint8 b, double maxval) {
 	return b*maxval/256.0;
+}
+static Color u2color(Uint32 c) {
+	Color cc;
+	cc.r = c & 0xFF;
+	cc.g = (c >> 8 ) & 0xFF;
+	cc.b = (c >> 16) & 0xFF;
+	cc.a = (c >> 24) & 0xFF;
+	return cc;
+}
+static Uint32 color2u(Color c) {
+	return c.r + (c.g << 8) + (c.b << 16) + (c.a << 24);
 }
 /***************************** MasterController ****************************/
 MasterController::MasterController(NetworkClient *client, Controller *phy):phy(phy),client(client) {
@@ -548,29 +559,41 @@ void AP2Polygon(const ApproxPolygon &apoly, TFPolygon &poly, unsigned width, uns
 		poly[i].y = us2fl(apoly[i].y, height);
 	}
 }
+static Wall *blockM2wall(const BlockM &b, const Vector2d &size, Engine *engine) {
+	TFPolygon poly;
+	AP2Polygon(b.apolygon, poly, size.x, size.y);
+	TextureDesc tex;
+	tex.name = b.h.texture_name;
+	tex.angle = b.h.textureAngle;
+	const TextureScales &sc = b.h.scales;
+	tex.xoff = sc.xoff; tex.yoff = sc.yoff;
+	tex.xscale = sc.xscale; tex.yscale = sc.yscale;
+	tex.mapping = (Mapping)b.h.mapping;
+	tex.color = u2color(b.h.color);
+	
+	Wall *wall = new Wall(poly, b.h.angle, tex, engine);
+	engine->add(wall);
+	return wall;
+}
 void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<BlockM> &blocks) {
 	engine->clear_entities();
+	Vector2d size(width, height);
 
 	for(size_t i=0; i < blocks.size(); i++) {
-		fprintf(stderr, "[next block1]\n");
-		BlockM &b=blocks[i];
-		TFPolygon poly;
-		AP2Polygon(b.apolygon, poly, width, height);
-		Wall *wall = new Wall(poly, b.angle, b.texture_name, engine);
-		engine->add(wall);
-		if (i == 0) {
-			Vector2d pt = poly[poly.size()-1];
-			fprintf(stderr, "map boundaries poly %gx%g w=%u h=%u\n", pt.x, pt.y, width, height);
-			wall->isMapBoundaries(true);
-		}
+		Wall *wall = blockM2wall(blocks[i], size, engine);
+		if (i == 0) wall->isMapBoundaries(true);
 	}
 	engine->defineMapSize(width, height);
 	engine->freeze(false);
 }
 static void wall2blockM(Wall *wall, BlockM &b, const Vector2d &size) {
 	Polygon2AP(wall->getStraightPolygon(), b.apolygon, size.x, size.y);
-	b.angle = wall->getAngle();
-	b.texture_name = cstrdup(wall->getTextureName().c_str());
+	b.h.texture_name = cstrdup(wall->getTextureName().c_str());
+	b.h.angle = wall->getAngle();
+	b.h.color = color2u(wall->getColor());
+	b.h.scales = wall->getTextureScales();
+	b.h.textureAngle = wall->getTextureAngle();
+	b.h.mapping = wall->getMappingType();
 }
 void CollectMapBlocks(Engine *engine, std::vector<BlockM> &blocks) {
 	BlockM b;
@@ -596,17 +619,6 @@ void killAllEntities(Engine *engine, bool killFlag, bool (*pred)(EType *entity) 
 		EType *en = dynamic_cast<EType*>(*it);
 		if (en && ((!pred) || pred(en))) en->setKilled(killFlag);
 	}
-}
-static Color u2color(Uint32 c) {
-	Color cc;
-	cc.r = c & 0xFF;
-	cc.g = (c >> 8 ) & 0xFF;
-	cc.b = (c >> 16) & 0xFF;
-	cc.a = (c >> 24) & 0xFF;
-	return cc;
-}
-static Uint32 color2u(Color c) {
-	return c.r + (c.g << 8) + (c.b << 16) + (c.a << 24);
 }
 void NetworkClient::reportNewPlayer(Player *pl, Uint32 toseqid, const RemoteClient &creator, const RemoteClient &target) {
 	if (!is_server) return;
@@ -685,10 +697,9 @@ bool NetworkClient::treatMessage(Message &msg) {
 		nmsg->client = msg.client; /* send back DefineMap to client */
 		
 		for(size_t i = 0; i < blocks.size(); ++i) {
-			BlockMpod bm={blocks[i].texture_name, blocks[i].angle};
-			nmsg->Append(&bm, NMF_Block);
+			nmsg->Append(&blocks[i].h, NMF_BlockHeader);
 			nmsg->AppendV(blocks[i].apolygon, NMF_BlockPoint);
-			free(blocks[i].texture_name);
+			free(blocks[i].h.texture_name);
 		}
 		willSendMessage(nmsg);
 		Engine *engine = getEngine();
@@ -800,15 +811,12 @@ bool NetworkClient::treatMessage(Message &msg) {
 		fprintf(stderr, "Receiving %d blocks from server\n", mapdef.block_count);
 		for(size_t i=0; i < mapdef.block_count; i++) {
 			BlockM bl;
-			BlockMpod bm;
-			if (!msg.Input(&bm, NMF_Block)) return false;
-			bl.texture_name = bm.texture_name;
-			bl.angle = bm.angle;
+			if (!msg.Input(&bl.h, NMF_BlockHeader)) return false;
 			if (!msg.InputV(bl.apolygon, NMF_BlockPoint)) return false;
 			blocks.push_back(bl);
 		}
 		load_map_from_blocks(getEngine(), mapdef.width, mapdef.height, blocks);
-		for(size_t i=0; i < blocks.size(); i++) free(blocks[i].texture_name);
+		for(size_t i=0; i < blocks.size(); i++) free(blocks[i].h.texture_name);
 		return true;
 	} else if (msg.type == NMT_S2C_PlayerDeath) {
 		PlayerDeathM pd;

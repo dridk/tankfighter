@@ -11,6 +11,7 @@
 
 using namespace sf;
 
+
 Wall::Wall(double x, double y, double w, double h, double angle0, const TextureDesc &texture0, Engine *engine)
 		:Entity(SHAPE_POLYGON, engine) {
 	DoubleRect r;
@@ -158,4 +159,18 @@ bool Wall::isMapBoundaries() const {
 }
 void Wall::isMapBoundaries(bool v) {
 	is_map_boundaries = v;
+}
+Color Wall::getColor(void) {
+	return texture.color;
+}
+Mapping Wall::getMappingType() {
+	return texture.mapping;
+}
+TextureScales Wall::getTextureScales(void) const {
+	TextureScales t;
+	t.xscale = texture.xscale;
+	t.yscale = texture.yscale;
+	t.xoff = texture.xoff;
+	t.yoff = texture.yoff;
+	return t;
 }

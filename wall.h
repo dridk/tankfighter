@@ -5,8 +5,12 @@
 #include "polygon.h"
 #include "coretypes.h"
 #include <string>
+#include <SFML/Graphics/Color.hpp>
 
 enum Mapping {MAPPING_TILE, MAPPING_STRETCH, MAPPING_TILE_ABSOLUTE};
+struct TextureScales {
+	float xscale, yscale, xoff, yoff;
+};
 struct TextureDesc {
 	std::string name;
 	sf::Color color;
@@ -33,6 +37,7 @@ class Wall: public Entity
 
 	double getTextureAngle() const;
 	double getAngle() const;
+	TextureScales getTextureScales() const;
 
 	virtual void draw(sf::RenderTarget &target) const;
 	virtual Vector2d movement(sf::Int64 tm);
@@ -40,6 +45,8 @@ class Wall: public Entity
 	std::string getTextureName(void) const;
 	bool isMapBoundaries() const;
 	void isMapBoundaries(bool v);
+	sf::Color getColor(void);
+	Mapping getMappingType(void);
 
 	private:
 	void ConstructWall(const TFPolygon &polygon, double angle, const TextureDesc &texture);

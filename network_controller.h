@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <ostream>
 #include <vector>
+#include "wall.h"
 
 
 class Engine;
@@ -204,15 +205,19 @@ struct BlockPoint {
 	unsigned short x, y;
 };
 typedef std::vector<BlockPoint> ApproxPolygon;
-struct BlockM {
+struct BlockHeader {
 	char *texture_name;
 	float angle;
+	Uint32 color;
+	TextureScales scales;
+	float textureAngle;
+	Uint32 mapping;
+};
+struct BlockM {
+	BlockHeader h;
 	ApproxPolygon apolygon;
 };
-struct BlockMpod {
-	char *texture_name;
-	float angle;
-};
+
 struct DefineMapM {
 	unsigned short width, height;
 	unsigned block_count;

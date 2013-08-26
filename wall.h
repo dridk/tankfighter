@@ -52,7 +52,7 @@ class Wall: public Entity
 	void ConstructWall(const TFPolygon &polygon, double angle, const TextureDesc &texture);
 	DoubleRect getBoundingRectangle() const;
 	void ComputePosition();
-	TFPolygon polygon, straight_polygon;
+	TFPolygon straight_polygon;
 	TextureDesc texture;
 	float angle;
 	bool is_map_boundaries;

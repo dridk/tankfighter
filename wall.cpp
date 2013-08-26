@@ -29,8 +29,6 @@ void Wall::ConstructWall(const TFPolygon &polygon0, double angle0, const Texture
 	is_map_boundaries = false;
 	angle = angle0;
 	straight_polygon = polygon0;
-	polygon = polygon0;
-	RotatePolygon(polygon, angle0);
 	ComputePosition();
 	texture = texture0;
 }
@@ -56,13 +54,15 @@ DoubleRect getPolyBounds(const TFPolygon &polygon) {
 	return DoubleRect(minp.x, minp.y, maxp.x - minp.x, maxp.y - minp.y);
 }
 DoubleRect Wall::getBoundingRectangle() const {
-	return getPolyBounds(polygon);
+	return getPolyBounds(getPolygon());
 }
 TFPolygon Wall::getStraightPolygon(void) const {
 	return straight_polygon;
 }
 TFPolygon Wall::getPolygon(void) const {
-	return polygon;
+	TFPolygon poly = straight_polygon;
+	RotatePolygon(poly, angle);
+	return poly;
 }
 void Wall::draw(sf::RenderTarget &target) const {
 	TextureCache *cache = getEngine()->getTextureCache();
@@ -79,15 +79,15 @@ void Wall::draw(sf::RenderTarget &target) const {
 	else RotatePolygon(rpoly, -texture.angle);
 	
 	DoubleRect r = getPolyBounds(rpoly);
-	ConvexShape shape(polygon.size());
+	ConvexShape shape(rpoly.size());
 	if (texture.mapping != MAPPING_TILE_ABSOLUTE) {
 		shape.setRotation(180/M_PI*(angle + texture.angle));
-		shape.setOrigin(polygon[0].x, polygon[0].y);
-		shape.setPosition(polygon[0].x, polygon[0].y);
+		shape.setOrigin(rpoly[0].x, rpoly[0].y);
+		shape.setPosition(rpoly[0].x, rpoly[0].y);
 	} else {
 		shape.setRotation(180/M_PI*texture.angle);
-		shape.setOrigin(polygon[0].x, polygon[0].y);
-		shape.setPosition(polygon[0].x, polygon[0].y);
+		shape.setOrigin(rpoly[0].x, rpoly[0].y);
+		shape.setPosition(rpoly[0].x, rpoly[0].y);
 	}
 	shape.setTexture(sftexture);
 	sftexture->setRepeated(true);
@@ -103,16 +103,16 @@ void Wall::draw(sf::RenderTarget &target) const {
 		yoff += r.top - r0.top;
 	}
 	if (texture.mapping == MAPPING_TILE_ABSOLUTE) {
-		/* my requirement is about polygon[0] point alignment... */
+		/* my requirement is about rpoly[0] point alignment... */
 		/* I can compute where it should be on the texture */
 		/* And then, compute where the r.top/r.left should be on the texture...*/
-		Vector2f p0t(polygon[0].x, polygon[0].y);
+		Vector2f p0t(rpoly[0].x, rpoly[0].y);
 		Transform rottex;
 		rottex.rotate(-180/M_PI*texture.angle);
 		p0t = rottex.transformPoint(p0t);
 		
-		xoff += p0t.x + (r.left - polygon[0].x);
-		yoff += p0t.y + (r.top - polygon[0].y);
+		xoff += p0t.x + (r.left - rpoly[0].x);
+		yoff += p0t.y + (r.top - rpoly[0].y);
 	}
 	
 	shape.setTextureRect(IntRect(xoff/texscale.x + texture.xoff*corescale.x, yoff/texscale.y + texture.yoff*corescale.y, r.width/texscale.x, r.height/texscale.y));
@@ -134,7 +134,7 @@ std::string Wall::getTextureName(void) const {
 	return texture.name;
 }
 void Wall::getPolygon(TFPolygon &opoly) {
-	opoly = polygon;
+	opoly = getPolygon();
 }
 double Wall::getAngle() const {return angle;}
 double Wall::getTextureAngle() const {return texture.angle;}

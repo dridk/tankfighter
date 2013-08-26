@@ -41,12 +41,16 @@ static const char *NMF_PlayerScore = "uu";
 
 /********************** conversion helpers *********************/
 static unsigned short fl2us(double fl, double maxval) {
-	return static_cast<unsigned short>(fl/maxval*65536.0);
+	Uint32 i = static_cast<Uint32>(fl/maxval*65536.0);
+	if (i >= 65536) {i = 65535;} /* overflow... set to max position */
+	return static_cast<unsigned short>(i);
 }
 static Uint8 fl2b(double fl, double maxval) {
 	return static_cast<Uint8>(fl/maxval*256.0);
 }
 static double us2fl(unsigned short us, double maxval) {
+	Uint32 u = us;
+	if (u == 65535) u = 65536; /* assume overflow */
 	return us*maxval/65536.0;
 }
 static double b2fl(Uint8 b, double maxval) {
@@ -545,25 +549,41 @@ void AP2Polygon(const ApproxPolygon &apoly, TFPolygon &poly, unsigned width, uns
 	}
 }
 void load_map_from_blocks(Engine *engine, unsigned width, unsigned height, std::vector<BlockM> &blocks) {
-	engine->defineMapSize(width, height);
+	engine->clear_entities();
+
 	for(size_t i=0; i < blocks.size(); i++) {
+		fprintf(stderr, "[next block1]\n");
 		BlockM &b=blocks[i];
 		TFPolygon poly;
 		AP2Polygon(b.apolygon, poly, width, height);
-		engine->add(new Wall(poly, b.angle, b.texture_name, engine));
+		Wall *wall = new Wall(poly, b.angle, b.texture_name, engine);
+		engine->add(wall);
+		if (i == 0) {
+			Vector2d pt = poly[poly.size()-1];
+			fprintf(stderr, "map boundaries poly %gx%g w=%u h=%u\n", pt.x, pt.y, width, height);
+			wall->isMapBoundaries(true);
+		}
 	}
+	engine->defineMapSize(width, height);
+	engine->freeze(false);
+}
+static void wall2blockM(Wall *wall, BlockM &b, const Vector2d &size) {
+	Polygon2AP(wall->getStraightPolygon(), b.apolygon, size.x, size.y);
+	b.angle = wall->getAngle();
+	b.texture_name = cstrdup(wall->getTextureName().c_str());
 }
 void CollectMapBlocks(Engine *engine, std::vector<BlockM> &blocks) {
+	BlockM b;
 	Wall *iwall = dynamic_cast<Wall*>(engine->getMapBoundariesEntity());
 	Vector2d size = engine->map_size();
+	wall2blockM(iwall, b, size);
+	blocks.push_back(b);
+	
 	for(Engine::EntitiesIterator it=engine->begin_entities(), e=engine->end_entities(); it != e; ++it) {
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (!wall) continue;
 		if (wall == iwall) continue;
-		BlockM b;
-		Polygon2AP(wall->getStraightPolygon(), b.apolygon, size.x, size.y);
-		b.angle = wall->getTextureAngle();
-		b.texture_name = cstrdup(wall->getTextureName().c_str());
+		wall2blockM(wall, b, size);
 		blocks.push_back(b);
 	}
 }
@@ -1120,7 +1140,7 @@ bool NetworkClient::requestConnection(const RemoteClient &server) {
 		requestPlayerCreation(ctrl, &c);
 		getEngine()->destroy(pl);
 	}
-	engine->clear_entities();
+	engine->freeze(true);
 	Entity::useUpperUID();
 	getEngine()->display(std::string("Connecting to ")+tostring(server));
 	return true;

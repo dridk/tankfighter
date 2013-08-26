@@ -89,8 +89,10 @@ void Engine::play(void) {
 				quit();
 			} else if (e.type == Event::KeyPressed) {
 				if (e.key.code == Keyboard::Escape) {
-					if (network_menu) network_menu->escape();
-					else PopupMenu();
+					if (!is_frozen) {
+						if (network_menu) network_menu->escape();
+						else PopupMenu();
+					}
 				}
 				if (e.key.code == Keyboard::M) {
 					char buffer[256];
@@ -185,6 +187,7 @@ Missile *Engine::getMissileByUID(Uint32 uid) {
 	return dynamic_cast<Missile*>(getEntityByUID(uid));
 }
 void Engine::addPlayer(unsigned cid, int joyid) {
+	if (is_frozen) return;
 	Controller *newc;
 	if (cid >= cdef.forplayer.size()) return;
 	if (cid == 0 && joyid ==  -1) {
@@ -309,6 +312,7 @@ void Engine::CheckMenu(void) {
 	}
 }
 Engine::Engine():network(this),messages(this) {
+	is_frozen = false;
 	msize.x = 1920;
 	msize.y = 1080;
 	network_menu = NULL;
@@ -478,7 +482,8 @@ void Engine::draw(void) {
 	scorepos.y = 16;
 	window.clear();
 	/* draw walls before other entities */
-	getMapBoundariesEntity()->draw(window);
+	Entity *bnds = getMapBoundariesEntity();
+	if (bnds) bnds->draw(window);
 	for(EntitiesIterator it=entities.begin(); it != entities.end(); ++it) {
 		Wall *wall = dynamic_cast<Wall*>(*it);
 		if (wall && wall->isMapBoundaries()) continue;
@@ -538,6 +543,7 @@ static bool quasi_equals(double a, double b) {
 	return fabs(a-b) <= 1e-3*(fabs(a)+fabs(b));
 }
 void Engine::compute_physics(void) {
+	if (is_frozen) return;
 	unsigned minFPS = parameters.minFPS();
 	Int64 tm = clock.getElapsedTime().asMicroseconds();
 	if (tm == 0) return;
@@ -638,4 +644,7 @@ void Engine::display(const std::string &text, const sf::Color *c) {
 }
 void Engine::loadMap(const char *path) {
 	load_map(this, path);
+}
+void Engine::freeze(bool v) {
+	is_frozen = v;
 }

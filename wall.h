@@ -30,7 +30,9 @@ class Wall: public Entity
 	virtual void getPolygon(TFPolygon &poly);
 	TFPolygon getPolygon(void) const;
 	TFPolygon getStraightPolygon(void) const;
-	virtual double getTextureAngle() const;
+
+	double getTextureAngle() const;
+	double getAngle() const;
 
 	virtual void draw(sf::RenderTarget &target) const;
 	virtual Vector2d movement(sf::Int64 tm);

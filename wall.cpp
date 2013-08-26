@@ -135,7 +135,8 @@ std::string Wall::getTextureName(void) const {
 void Wall::getPolygon(TFPolygon &opoly) {
 	opoly = polygon;
 }
-double Wall::getTextureAngle() const {return angle;}
+double Wall::getAngle() const {return angle;}
+double Wall::getTextureAngle() const {return texture.angle;}
 
 void TextureDesc::clear() {
 	name = "";

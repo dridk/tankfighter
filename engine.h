@@ -56,6 +56,9 @@ class Engine
 	Player *getPlayerByUID(sf::Uint32 uid);
 	Missile *getMissileByUID(sf::Uint32 uid);
 	void display(const std::string &text, const sf::Color *c = NULL);
+	void freeze(bool v);
+	
+	
 	private:
 	void initialActions();
 	void map_boundaries_changed(void);
@@ -88,5 +91,6 @@ class Engine
 	Menu *network_menu;
 	Messages messages;
 	bool is_fullscreen;
+	bool is_frozen;
 };
 #endif

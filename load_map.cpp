@@ -13,6 +13,7 @@
 #include "parameters.h"
 #include "parse_json.h"
 #include "geometry.h"
+#include "color.h"
 #include <math.h>
 #include <stdint.h>
 
@@ -30,6 +31,9 @@ std::string json_string_to_stdstring(const json_value *v) {
 	r = p;
 	free(p);
 	return r;
+}
+static Color json_to_color(const json_value *v) {
+	return colorFromString(json_string_to_stdstring(v).c_str());
 }
 bool json2texturedesc(const json_value *entity, TextureDesc &desc) {
 	desc.clear();
@@ -69,6 +73,13 @@ bool json2texturedesc(const json_value *entity, TextureDesc &desc) {
 		}
 		if (strcmp(key, "image")==0) {
 			desc.name = json_string_to_stdstring(value);
+		}
+		if (strcmp(key, "color")==0) {
+			desc.color = json_to_color(value);
+		}
+		double alpha;
+		if (try_assign_double_variable(&alpha, "alpha", key, value)) {
+			desc.color.a = alpha;
 		}
 	}
 	return true;

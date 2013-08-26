@@ -1,13 +1,13 @@
 {"type": "ktank-map", "version": "1.0", "width": 1920, "height": 1080
-, "background": {"image": "dirt", "mapping": "tile"}
+, "background": {"image": "dirt", "mapping": "tile", "color":"lightblue"}
 , "blocks": [
 	{"x": 100, "y":100, "w": 512, "h": 128, "texture": "bloc2", "angle": 15},
-	{"x": 400, "y":300, "w": 256, "h": 256, "texture": {"image":"bloc2", "mapping":"stretch", "xoff":0}, "angle": 30},
+	{"x": 400, "y":300, "w": 256, "h": 256, "texture": {"image":"bloc2", "mapping":"stretch", "xoff":0, "color": "yellow", "alpha":128}, "angle": 30},
 	{"x": 10, "y":700, "w": 1024, "h": 256, "texture": "bloc2", "angle": 45},
-	{"x": 1200, "y":150, "w": 228, "h": 888, "texture": {"image":"bloc","mapping":"absolute tile","scale":1,"angle":45}, "angle": 60},
+	{"x": 1200, "y":150, "w": 228, "h": 888, "texture": {"image":"bloc","mapping":"absolute tile","scale":1,"angle":45,"color":"#FF0000"}, "angle": 60},
 	{"x": 1600, "y":300, "w": 152, "h": 222, "texture": {"image":"bloc","mapping":"tile","scale":1,"angle":5}, "angle": 10},
 	{"shape":"polygon", "texture": "bloc", "points": [
 		[800,300], [900,200], [1000, 300], [1000, 700], [800, 700]
-	], "angle": 15, "texture":{"image":"bloc","mapping":"absolute tile","scale":1,"angle":45}}
+	], "angle": 15, "texture":{"image":"bloc","mapping":"absolute tile","scale":1,"angle":45, "color":"red"}}
 ]
 }

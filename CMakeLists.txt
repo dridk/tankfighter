@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.4)
 project (tankfighter)
-
+########## GENERAL PARAMETERS ##########
+set (TF_NAME "tankfighter")
+set (TF_VERSION 1.0)
 
 # define SFML requirement
 include(FindPkgConfig)
@@ -68,13 +70,16 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DI
 target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES} ${FOG_LIBRARIES})
 string (REPLACE ";" " " X_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER} ${OPENGL_LDFLAGS_OTHER} ${FOG_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line
 set_property(TARGET tankfighter PROPERTY LINK_FLAGS "${LINK_FLAGS} ${X_LDFLAGS_OTHER}")
-string (REPLACE ";" " " X_CFLAGS_OTHER "${SFML2_CFLAGS_OTHER} ${FC2_CFLAGS_OTHER} ${OPENGL_CFLAGS_OTHER} ${FOG_CFLAGS_OTHER}")
+string (REPLACE ";" " " X_CFLAGS_OTHER "-DTF_NAME=\"\\\"${TF_NAME}\\\"\" -DTF_VERSION=\"\\\"${TF_VERSION}\\\"\" -DTF_PREFIX=\"\\\"${CMAKE_INSTALL_PREFIX}\"\\\" ${SFML2_CFLAGS_OTHER} ${FC2_CFLAGS_OTHER} ${OPENGL_CFLAGS_OTHER} ${FOG_CFLAGS_OTHER}")
 set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${X_CFLAGS_OTHER}")
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
-	install (TARGETS tankfighter DESTINATION bin)
-else(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+message(STATUS "cmake_system_name is ${CMAKE_SYSTEM_NAME}")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
 	install (TARGETS tankfighter DESTINATION .)
 	INSTALL_FILES(/sprites FILES sprites/crosshair.png sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
 	INSTALL_FILES(/ FILES keymap.json map.json map2.json tankfighter.cfg)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+else(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
+	install (TARGETS tankfighter DESTINATION bin)
+	INSTALL_FILES(/share/tankfighter-${TF_VERSION}/sprites FILES sprites/crosshair.png sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
+	INSTALL_FILES(/share/tankfighter-${TF_VERSION} FILES keymap.json map.json map2.json tankfighter.cfg)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Win32")

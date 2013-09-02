@@ -4,18 +4,12 @@
 #include <SFML/Audio.hpp>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <iostream>
+#include <string.h>
 #include <math.h>
-#include "json.h"
-#include "geometry.h"
-#include "misc.h"
 #include "engine.h"
-#include "load_map.h"
-#include "player.h"
-#include "controller.h"
-#include "commands.h"
 #include "parameters.h"
+#include <unistd.h>
+#include <limits.h>
 
 
 using namespace sf;
@@ -26,6 +20,24 @@ using namespace std;
 
 static void set_data_directory() {
 #ifndef _WIN32
+	const char *testfile = "sprites";
+	char buffer[256];
+	char exepath[PATH_MAX+1];
+	if (access(testfile, R_OK)!=-1) return;
+	sprintf(buffer, "/proc/%lu/exe", (unsigned long)getpid());
+	if (readlink(buffer, exepath, PATH_MAX+1) != -1) {
+		/* we got an exe path on Linux */
+		char *e = strrchr(exepath, '/');
+		if (e && sizeof(exepath) > (e+1-exepath)+strlen(testfile)+1) {
+			memmove(e+1, testfile, strlen(testfile)+1);
+			if (access(exepath, R_OK)!=-1) {
+				*e = 0;
+				chdir(exepath);
+				return;
+			}
+		}
+	}
+	/* CWD is not a data directory */
 	chdir(stringify(TF_PREFIX) "/share/" stringify(TF_NAME) "-" stringify(TF_VERSION));
 #endif
 }

@@ -119,10 +119,10 @@ Parameters::Parameters() {
 		set(pdef.name, pdef.defval);
 		/*values.insert(pdef.name, pdef.defval);*/
 	}
-	parseFile(config().c_str());
 }
 bool Parameters::parseCmdline (int argc, char **argv) {
 	int index = 0;
+	parseFile(config().c_str());
 	std::vector<struct option> options(variables.size());
 	size_t i=0;
 	for(VarmapIterator it=variables.begin(); it != variables.end(); ++it) {

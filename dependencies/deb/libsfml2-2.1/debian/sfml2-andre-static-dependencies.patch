@@ -1,0 +1,16 @@
+--- a/src/SFML/Graphics/CMakeLists.txt	2013-07-21 09:30:08.000000000 +0200
++++ b/src/SFML/Graphics/CMakeLists.txt	2013-09-02 20:08:42.000000000 +0200
+@@ -100,8 +100,11 @@
+ # find external libraries
+ find_package(OpenGL REQUIRED)
+ find_package(Freetype REQUIRED)
+-find_package(GLEW REQUIRED)
+-find_package(JPEG REQUIRED)
++find_package(PkgConfig REQUIRED)
++set(GLEW_INCLUDE_PATH "$($(PKG_CONFIG_EXECUTABLE) --static --cflags glew")
++set(GLEW_LIBRARY "GLEW.a")
++set(JPEG_INCLUDE_PATH "")
++set(GLEW_LIBRARY "jpeg.a")
+ if(LINUX)
+     find_package(X11 REQUIRED)
+ endif()

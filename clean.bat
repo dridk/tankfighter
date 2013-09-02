@@ -1,6 +1,7 @@
-rm tankfighter
-rm *.o
-rm CMakeCache.txt
-rm install_manifest.txt
-rm cmake_install.cmake
-rm -r CMakeFiles
+rm -f tankfighter
+rm -f *.o
+rm -f CMakeCache.txt
+rm -f install_manifest.txt
+rm -f cmake_install.cmake
+rm -rf CMakeFiles
+rm -f Makefile

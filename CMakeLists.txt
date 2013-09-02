@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.4)
 project (tankfighter)
 ########## GENERAL PARAMETERS ##########
 set (TF_NAME "tankfighter")
-set (TF_VERSION 1.0)
+set (TF_VERSION 0.9.0)
 
 # define SFML requirement
 include(FindPkgConfig)
@@ -14,8 +14,13 @@ set (CMAKE_C_FLAGS_RELEASE "-O2")
 
 ############ SEARCH SFML2 ##############
 if(PKG_CONFIG_FOUND)
-	pkg_search_module(SFML2 sfml-all >= 2.00)
+	pkg_search_module(SFML2 sfml2-static >= 2.00)
 endif(PKG_CONFIG_FOUND)
+
+if(SFML2_FOUND)
+else(SFML2_FOUND)
+	pkg_search_module(SFML2 sfml-all >= 2.00)
+endif(SFML2_FOUND)
 
 if(SFML2_FOUND)
 else(SFML2_FOUND)
@@ -41,9 +46,10 @@ else(FOG_FOUND)
 	set(FOG_LDFLAGS_OTHER "")
 endif(FOG_FOUND)
 ########### SEARCH fontconfig2 #############
-if(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
+else(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
 	pkg_search_module(FC2 REQUIRED fontconfig >= 2.00)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Unix")
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
 
 ########## SEARCH OpenGL #####################
 if(PKG_CONFIG_FOUND)
@@ -74,12 +80,14 @@ string (REPLACE ";" " " X_CFLAGS_OTHER "-DTF_NAME=\"\\\"${TF_NAME}\\\"\" -DTF_VE
 set_property(TARGET tankfighter PROPERTY COMPILE_FLAGS "${COMPILE_FLAGS} ${X_CFLAGS_OTHER}")
 
 message(STATUS "cmake_system_name is ${CMAKE_SYSTEM_NAME}")
+
+set (sprites sprites/crosshair.png sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
+set (datafiles keymap.json map.json map2.json tankfighter.cfg)
+set (ddir /share/tankfighter-${TF_VERSION})
 if(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
 	install (TARGETS tankfighter DESTINATION .)
-	INSTALL_FILES(/sprites FILES sprites/crosshair.png sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
-	INSTALL_FILES(/ FILES keymap.json map.json map2.json tankfighter.cfg)
 else(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
 	install (TARGETS tankfighter DESTINATION bin)
-	INSTALL_FILES(/share/tankfighter-${TF_VERSION}/sprites FILES sprites/crosshair.png sprites/car.png sprites/bloc.png sprites/bloc2.png sprites/canon.png sprites/bullet.png sprites/dirt.jpg)
-	INSTALL_FILES(/share/tankfighter-${TF_VERSION} FILES keymap.json map.json map2.json tankfighter.cfg)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Win32")
+INSTALL_FILES(${ddir}/sprites FILES ${sprites})
+INSTALL_FILES(${ddir} FILES ${datafiles})

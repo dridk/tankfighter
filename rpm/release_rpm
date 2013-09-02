@@ -1,0 +1,23 @@
+#!/bin/sh
+if [ -z "$TMP" ]; then
+	TMP=/tmp
+fi
+
+spec="tankfighter.spec"
+specdir="$(pwd)"
+tfp=$(dirname $(dirname "$(pwd)"))
+tf="$tfp/tankfighter"
+rpmdir=$(rpmbuild --showrc |sed -n 's/[-0-9]*: *_topdir[[:space:]]*//p'|sed "s|%{getenv:HOME}|$HOME|")
+
+tfver=$(sed -n 's/set (TF_VERSION \([^)]*\)).*/\1/p' "${tf}/CMakeLists.txt")
+(cd ..;sh clean.bat)
+echo tankfighter version $tfver
+namever="tankfighter-${tfver}"
+rm -rf "$TMP/$namever" 2>/dev/null
+cp -r ${tf} "$TMP/$namever"
+(cd "$TMP/$namever";sh clean.bat)
+rm -rf "$TMP/$namever/.git"
+tar cfz  ${rpmdir}/SOURCES/$namever.tar.gz -C "$TMP" "$namever"
+cp -f "$specdir/$spec" "$rpmdir/SPECS"
+cd "$rpmdir/SPECS"
+rpmbuild --nodeps --rmsource --rmspec -ba "$spec"

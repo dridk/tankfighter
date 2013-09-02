@@ -65,13 +65,13 @@ else(OPENGL_FOUND)
 endif(OPENGL_FOUND)
 
 
-include_directories (${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${FOG_INCLUDE_DIRS})
+include_directories (${CMAKE_SOURCE_DIR} ${SFML2_INCLUDE_DIRS} ${FC2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${FOG_INCLUDE_DIRS})
 link_directories (${SFML2_LIBRARY_DIRS} ${FC2_LIBRARY_DIRS} ${OPENGL_LIBRARY_DIRS} ${FOG_LIBRARY_DIRS})
 message(STATUS "link_directories ${LINK_DIRECTORIES}")
 # define main executable target
 add_executable (tankfighter color.cpp image_helper.c parse_json.cpp fc.cpp input.cpp messages.cpp menu.cpp parameters.cpp network_controller.cpp ${CMAKE_BINARY_DIR}/keys.cpp commands.cpp joystick_controller.cpp missile.cpp engine_event.cpp controller.cpp keybmouse_controller.cpp player.cpp texture_cache.cpp entity.cpp wall.cpp load_map.cpp engine.cpp misc.cpp main.cpp json.c geometry.cpp)
 
-add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/keys.cpp COMMAND ${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh)
+add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/keys.cpp" COMMAND "${CMAKE_SOURCE_DIR}/generate_keys.cpp.sh" "${CMAKE_SOURCE_DIR}")
 
 target_link_libraries (tankfighter ${SFML2_LIBRARIES} ${FC2_LIBRARIES} ${OPENGL_LIBRARIES} ${FOG_LIBRARIES})
 string (REPLACE ";" " " X_LDFLAGS_OTHER "${SFML2_LDFLAGS_OTHER} ${FC2_LDFLAGS_OTHER} ${OPENGL_LDFLAGS_OTHER} ${FOG_LDFLAGS_OTHER}") # fix bug in cmake that make LDFLAGS semicolon separated on command line

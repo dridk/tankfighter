@@ -1,7 +1,8 @@
 #!/bin/sh
 
-out="$1"
-kbh="$2"
+srcdir="$1"
+out="$2"
+kbh="$3"
 
 if [ -z "$out" ]; then
 	out="keys.cpp"
@@ -41,11 +42,11 @@ fi
 
 if [ -n "$kbh" ]; then
 	exec > "$out"
-	cat keys.cpp.head
+	cat "$srcdir/keys.cpp.head"
 	cat "$kbh/Keyboard.hpp"|extract_enum "Key" "Keyboard" "key_codemap"
 	cat "$kbh/Mouse.hpp"|extract_enum "Button" "Mouse" "mouse_codemap"
 	cat "$kbh/Joystick.hpp"|extract_enum "Axis" "Joystick" "joyaxis_codemap"
-	cat keys.cpp.tail
+	cat "$srcdir/keys.cpp.tail"
 	exit 0
 else
 	echo "SFML 2.0 SFML/Window/Keyboard.hpp file not found. If you find it, set \${SFML_ROOT} so that \${SFML_ROOT}/SFML/Window/Keyboard.hpp exists" >&2

@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_VERBOSE=1
+
+#include /usr/share/cdbs/1/rules/debhelper.mk
+
+version=@MAJOR@.@MINOR@.@RELEASE@
+
+CFLAGS=-O2
+MAKEFLAGS=-j2
+
+%:
+	dh $@

@@ -1,0 +1,18 @@
+Source: tankfighter
+Section: games
+Priority: optional
+Maintainer: André Gillibert <MetaEntropy@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), pkg-config, cmake,
+  libsfml2-static,
+  libfontconfig1-dev,
+  mesa-common-dev, libgl1-mesa-dev
+Standards-Version: 3.9.2
+Homepage: http://github.com/dridk/tankfighter
+
+Package: tankfighter
+Architecture: any
+Depends: libx11-6, libxrandr2, libopenal1, libsndfile1,
+  libfreetype6, libfontconfig1, libgl1-mesa-glx,
+  ${shlibs:Depends},${misc:Depends}
+Description:
+ Tankfighter is an open source multiplayer real time video game. It can be played in hot seat mode or on network.

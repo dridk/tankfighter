@@ -1,0 +1,52 @@
+Format: http://dep.debian.net/deps/dep5
+Upstream-Name: tankfighter
+Source: http://github.com/dridk/tankfighter
+
+Files: *
+Copyright: 2013 Laurent Gomila
+License: REALLYFREE
+ The REALLYFREE License
+ Copyright (c) 2013 André Gillibert
+ .
+ Permission is hereby granted, free of charge, to any person ("You") obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so.
+ .
+ You don't have to keep this copyright notice with any form of the Software.
+ You may misrepresent altered versions of this Software as the original, but doing so is discouraged.
+ You may falsely claim authorship of the original Software, but that won't make it true.
+ You may modify or keep the original Software name in original and modified forms. Doing reasonable things with names is encouranged.
+ This license text is also part of the Software and subject to the same freedoms.
+ . 
+ In countries where this is possible, the author of this Software gives up all his intellectual property rights, including but not limited to copyrights, authorship rights and moral author's rights.
+ In countries where this is not possible, all the rights that can be given up are given up.
+
+Files: src/image_helper.c
+License: MIT
+ The MIT License (MIT)
+ .
+ Copyright (c) 2007 Jonathan Dummer
+ .
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+ . 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+
+Files: sprites/Visor.svg sprites/Crosshairs_Red.svg
+License: CC0 1.0 Universal Public Domain Dedication

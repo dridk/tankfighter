@@ -8,5 +8,5 @@ Description: The Simple and Fast Multimedia Library, all static modules.
 URL: http://www.sfml-dev.org
 Version: 2.1.0
 CFlags: -I${includedir}/SFML-static-2.0
-Requires: xrandr, x11, gl, sndfile, freetype2
+Requires: xrandr, x11, gl, sndfile, freetype2, openal, fontconfig
 Libs: -L${libdir} -lsfml-window-s -lsfml-graphics-s -lsfml-audio-s -lsfml-network-s -lsfml-system-s -ljpeg.a -lGLEW.a

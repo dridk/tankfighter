@@ -28,6 +28,9 @@ done|tail -1
 find_keyboard_hpp() {
 	path=$(find_incl "sfml-all" "SFML/Window/Keyboard.hpp")
 	if [ -z "$path" ]; then
+		path=$(find_incl "sfml2-static" "SFML/Window/Keyboard.hpp")
+	fi
+	if [ -z "$path" ]; then
 		path16=$(find_incl "sfml-1.6" "SFML/Window/WindowListener.hpp")
 		if [ -n "$path16" ]; then
 			echo "SFML 1.6 headers found, but SFML >= 2.0 headers required" >&2

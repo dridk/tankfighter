@@ -1,3 +1,13 @@
+override_dh_auto_build
+*.substvars
+*.log
+*.debian.tar.gz
+*.orig.tar.gz
+*.dsc
+*.deb
+*.rpm
+*.build
+*.changes
 libFog.dll
 tankfighter.exe
 tankfighter

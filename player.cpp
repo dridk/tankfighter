@@ -92,7 +92,7 @@ void Player::draw(sf::RenderTarget &target) const {
 	body.setOrigin(Vector2f(r.width/2, r.height/2));
 	body.setRotation(360.0/(2*M_PI)*tank_direction+90);
 	body.setColor(color);
-	target.draw(body);
+	drawSprite(body, target);
 
 	Sprite &canon = getSprite(parameters.canonSpriteName().c_str());
 	r = canon.getLocalBounds();
@@ -100,7 +100,7 @@ void Player::draw(sf::RenderTarget &target) const {
 	canon.setOrigin(Vector2f(r.width/2, r.height/2));
 	canon.setRotation(360.0/(2*M_PI)*canon_direction+90);
 	canon.setColor(color);
-	target.draw(canon);
+	drawSprite(canon, target);
 }
 void Player::try_shoot() {
 	if (shoot_clock.getElapsedTime().asMicroseconds() >= ((Int64)parameters.missileDelayMS())*1000) {

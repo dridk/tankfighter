@@ -1,6 +1,7 @@
 #include "misc.h"
 #include <stdio.h>
 #include <string.h>
+#include <SFML/Graphics/RectangleShape.hpp>
 
 using namespace sf;
 
@@ -72,3 +73,21 @@ char *cstrdup(const char *p) {
 	memcpy(out, p, ln+1);
 	return out;
 }
+
+
+void drawSprite(Sprite &spr, RenderTarget &target) {
+	RectangleShape shape;
+	Texture &sftexture = const_cast<Texture&>(*spr.getTexture());
+	FloatRect r = spr.getLocalBounds();
+	shape.setSize(Vector2f(r.width, r.height));
+	shape.setOrigin(spr.getOrigin());
+	shape.setRotation(spr.getRotation());
+	shape.setPosition(spr.getPosition());
+	shape.setScale(spr.getScale());
+	shape.setTexture(spr.getTexture());
+	shape.setFillColor(spr.getColor());
+	sftexture.setRepeated(false);
+	target.draw(shape);
+	sftexture.setRepeated(true);
+}
+

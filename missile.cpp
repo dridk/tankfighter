@@ -45,7 +45,7 @@ void Missile::draw(sf::RenderTarget &target) const {
 	if (player) {
 		sprite.setColor(player->getColor());
 	}
-	target.draw(sprite);
+	drawSprite(sprite, target);
 }
 double Missile::getAngle(void) const {return angle;}
 MissileControllingData::MissileControllingData() {

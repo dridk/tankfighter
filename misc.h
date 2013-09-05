@@ -3,6 +3,7 @@
 #include "coretypes.h"
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <string>
 #include <sstream>
 #include <math.h>
@@ -31,5 +32,7 @@ std::string tostring(const T &x) {
 	return o.str();
 }
 char *cstrdup(const char *p);
+
+void drawSprite(sf::Sprite &spr, sf::RenderTarget &target);
 
 #endif

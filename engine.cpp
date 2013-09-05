@@ -466,15 +466,15 @@ static GeomPolygon wall2geompoly(Wall *w) {
 }
 #endif
 void Engine::drawMouseCursor(void) {
-	Sprite *spr = getTextureCache()->getSprite(parameters.mouseCursor().c_str());
-	FloatRect sprr = spr->getLocalBounds();
+	Sprite &spr = *getTextureCache()->getSprite(parameters.mouseCursor().c_str());
+	FloatRect sprr = spr.getLocalBounds();
 	Vector2i wposi = Mouse::getPosition(window);
 	Vector2d mpos  = window2map(Vector2d(wposi.x, wposi.y));
 	Vector2d hotspot = parameters.mouseCursorHotSpot(Vector2d(sprr.width, sprr.height));
-	spr->setOrigin(hotspot.x, hotspot.y);
-	spr->setPosition(mpos.x,mpos.y);
-	spr->setRotation(0);
-	window.draw(*spr);
+	spr.setOrigin(hotspot.x, hotspot.y);
+	spr.setPosition(mpos.x,mpos.y);
+	spr.setRotation(0);
+	drawSprite(spr, window);
 }
 void Engine::draw(void) {
 	Vector2d scorepos;

@@ -9,8 +9,7 @@ Group: Game
 
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: pkgconfig
-BuildRequires: SFML2-devel >= 2.0
-Requires: SFML2 >= 2.0
+BuildRequires: SFML2-static >= 2.0
 BuildRequires: fontconfig-devel
 Requires: fontconfig
 

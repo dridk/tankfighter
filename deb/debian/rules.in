@@ -12,3 +12,41 @@ MAKEFLAGS=-j2
 
 %:
 	dh $@
+
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+CC=gcc
+CXX=g++
+AR=ar
+RANLIB=ranlib
+else
+CC=$(DEB_HOST_GNU_TYPE)-gcc
+CXX=$(DEB_HOST_GNU_TYPE)-g++
+AR=$(DEB_HOST_GNU_TYPE)-ar
+RANLIB=$(DEB_HOST_GNU_TYPE)-ranlib
+endif
+ARCHDIR=$(DEB_HOST_MULTIARCH)
+
+override_dh_auto_build:
+	dh_testdir
+	echo Building on $(DEB_BUILD_ARCH_CPU) for host $(DEB_HOST_ARCH_CPU)
+	echo "set(CMAKE_SYSTEM_NAME Linux)" > cmake_toolchain_file && \
+	echo "set(CMAKE_SYSTEM_VERSION 1)" >> cmake_toolchain_file && \
+	echo "set(CMAKE_C_COMPILER $(CC))" >> cmake_toolchain_file && \
+	echo "set(CMAKE_CXX_COMPILER $(CXX))" >> cmake_toolchain_file && \
+	echo "set(CMAKE_FIND_ROOT_PATH /usr)" >> cmake_toolchain_file && \
+	echo "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> cmake_toolchain_file && \
+	echo "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> cmake_toolchain_file && \
+	echo "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> cmake_toolchain_file
+	cmake . -DCMAKE_INSTALL_PREFIX=/usr \
+         -DCMAKE_INSTALL_LIBDIR=lib/$(ARCHDIR) \
+	 -DCMAKE_INSTALL_INCLUDEDIR=include \
+         -DBUILD_SHARED_LIBS=false -DCMAKE_TOOLCHAIN_FILE=cmake_toolchain_file \
+         -DCMAKE_AR=$(shell which $(AR)) \
+         -DCMAKE_RANLIB=$(shell which $(RANLIB)); make -j2 VERBOSE=1
+	touch $@
+override_dh_auto_install: override_dh_auto_build
+	make DESTDIR=debian/tankfighter install
+
+clean::
+	rm -f override_dh_auto_build
+	dh clean

@@ -1,18 +1,20 @@
 Source: libsfml2
-Section: video
+Section: contrib/video
 Priority: optional
 Maintainer: André Gillibert <MetaEntropy@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), pkg-config, cmake, unzip,
+Build-Depends: debhelper (>= 9), pkg-config, cmake, unzip,
   libx11-dev, libxrandr-dev, libjpeg-dev,
   libopenal-dev, libsndfile1-dev,
   libfreetype6-dev, libfontconfig1-dev,
   mesa-common-dev,
   libgl1-mesa-dev, libglew1.6-dev
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Homepage: http://sfml-dev.org/
 
 Package: libsfml2-static
+Multi-Arch: same
 Architecture: any
+Provides: libsfml2-static-i386 [i386], libsfml2-static-amd64 [amd64]
 Depends: libx11-6, libxrandr2, libopenal1, libsndfile1,
   libfreetype6, libfontconfig1, libgl1-mesa-glx,
   libx11-dev, libxrandr-dev, libjpeg-dev,
@@ -22,4 +24,6 @@ Depends: libx11-6, libxrandr2, libopenal1, libsndfile1,
   libgl1-mesa-dev, libglew1.6-dev,
   ${misc:Depends}
 Description: SFML2 framework static libraries
- SFML provides a multi-platform C++ 2D gaming and multimedia framework based on OpenGL and OpenAL. It is composed of five modules: system, window, graphics, audio and network.
+ SFML provides a multi-platform C++ 2D gaming and multimedia framework
+ based on OpenGL and OpenAL.
+ It is composed of five modules: system, window, graphics, audio and network.

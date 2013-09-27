@@ -14,6 +14,7 @@ tankfighter
 keys.cpp
 install_manifest.txt
 cmake_install.cmake
+cmake_toolchain_file
 Makefile
 CMakeCache.txt
 CMakeFiles

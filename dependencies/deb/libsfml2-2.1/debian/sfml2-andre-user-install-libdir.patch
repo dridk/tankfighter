@@ -1,0 +1,13 @@
+--- a/cmake/Macros.cmake	2013-07-21 09:30:08.000000000 +0200
++++ b/cmake/Macros.cmake	2013-09-12 13:40:29.000000000 +0200
+@@ -193,8 +193,8 @@
+     # add the install rule
+     install(TARGETS ${target}
+             RUNTIME DESTINATION bin COMPONENT bin
+-            LIBRARY DESTINATION lib${LIB_SUFFIX} COMPONENT bin 
+-            ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT devel
++            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT bin 
++            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+             FRAMEWORK DESTINATION ${CMAKE_INSTALL_FRAMEWORK_PREFIX} COMPONENT bin)
+ 
+ endmacro()

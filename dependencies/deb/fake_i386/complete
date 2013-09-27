@@ -1,0 +1,9 @@
+Provides: libxrandr-dev,
+ libopenal-dev,
+ libsndfile1-dev,
+ libfreetype6-dev,
+ libfontconfig1-dev,
+ mesa-common-dev,
+ libgl1-mesa-dev
+Package: complete
+Architecture: i386

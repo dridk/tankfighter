@@ -1,3 +1,8 @@
+libsfml2 (2.1-2andre) unstable; urgency=low
+
+  * Improved cross-compiling support
+
+ -- André Gillibert <MetaEntropy@gmail.com>  Thu, 12 Sep 2013 11:15:00 +0200
 libsfml2 (2.1) unstable; urgency=low
 
   * Initial release
